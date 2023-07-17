@@ -1,0 +1,50 @@
+{%extends 'layout.html'%}
+{%block content%}
+    <div class="container">
+        <div style="...">
+            <from method='post' action="/pezzi/" >
+                {% csrf_token %}
+                <input type="hidden" name="name" value="value" />  
+                <a class="btn btn-success" >
+                    <span class = "glyhicon glyhicon-plus-sign" aria-hidden="true"></span>
+                    获取最新数据
+                </a>            
+            </from>            
+        </div>
+        
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                {{cellID}}-机器产出信息
+            </div>
+            <!--Table-->
+            <Table class="table table-bordered">
+                <thead>
+                <tr>            
+                    <th>ID</th>
+                    <th>日期</th>
+                    <th>时间</th>                     
+                    <th>车间</th>
+                    <th>设备编号</th>
+                    <th>计件</th>
+                    <th>运行程序</th>
+                    <th>工作模式</th>
+                </tr>
+                </thead>
+                <tbody>
+                {%for obj in queryset%}
+                    <tr>
+                        <td>{{obj.EventID}}</td>
+                        <td>{{obj.Data}}</td>
+                        <td>{{obj.Ora}}</td>
+                        <td>{{obj.Plant}}</td>
+                        <td>{{obj.CellaID}}</td>
+                        <td>{{obj.progrem}}</td>
+                        <td>{{obj.JobMode}}</td>
+                    </tr>
+                {%endfor%}
+                </tbody>
+            </Table>
+        </div>
+    </div>
+{%endblock%}

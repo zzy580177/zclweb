@@ -1,0 +1,42 @@
+{%extends 'layout.html'%}
+{%block content%}
+    <div class="container">
+        <div style="...">
+            <a class="btn btn-success" href="/stato/">
+                <span class = "glyhicon glyhicon-plus-sign" aria-hidden="true"></span>
+                获取最新数据
+            </a>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                设备状态切换时刻表
+            </div>
+            <!--Table-->
+            <Table class="table table-bordered">
+                <thead>
+                <tr>            
+                    <th>ID</th>
+                    <th>日期</th>
+                    <th>时间</th>
+                    <th>车间</th>
+                    <th>设备编码</th>
+                    <th>工作状态</th>
+                </tr>
+                </thead>
+                <tbody>
+                {%for obj in queryset%}
+                    <tr>
+                        <td>{{obj.StatoID}}</td>
+                        <td>{{obj.Data}}</td>
+                        <td>{{obj.Ora}}</td>
+                        <td>{{obj.Plant}}</td>
+                        <td>{{obj.CellaID}}</td>
+                        <td>{{obj.get_stato_display}}</td>
+                    </tr>
+                {%endfor%}
+                </tbody>
+            </Table>
+        </div>
+    </div>
+{%endblock%}

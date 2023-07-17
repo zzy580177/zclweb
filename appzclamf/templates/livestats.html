@@ -1,0 +1,42 @@
+{%extends 'layout.html'%}
+{%block content%}
+    <div class="container">
+        <div style="...">
+            <a class="btn btn-success" href="/livestats/">
+                <span class = "glyhicon glyhicon-plus-sign" aria-hidden="true"></span>
+                获取最新数据
+            </a>
+        </div>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                设备在线时刻表
+            </div>
+            <!--Table-->
+            <Table class="table table-bordered">
+                <thead>
+                <tr>            
+                    <th>ID</th>
+                    <th>车间</th>
+                    <th>设备编号</th>
+                    <th>Check1</th>
+                    <th>Check2</th>
+                    <th>NoteID</th>
+                </tr>
+                </thead>
+                <tbody>
+                {%for obj in queryset%}
+                    <tr>
+                        <td>{{obj.id}}</td>
+                        <td>{{obj.Plant}}</td>
+                        <td>{{obj.CellaID}}</td>
+                        <td>{{obj.Check1}}</td>
+                        <td>{{obj.Check2}}</td>
+                        <td>{{obj.Note_Id}}</td>
+                    </tr>
+                {%endfor%}
+                </tbody>
+            </Table>
+        </div>
+    </div>
+{%endblock%}
