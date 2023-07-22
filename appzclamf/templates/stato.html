@@ -10,7 +10,7 @@
         <div class="panel panel-default">
             <div class="panel-heading">
                 <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
-                设备状态切换时刻表
+                #{{cellID}} 设备状态切换时刻表
             </div>
             <!--Table-->
             <Table class="table table-bordered">
@@ -20,8 +20,8 @@
                     <th>日期</th>
                     <th>时间</th>
                     <th>车间</th>
-                    <th>设备编码</th>
                     <th>工作状态</th>
+                    <th>告警编号</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -31,8 +31,8 @@
                         <td>{{obj.Data}}</td>
                         <td>{{obj.Ora}}</td>
                         <td>{{obj.Plant}}</td>
-                        <td>{{obj.CellaID}}</td>
-                        <td>{{obj.get_stato_display}}</td>
+                        <td>{{obj.Stato}}</td>
+                        <td>{{obj.Alarm}}</td>
                     </tr>
                 {%endfor%}
                 </tbody>

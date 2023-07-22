@@ -1,17 +1,6 @@
 from django.db import models
 
-#Create your models here.
-
-# class Base (models.Model):
-#     m2m = models.ManyToManyField (
-#         "AutoSheet1" ,
-#         related_name = "  %(class)s _related" ,
-#         related_query_name = " %(class)s s" ,
-#     )
-#     class Meta :
-#         abstract = True
-#         db_table = "%(class)s"
-
+schema = "AutoSheet1"
 class Alarm(models.Model):
 	""""告警索引表"""
 	#Id = models.IntegerField();
@@ -20,9 +9,8 @@ class Alarm(models.Model):
 	TypeID = models.IntegerField(null=True, blank=True)
 	Description_Id = models.IntegerField(null=True, blank=True)
 	class Meta:
-		db_table = "[zclDb].[Alarmi]"
-	# def _str_(self):
-	# 	return "%d : %s :%d: %d"%(self.AllarmID, self.AllarmString, self.TypeID, self.Description_Id)
+		db_table = "[%s].[Alarmi]"% schema
+		#db_table = "[AutoSheet1].[Alarmi]"
 
 class Event(models.Model):
 	"""事件日志"""
@@ -38,7 +26,7 @@ class Event(models.Model):
 	Pezzi = models.IntegerField(null=True, blank=True);
 	Evento = models.IntegerField(null=True, blank=True);
 	class Meta:
-		db_table = "[zclDb].[Event]"
+		db_table = "[%s].[Event]"% schema
 
 class LiveStats(models.Model):
 	"""在线日志"""
@@ -49,7 +37,7 @@ class LiveStats(models.Model):
 	Check2 =  models.DateTimeField(null=True, blank=True);
 	Note_Id = models.IntegerField(null=True, blank=True);
 	class Meta:
-		db_table = "[zclDb].[LiveState]"
+		db_table = "[%s].[LiveState]"% schema
 
 class Message(models.Model):
 	"""消息ID索引表"""
@@ -57,13 +45,14 @@ class Message(models.Model):
 	MessageID = models.IntegerField();
 	MessageString = models.CharField(null=True, max_length=4000);
 	Description_Id = models.IntegerField(null=True, blank=True);
+	# class Meta:
 	class Meta:
-		db_table = "[zclDb].[Messaggi]"
+		db_table = "[%s].[Messaggi]"% schema
 
 class Pezzi(models.Model):
 	"""产量信息日志"""
 	EventID = models.IntegerField(primary_key=True);
-	Data = models.CharField(null=True, max_length=100); #date
+	Data = models.CharField(null=True, max_length =100); #date
 	Plant = models.CharField(null=True,max_length=50);
 	CellaID = models.IntegerField(null=True, blank=True);
 	MainProg = models.CharField(null=True, max_length=100);
@@ -71,7 +60,7 @@ class Pezzi(models.Model):
 	Ora = models.CharField(null=True, max_length=100);
 	JobMode = models.CharField(null=True, max_length=50);
 	class Meta:
-		db_table = "[zclDb].[Pezzi]"
+		db_table = "[%s].[Pezzi]"% schema
 
 class Stato(models.Model):
 	"""工作状态切换日志"""
@@ -81,13 +70,13 @@ class Stato(models.Model):
 	Plant = models.CharField(max_length=50);
 	CellaID = models.IntegerField(null=True, blank=True);
 	stato_choics =(
-		(1, "运行"),
-		(0, "停止")
+		(True, "运行"),
+		(False, "停止")
 	)
 	Stato = models.BooleanField(null=True, blank=True, choices= stato_choics);
 	Alarm = models.IntegerField(null=True, blank=True);
 	class Meta:
-		db_table = "[zclDb].[Stato]"
+		db_table = "[%s].[Stato]"% schema
 
 class Incoming(models.Model):
 	"""订单表"""
@@ -100,5 +89,5 @@ class Incoming(models.Model):
 	material = models.CharField(max_length=10, null=True);
 	quantity = models.CharField(max_length=10, null=True);
 	class Meta:
-		db_table = "[zclDb].[Incoming]"
+		db_table = "[%s].[Incoming]"% schema
 

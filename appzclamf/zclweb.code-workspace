@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"name": "zclweb",
+			"path": ".."
+		}
+	],
+	"settings": {
+		"typescript.locale": "zh-CN"
+	}
+}

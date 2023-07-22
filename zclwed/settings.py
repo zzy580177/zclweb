@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-u1g!xfv(z$7&+_=^j^_8-j*&0g*u=j)td!#98=ye*0_&w4s^2&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*",]
 
 
 # Application definition
@@ -37,7 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'appzclamf.apps.AppzclamfConfig'
+    'appzclamf.apps.AppzclamfConfig',
+    'rest_framework'
 ]
 
 MIDDLEWARE = [
@@ -77,11 +78,11 @@ WSGI_APPLICATION = 'zclwed.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE':'mssql',
-        'HOST':'localhost',
-        'NAME':'zclAmf_1',
+        'HOST':'localhost\SQLEXPRESS',
+        'NAME':'ZclAutomation',
         'PORT':'1433',
-        'USER':'zclDb',
-        'PASSWORD':'1qaz2wsx',
+        'USER':'AutoSheet1',
+        'PASSWORD':'1qaz2wsx!',
         'OPTIONS':{
             'DRIVER':'SQL server Native Client 11.0',
         }
