@@ -6,9 +6,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from appzclamf.api.serializars import *
-import datetime
+from rest_framework_extensions.cache.decorators import cache_response
 
 class LiveStatsView(APIView):
+    @cache_response(timeout = 60*1, cache="default")
     def get(self, request, *args, **kwargs):
         l_cellaID = kwargs.get("cellaId") #request.CellaID
         l_liveStatses = LiveStats.objects.order_by('-id').filter( CellaID=l_cellaID)
@@ -16,6 +17,7 @@ class LiveStatsView(APIView):
         return Response(l_liveStatses_json.data)
 
 class PezziView(APIView):
+    @cache_response(timeout = 60*1, cache="default")
     def get(self, request, *args, **kwargs):
         l_cellaID = kwargs.get("cellaId") #request.CellaID
         l_Pezzi = Pezzi.objects.filter( CellaID=l_cellaID)
@@ -23,6 +25,7 @@ class PezziView(APIView):
         return Response(l_Pezzi_json.data)
 
 class StatoView(APIView):
+    @cache_response(timeout = 60*1, cache="default")
     def get(self, request, *args, **kwargs):
         l_cellaID = kwargs.get("cellaId") #request.CellaID
         l_Stato = Stato.objects.filter( CellaID=l_cellaID)

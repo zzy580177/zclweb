@@ -1,20 +1,14 @@
 {%extends 'layout.html'%}
 {%block content%}
     <div class="container">
-        <div style="...">
-
-            <from method='post' action="/pezzi/" >
-                {% csrf_token %}
-                <input type="hidden" name="name" value="value" />  
-                {%for obj in q_cellaDic%}
-                <a class="btn btn-success" >
-                    <span class = "glyhicon glyhicon-plus-sign" aria-hidden="true"></span>
-                    获取 #{{obj.CellaID}} 机最新数据
-                </a>
-                {%endfor%}        
-            </from> 
-        </div>
-        
+        <form id= "CellaIDForm" method="post" action="/pezzi/">
+            {% csrf_token %}
+            {%for cellQ in cellIDQ%}
+            <a class="btn btn-primary" onclick="selectCellIdPost('{{cellQ.CellaID}}')" value={{cellQ.CellaID}}>
+                <span class = "glyhicon glyhicon-plus-sign" aria-hidden="true"></span>{{cellQ.CellaID}}# 机
+            </a>
+            {%endfor%}
+        </form>        
         <div class="panel panel-default">
             <div class="panel-heading">
                 <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>

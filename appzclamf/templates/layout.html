@@ -30,10 +30,10 @@
     <!-- Collect the nav links, forms, and other content for toggling -->
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
       <ul class="nav navbar-nav">
-        <li><a href="#">设备能动率</a></li>
-        <li><a href="#">产能稼动率</a></li>
-        <li><a href="#">产量查询</a></li>
-        <li><a href="#">订单查询</a></li>
+        <li><a href="/livestats/detal/">设备能动率</a></li>
+      <!---  <li><a href="/building/">产能稼动率</a></li>
+        <li><a href="/building/">产量查询</a></li>
+        <li><a href="/building/">订单查询</a></li>  -->
         <li><a href="/livestats/">设备在线查询</a></li>
         <li><a href="/stato/">设备工作状态查询</a></li>
         <li><a href="/pezzi/">产能查询</a></li>
@@ -64,9 +64,18 @@
 -->
 
 </body>
-<script>  
-
+<script> function selectCellIdPost(value) {
+  var temp = document.getElementById("CellaIDForm");
+  var opt = document.createElement("textarea");    
+  opt.name = 'cellID';
+  opt.id = 'cellID';        
+  opt.value = value;
+  temp.appendChild(opt);        
+  temp.submit();
+  temp.removeChild(opt)
+}
 </script>
+<script src="(% static 'plugins\highcharts\highcharts.js%)">  </script>
 <script src= "{% static 'plugins\jquery-3.7.0.min.js'%}"></script>
 <script src= " {%static 'plugins\bootstrap-3.4.1\js\bootstrap.js'%} "></script>
 </html>

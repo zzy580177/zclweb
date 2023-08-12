@@ -1,19 +1,18 @@
 {%extends 'layout.html'%}
 {%block content%}
     <div class="container">
-        <div style="...">
+        <form id= "CellaIDForm" method="post" action="/livestats/">
+            {% csrf_token %}
             {%for cellQ in cellIDQ%}
-            <a class="btn btn-success" @click="get_cell_liveStatus({{cellQ.CellaID}})" >
-                <span class = "glyhicon glyhicon-plus-sign" aria-hidden="true"></span>
-                {{cellQ.CellaID}}
+            <a class="btn btn-primary" onclick="selectCellIdPost('{{cellQ.CellaID}}')" value={{cellQ.CellaID}}>
+                <span class = "glyhicon glyhicon-plus-sign" aria-hidden="true"></span>{{cellQ.CellaID}}# 机
             </a>
             {%endfor%}
-        </div>
-        {%for cellQ in queryset%}
+        </form>
         <div class="panel panel-default">
             <div class="panel-heading">
                 <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
-                {{cellQ.CellaID}}# 设备 在线时刻表
+                {{cellID}}# 机在线时刻表
             </div>
             <!--Table-->
             <Table class="table table-bordered">
@@ -26,7 +25,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                {%for obj in cellQ.LiveCheckQ%}
+                {%for obj in queryset%}
                     <tr>
                         <td>{{obj.id}}</td>
                         <td>{{obj.Plant}}</td>
@@ -37,6 +36,6 @@
                 </tbody>
             </Table>
         </div>
-        {%endfor%}
+
     </div>
 {%endblock%}

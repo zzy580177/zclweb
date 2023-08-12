@@ -89,6 +89,11 @@ DATABASES = {
     }
 }
 
+REST_FRAMEWORK_EXTENSIONS = {
+    'DEFAULT_CACHE_RESPONSE_TIMEOUT':60,
+    'DEFAULT_USE_CACHE':'default',
+}
+
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
