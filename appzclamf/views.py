@@ -6,6 +6,7 @@ from appzclamf.models import  Alarm, Pezzi, Stato, LiveStats
 from datetime import datetime, timezone, timedelta, date, time
 from plotly.offline import plot
 from plotly.graph_objs import Scatter
+import appzclamf.api.dbFilter as mydb
 
 colorList = ['red', 'green', 'orange', 'purple', 'brown', 'plum', 'yellow']
 def getAlarmStr(alarmID):
@@ -128,7 +129,8 @@ def login(req):
     return redirect("/inex/");
 
 def index(req):
-    q_cellaDic = getCellQ()
+    day = datetime.now().strftime('%Y-%m-%d')
+    q_cellaDic = mydb.getCellPezziDic(day)
     return render(req, "index.html", {"Title":"index", "cellIDQ":q_cellaDic});
 
 def alarm(req):
@@ -181,5 +183,20 @@ def livestats_detal(req):
     plot_div = plot(dataList,output_type='div')
     context = {'plot_div':plot_div, "cellIDQ":q_cellaDic}
     return render(req,'test.html',context=context)
+
+def test(req):
+    q_cellaDic = mydb.getCellDic()
+    dataList =[]
+    t_x_data = []
+    t_y_data = []
+    for cellaDic in q_cellaDic:
+        x_data = [obj['day'] for obj in cellaDic["tms"]]
+        y_data = [obj['onlineTm'] for obj in cellaDic["tms"]]
+
+        data = Scatter(x=x_data[::-1],y=y_data[::-1], mode='lines',name=str(cellaDic['CellaID'])+' # 设备在线趋势',opacity=0.8,marker_color=cellaDic['color'])
+        dataList.append(data)
+    plot_div = plot(dataList,output_type='div')
+    context = {'plot_div':plot_div, "cellIDQ":q_cellaDic}
+    return render(req,'test1.html',context=context)
 
 

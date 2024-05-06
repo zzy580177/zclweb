@@ -6,26 +6,27 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from appzclamf.api.serializars import *
-from rest_framework_extensions.cache.decorators import cache_response
+from appzclamf.api.dbFilter import *
+#from rest_framework_extensions.cache.decorators import cache_response
 
 class LiveStatsView(APIView):
-    @cache_response(timeout = 60*1, cache="default")
+    #@cache_response(timeout = 60*1, cache="default")
     def get(self, request, *args, **kwargs):
         l_cellaID = kwargs.get("cellaId") #request.CellaID
-        l_liveStatses = LiveStats.objects.order_by('-id').filter( CellaID=l_cellaID)
+        l_liveStatses = getCellLives(l_cellaID)
         l_liveStatses_json = LiveStatsModelSerializer(l_liveStatses, many=True)
         return Response(l_liveStatses_json.data)
 
 class PezziView(APIView):
-    @cache_response(timeout = 60*1, cache="default")
+    #@cache_response(timeout = 60*1, cache="default")
     def get(self, request, *args, **kwargs):
         l_cellaID = kwargs.get("cellaId") #request.CellaID
-        l_Pezzi = Pezzi.objects.filter( CellaID=l_cellaID)
+        l_Pezzi = getCellPezzis(l_cellaID)
         l_Pezzi_json = PezziModelSerializer(l_Pezzi, many=True)
         return Response(l_Pezzi_json.data)
 
 class StatoView(APIView):
-    @cache_response(timeout = 60*1, cache="default")
+    #@cache_response(timeout = 60*1, cache="default")
     def get(self, request, *args, **kwargs):
         l_cellaID = kwargs.get("cellaId") #request.CellaID
         l_Stato = Stato.objects.filter( CellaID=l_cellaID)

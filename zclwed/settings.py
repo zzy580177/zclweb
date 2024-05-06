@@ -78,11 +78,11 @@ WSGI_APPLICATION = 'zclwed.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE':'mssql',
-        'HOST':'localhost\SQLEXPRESS',
-        'NAME':'ZclAutomation',
+        'HOST':'123.57.213.195',
+        'NAME':'zclamfdb2',
         'PORT':'1433',
-        'USER':'AutoSheet1',
-        'PASSWORD':'1qaz2wsx!',
+        'USER':'zclamf',
+        'PASSWORD':'Zclamfdb123',
         'OPTIONS':{
             'DRIVER':'SQL server Native Client 11.0',
         }
@@ -122,7 +122,7 @@ TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
-USE_TZ = True
+USE_TZ = False
 
 
 # Static files (CSS, JavaScript, Images)

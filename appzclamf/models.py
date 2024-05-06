@@ -1,6 +1,6 @@
 from django.db import models
 
-schema = "AutoSheet1"
+schema = "zcl_20240429"
 class Alarm(models.Model):
 	""""告警索引表"""
 	#Id = models.IntegerField();
@@ -24,6 +24,8 @@ class Event(models.Model):
 	Calibro = models.IntegerField(null=True, blank=True);
 	Colore = models.CharField(null=True, max_length=50);
 	Pezzi = models.IntegerField(null=True, blank=True);
+	#ReqPezzi = models.IntegerField(null=True, blank=True);
+	#TotPezzi = models.IntegerField(null=True, blank=True);
 	Evento = models.IntegerField(null=True, blank=True);
 	class Meta:
 		db_table = "[%s].[Event]"% schema
@@ -35,7 +37,7 @@ class LiveStats(models.Model):
 	CellaID = models.IntegerField(null=True, blank=True);
 	Check1 = models.DateTimeField(null=True, blank=True);
 	Check2 =  models.DateTimeField(null=True, blank=True);
-	Note_Id = models.IntegerField(null=True, blank=True);
+	Note_Id = models.CharField(max_length=50, blank=True);
 	class Meta:
 		db_table = "[%s].[LiveState]"% schema
 
@@ -57,6 +59,8 @@ class Pezzi(models.Model):
 	CellaID = models.IntegerField(null=True, blank=True);
 	MainProg = models.CharField(null=True, max_length=100);
 	Pezzi = models.IntegerField(null=True, blank=True);
+	ReqPezzi = models.IntegerField(null=True, blank=True);
+	TotPezzi = models.IntegerField(null=True, blank=True);
 	Ora = models.CharField(null=True, max_length=100);
 	JobMode = models.CharField(null=True, max_length=50);
 	class Meta:
