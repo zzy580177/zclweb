@@ -1,228 +1,200 @@
 from django.db.models import Q
 import numpy as np
 from appzclamf.models import  Alarm, Pezzi, Stato, LiveStats
-from datetime import datetime, timezone, timedelta, date, time
+from datetime import datetime, timedelta, date, time
 import pandas as pd
 
 np_dtype = "datetime64[us]"
+startTm = datetime.min.time()
 
-def getAlarmStr(alarmID):
-    ser_q = Alarm.objects.filter(Q(AllarmID__get = alarmID))
-    return ser_q[0].AllarmString
-
-def getCellLives(cellID):
+def get_serq_Live(cellID):
     ser_q = LiveStats.objects.order_by("-id").filter( CellaID=cellID)
     return ser_q
 
-def getCellPezzis(cellID):
+def get_serq_pezzi(cellID):
     ser_q = Pezzi.objects.filter( CellaID=cellID).order_by("-EventID")
     return ser_q
 
-def getCellStatos(cellID):
+def get_serq_stato(cellID):
     ser_q = Stato.objects.filter( CellaID=cellID).order_by("-StatoID")
     return ser_q
 
-def getOnLinsDates(cellID):
-    ser_q = Stato.objects.filter( CellaID=cellID).order_by("-StatoID").values_list("Data", flat=True)
-    date_v = [data for data in ser_q]
-    date_v = pd.Series(date_v).drop_duplicates().tolist()
+def get_value_AlarmStr(alarmID):
+    ser_q = Alarm.objects.filter(Q(AllarmID__get = alarmID))
+    return ser_q[0].AllarmString
+
+def get_value_dailyPezzi(cellID, day):
+    date_v = Pezzi.objects.filter( CellaID=cellID, Data = day).values_list("EventID","Pezzi","ReqPezzi","TotPezzi").last()
     return date_v
 
-def isCellOnline(cellID ,time):
-    return getCellLives(cellID).filter(Check1__gt=time).exists()
-
-def isStatosExitsByDay(cellID, day):
-    result = getCellStatos(cellID).filter(Data = day).exists()
-    return result
-
-def isStatosExitsByTime(cellID, day, time, alarm_v):
-    result = getCellStatos(cellID).filter(Data = day, Ora__gt=time, Stato = False, Alarm = alarm_v).exists()
-    return result
-
-def getCheck1List(cellID, start, stop):
-    ser_q = LiveStats.objects.order_by("-id").filter(CellaID=cellID, Check1__range=(start, stop)).values_list("Check1")
+def get_valueList_check1(cellID, start, stop):
+    ser_q = LiveStats.objects.filter(CellaID=cellID, Check1__range=(start, stop)).values_list("Check1", flat=True).order_by("-Check1")
     date_v = [data for data in ser_q]
     return np.array(date_v, dtype= np_dtype)
 
-def getCheck2List(cellID, start, stop):
-    ser_q = LiveStats.objects.order_by("-id").filter(CellaID=cellID, Check2__range=(start, stop)).values_list("Check2")
+def get_valueList_check2(cellID, start, stop):
+    ser_q = LiveStats.objects.filter(CellaID=cellID, Check2__range=(start, stop)).values_list("Check2", flat=True).order_by("-Check2")
     date_v = [data for data in ser_q]
     return np.array(date_v, dtype= np_dtype)
 
-def getCellOnlineTimeByDay(cellID, day):
-    start, stop = generateTmFilerRange(day)
-    check1 = getCheck1List(cellID, start, stop)
-    check2 = getCheck2List(cellID, start, stop)
-    df_sum = timedelta(seconds = 0)
-    if (check1.size > check2.size):
-        check2 = np.append(check2, [np.datetime64(start)])
-    if (check1.size == check2.size):
-        df_sum = np.subtract(check1,check2).sum()
-    if df_sum > timedelta(seconds = 0):
-        return df_sum.astype("timedelta64[s]").astype(int)
-    else:
-        return 0
+def get_valueList_start(cellID, day):
+    ser_q = Stato.objects.filter( CellaID=cellID, Data = day, Stato = True).values_list("Ora", flat=True)
+    date_v = [data for data in ser_q]
+    for i in range(len(date_v)):
+        date_v[i] = datetimeCom(day,str2Time(date_v[i]))
+    return np.array(date_v , dtype= np_dtype)
 
-def getCellPezzisByDay(cellID, day):
-    ser_q = getCellPezzis(cellID).filter(Data = day).values("Pezzi","ReqPezzi", "TotPezzi").first()
-    return ser_q
+def get_valueList_stop(cellID, day):
+    ser_q = Stato.objects.filter( CellaID=cellID, Data = day, Stato = False).values_list("Ora", flat=True)
+    date_v = [data for data in ser_q]
+    for i in range(len(date_v)):
+        date_v[i] = datetimeCom(day,str2Time(date_v[i]))
+    return np.array(date_v, dtype= np_dtype)
 
-def isPezzisExitsByDay(cellID, day):
-    result = getCellPezzis(cellID).filter(Data = day).exists()
+def get_valueLists_stato(cellID, day):
+    ser_q = Stato.objects.filter( CellaID=cellID, Data = day).values("Data", "Ora", "Stato").order_by("-Ora")
+    date_v = [data for data in ser_q]
+    return date_v
+
+def get_value_lastStato(cellID, day):
+    result = Stato.objects.filter( CellaID=cellID, Data = day).values("Ora","Stato","Alarm").last()
     return result
 
-def strToDate(datestr):
+def isCellLive(cellID ,time):
+    result = LiveStats.objects.filter( CellaID=cellID,Check1__gt=time)
+    return result.exists()
+
+def isDailyStatoChang(cellID, day):
+    result = Stato.objects.filter( CellaID=cellID,Data = day)
+    return result.exists()
+
+def isStatoIdle(cellID, day, time, alarm_v = 0):
+    result = Stato.objects.filter( CellaID=cellID, Data = day, Ora__gt=time, Stato = False, Alarm = alarm_v)
+    return result.exists()
+
+def isDailyPezzisChang(cellID, day):
+    result = Pezzi.objects.filter( CellaID=cellID, Data = day)
+    return result.exists()
+
+def str2Date(datestr):
     return date(*map(int, datestr.split("-")))
 
-def strToTime(timestr):
+def str2Time(timestr):
     return time(*map(int, timestr.split(".")[0].split(":")))
 
 def datetimeCom(date,time):
-    return datetime.combine(strToDate(date), time)
+    return datetime.combine(str2Date(date), time)
 
-def generateTmFilerRange(day):
-    start = datetimeCom(day, datetime.min.time())
+def generateTmRange(day):
+    start = datetimeCom(day, startTm)
     stop = start + timedelta(hours= 24)
     curr_time = datetime.now()
     stop = stop if stop < curr_time else curr_time
     return start, stop
 
-def getStartTmList(cellID, day):
-    ora_q = getCellStatos(cellID).filter(Data = day, Stato = False).values_list("Ora", flat=True)
-    date_v = [data for data in ora_q]
-    for i in range(len(date_v)):
-        date_v[i] = datetimeCom(day,strToTime(date_v[i]))
-    return np.array(date_v , dtype= np_dtype)
-
-def getStopTmList(cellID, day):
-    ora_q = getCellStatos(cellID).filter(Data = day, Stato = False).values_list("Ora", flat=True)
-    date_v = [data for data in ora_q]
-    for i in range(len(date_v)):
-        date_v[i] = datetimeCom(day,strToTime(date_v[i]))
-    return np.array(date_v, dtype= np_dtype)
-
-def getWorkTmsum(stopTms, startTms, day):
-    start, stop = generateTmFilerRange(day)
-    if ( startTms.size > stopTms.size):
-        stopTms = np.insert(stopTms,0,[np.datetime64(stop)])
-    if ( startTms.size < stopTms.size):
-        startTms = np.append(startTms, [np.datetime64(start)])
-    if ( startTms.size == stopTms.size):
-        sum = np.subtract(stopTms,startTms).sum()
-        return sum.astype("timedelta64[s]").astype(int)
-    else:
-        return 0
-
-def getIdleTmsum(stopTms, startTms, day):
-    start, stop = generateTmFilerRange(day)
-    if ( startTms.size > stopTms.size):
-        stopTms = np.append(stopTms, [np.datetime64(start)])
-    if ( startTms.size < stopTms.size):
-        startTms = np.insert(startTms,0,[np.datetime64(stop)])
-    if ( startTms.size == stopTms.size):
-        sum = np.subtract(startTms,stopTms).sum()
-        return sum.astype("timedelta64[s]").astype(int)
-    else:
-        return 0
-
-colorList = ["red", "green", "orange", "purple", "brown", "plum", "yellow"]
-
-def getCellQ():
-    q_set = LiveStats.objects.values("CellaID").distinct()
-    l_Celle = []
-    l_CelleQ = [livestats for livestats in q_set]
-    for i in range(len(l_CelleQ)):
-        cellID = l_CelleQ[i]["CellaID"]
-        dic = {"CellaID": cellID, "onlineTms" :[], "workTms":[], "abnormTms":[], "ildetms" : []}
-        dic["IsOnline"] = isCellOnline(cellID)
-        dic["color"] = colorList[i]
-        dic["days"] = getOnLinsDates(cellID)
-        for i in range(len(dic["days"])):
-            start, stop = generateTmFilerRange(dic["days"][i])
-            dic["onlineTms"].append(getCellOnlineTimeByDay(cellID, dic["days"][i]))
-            stopTms = getStopTmList(cellID, datetime.now().strftime("%Y-%m-%d"))
-            startTms = getStartTmList(cellID, datetime.now().strftime("%Y-%m-%d"))
-            dic["workTms"].append(getWorkTmsum(stopTms, startTms, start, stop))
-            dic["ildetms"].append(getIdleTmsum(stopTms, startTms, start, stop))
-            dic["abnormTms"].append(0)
-        l_Celle.append(dic)
-    return l_Celle
-
-def getCellDic():
-    q_set = LiveStats.objects.values("CellaID").distinct()
-    l_Celle = []
-    l_CelleQ = [livestats for livestats in q_set]
-    for i in range(len(l_CelleQ)):
-        cellID = l_CelleQ[i]["CellaID"]
-        dic = {"CellaID": cellID, "tms" :[]}
-        dic["IsOnline"] = isCellOnline(cellID)
-        dic["color"] = colorList[i]
-        dic["days"] = getOnLinsDates(cellID)
-        for i in range(len(dic["days"])):
-            tmdic = {}
-            start, stop = generateTmFilerRange(dic["days"][i])
-            stopTms = getStopTmList(cellID, datetime.now().strftime("%Y-%m-%d"))
-            startTms = getStartTmList(cellID, datetime.now().strftime("%Y-%m-%d"))
-            tmdic["onlineTm"] = getCellOnlineTimeByDay(cellID, dic["days"][i])
-            tmdic["workTm"] = getWorkTmsum(stopTms, startTms, start, stop)
-            tmdic["ildeTm"] = getIdleTmsum(stopTms, startTms, start, stop)
-            tmdic["abnormTm"] = 0
-            tmdic["day"] = dic["days"][i]
-            dic["tms"].append(tmdic)
-        l_Celle.append(dic)
-    return l_Celle
-
 def convert_to_hhmmss(td_array):
-    m, s = divmod(td_array, 60)
-    h, m = divmod(m, 60)
-    time_for_hms = "%02d:%02d:%02d" % (h, m, s)
-    return time_for_hms
+    td = pd.Timestamp('2021-01-01') + pd.Timedelta(td_array)
+    td = td.strftime('%H:%M:%S')
+    return td
 
-def getCellPezziDic(day):
+def calcd_dailyLiveTm(cellID, day):
+    start, stop = generateTmRange(day)
+    check1 = get_valueList_check1(cellID, start, stop)
+    check2 = get_valueList_check2(cellID, start, stop)
+    deltaTsum = np.timedelta64(0,'us')
+    if (check1.size > check2.size):
+        check2 = np.append(check2, [np.datetime64(start)])
+    if (check1.size == check2.size):
+        deltaTsum = (check1-check2).sum()
+    return deltaTsum,check1[0],check2[-1]
+
+def calcd_dailyWorkTm(statolist, stop, start):
+    startTms =[]
+    stopTms =[]
+    for i in range(len(statolist)):
+        if statolist[i]["Stato"] == 1:
+            startTms.append(datetimeCom(statolist[i]["Data"],str2Time(statolist[i]["Ora"])))
+            if i==0:
+                stopTms.append(stop.astype(datetime))
+        else:
+            stopTms.append(datetimeCom(statolist[i]["Data"],str2Time(statolist[i]["Ora"])))
+            if i+1 == len(statolist):
+                startTms.append(start.astype(datetime))
+    startTms, stopTms = np.array(startTms, dtype= np_dtype), np.array(stopTms, dtype= np_dtype)
+    if ( startTms.size == stopTms.size):
+        deltaT = (stopTms-startTms)
+        return deltaT.sum()
+    else:
+        return np.timedelta64(0,'us')
+
+def calcd_dailyIdleTm(statolist, stop, start):
+    startTms =[]
+    stopTms =[]
+    for i in range(len(statolist)):
+        if statolist[i]["Stato"] == 1:
+            startTms.append(datetimeCom(statolist[i]["Data"],str2Time(statolist[i]["Ora"])))
+            if i+1 == len(statolist):
+                stopTms.append(start.astype(datetime))
+        else:
+            stopTms.append(datetimeCom(statolist[i]["Data"],str2Time(statolist[i]["Ora"])))
+            if i == 0:
+                startTms.append(stop.astype(datetime))
+    startTms, stopTms = np.array(startTms, dtype= np_dtype), np.array(stopTms, dtype= np_dtype)
+    if ( startTms.size == stopTms.size):
+        deltaT = (startTms-stopTms)
+        return deltaT.sum()
+    else:
+        return np.timedelta64(0,'us')
+
+def getDataForIndex(day):
     q_set = LiveStats.objects.values_list("CellaID", flat=True).distinct()
     celleList = [livestats for livestats in q_set]
     output = []
     for i in range(len(celleList)):
         cellID = celleList[i]
-        cell_dic = {"CellaID": cellID, "Note_Id":"精雕机"}
-        cell_dic["ProcDic"] = getProcDic(cellID, day)
-        cell_dic["PezzDic"] = getPezzDic(cellID, day)
-        cell_dic["StatoDic"] = getCellCurrStatus(cellID)
+        nodeinfo = LiveStats.objects.filter(CellaID = cellID).values_list("Note_Id", flat=True).last()
+        cell_dic = {"CellaID": cellID, "Note_Id": nodeinfo}
+        cell_dic["ProcDic"] = getDailyProcData(cellID, day)
+        cell_dic["PezzDic"] = getDailyPezzData(cellID, day)
+        cell_dic["StatoDic"] = getCurrStatoData(cellID)
         output.append(cell_dic)
     return output
 
-def getProcDic(cellID, day):
+def getDailyProcData(cellID, day):
     output={"WorkTm":0, "IldeTm":0, "AbnormTm": 0}
-    output["OnlineTm"] = convert_to_hhmmss(getCellOnlineTimeByDay(cellID, day))
-    if isStatosExitsByDay(cellID, day):
-        stopTms = getStopTmList(cellID, day)
-        startTms = getStartTmList(cellID, day)
-        output["WorkTm"] = convert_to_hhmmss(getWorkTmsum(stopTms, startTms, day))
-        output["IldeTm"] = convert_to_hhmmss(getIdleTmsum(stopTms, startTms, day))
+    liveTm, stop, start = calcd_dailyLiveTm(cellID, day)
+    output["OnlineTm"] = convert_to_hhmmss(liveTm)
+    if isDailyStatoChang(cellID, day):
+        statolist = get_valueLists_stato(cellID, day)
+        output["WorkTm"] = convert_to_hhmmss(calcd_dailyWorkTm(statolist, stop, start))
+        output["IldeTm"] = convert_to_hhmmss(calcd_dailyIdleTm(statolist, stop, start))
     return output
 
-def getCellCurrStatus(cellID):
+def getCurrStatoData(cellID):
     output = {"AlarmSrt":"无", "Status":"运行中"}
-    curr_time = datetime.now(timezone.utc) + timedelta(minutes=-5)
+    curr_time = datetime.now() + timedelta(minutes=-5)
     day = curr_time.strftime("%Y-%m-%d")
-    time = curr_time.strftime("%H:%M:%S.%f")
-    if (not isCellOnline(cellID, curr_time)):
-        output["Status"] = "离线中"
-    elif(isStatosExitsByTime(cellID, day, time, 0)):
+    if (not isCellLive(cellID, curr_time)):
+        return {"AlarmSrt":"无", "Status":"离线中"}
+    if (not isDailyStatoChang(cellID, day)):
         output["Status"] = "待机中"
-    elif(isStatosExitsByTime(cellID, day, time, 1)):
-        output["Status"] = "告警中" 
-        #output["AlarmSrt"] = getAlarmStr[lastStato["Alarm"]]
+    else:
+        lastStato = get_value_lastStato(cellID, day)
+        if lastStato["Alarm"] > 0:
+            output["Status"] = "故障中" 
+            output["AlarmSrt"] = get_value_AlarmStr[lastStato["Alarm"]]
+        elif lastStato["Stato"] ==0:
+            output["Status"] = "待机中"
     return output
 
-def getPezzDic(cellID, day):
+def getDailyPezzData(cellID, day):
     output = {"Pezzi":"0","ReqPezzi":"0", "TotPezzi":"0", "Reach":"56"}
-    if not(isPezzisExitsByDay(cellID, day)):
+    if not(isDailyPezzisChang(cellID, day)):
         return output
-    pezz_q = getCellPezzisByDay(cellID, day)
-    output["Pezzi"] = pezz_q["Pezzi"]
-    output["ReqPezzi"] = pezz_q["ReqPezzi"]
-    output["TotPezzi"] = pezz_q["TotPezzi"]  
+    pezz_v = get_value_dailyPezzi(cellID, day)
+    output["Pezzi"] = pezz_v[1]
+    output["ReqPezzi"] = pezz_v[2]
+    output["TotPezzi"] = pezz_v[3]  
     output["Reach"] = round((output["Pezzi"]*100/output["TotPezzi"]) )if output["TotPezzi"] >0 else 100
     return output
 

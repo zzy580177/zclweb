@@ -130,7 +130,7 @@ def login(req):
 
 def index(req):
     day = datetime.now().strftime('%Y-%m-%d')
-    q_cellaDic = mydb.getCellPezziDic(day)
+    q_cellaDic = mydb.getDataForIndex(day)
     return render(req, "index.html", {"Title":"index", "cellIDQ":q_cellaDic});
 
 def alarm(req):
