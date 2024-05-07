@@ -155,13 +155,15 @@ def getDataForIndex(day):
     celleList = [livestats for livestats in q_set]
     output = []
     for i in range(len(celleList)):
-        cellID = celleList[i]
-        nodeinfo = LiveStats.objects.filter(CellaID = cellID).values_list("Note_Id", flat=True).last()
-        cell_dic = {"CellaID": cellID, "Note_Id": nodeinfo}
-        cell_dic["ProcDic"] = getDailyProcData(cellID, day)
-        cell_dic["PezzDic"] = getDailyPezzData(cellID, day)
-        cell_dic["StatoDic"] = getCurrStatoData(cellID)
-        output.append(cell_dic)
+        output.append(getCellaDataForIndex(celleList[i], day))
+    return output
+
+def getCellaDataForIndex(cellID, day):
+    nodeinfo = LiveStats.objects.filter(CellaID = cellID).values_list("Note_Id", flat=True).last()
+    output = {"CellaID": cellID, "Note_Id": nodeinfo}
+    output["Proc"] = getDailyProcData(cellID, day)
+    output["Pezz"] = getDailyPezzData(cellID, day)
+    output["Stato"] = getCurrStatoData(cellID)
     return output
 
 def getDailyProcData(cellID, day):
