@@ -159,7 +159,8 @@ def getDataForIndex(day):
         if len(sub_output) == 3:
             output.append(sub_output)
             sub_output = []
-        sub_output.append(getCellaDataForIndex(celleList[i], day))
+        subinfo = getCellaDataForIndex(celleList[i], day)
+        sub_output.append(subinfo)
     if len(sub_output) > 0:
         output.append(sub_output)
     return output
@@ -183,20 +184,23 @@ def getDailyProcData(cellID, day):
     return output
 
 def getCurrStatoData(cellID):
-    output = {"AlarmSrt":"无", "Status":"运行中"}
+    output = {"AlarmSrt":"无", "Status":"运行中", "img":"aasd.gif"}
     curr_time = datetime.now() + timedelta(minutes=-5)
     day = curr_time.strftime("%Y-%m-%d")
     if (not isCellLive(cellID, curr_time)):
-        return {"AlarmSrt":"无", "Status":"离线中"}
+        return {"AlarmSrt":"无", "Status":"离线中", "img":"aaac.png"}
     if (not isDailyStatoChang(cellID, day)):
         output["Status"] = "待机中"
+        output["StatoID"] = "ilde"        
     else:
         lastStato = get_value_lastStato(cellID, day)
         if lastStato["Alarm"] > 0:
             output["Status"] = "故障中" 
+            output["img"] = "aaac.png" 
             output["AlarmSrt"] = get_value_AlarmStr[lastStato["Alarm"]]
         elif lastStato["Stato"] ==0:
             output["Status"] = "待机中"
+            output["img"] = "aaac.png" 
     return output
 
 def getDailyPezzData(cellID, day):
