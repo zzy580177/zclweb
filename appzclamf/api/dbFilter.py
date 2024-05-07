@@ -4,6 +4,9 @@ from appzclamf.models import  Alarm, Pezzi, Stato, LiveStats
 from datetime import datetime, timedelta, date, time
 import pandas as pd
 
+import pytz
+tz = pytz.timezone('Asia/Shanghai')
+
 np_dtype = "datetime64[us]"
 startTm = datetime.min.time()
 
@@ -88,7 +91,8 @@ def datetimeCom(date,time):
 def generateTmRange(day):
     start = datetimeCom(day, startTm)
     stop = start + timedelta(hours= 24)
-    curr_time = datetime.now()
+    curr_time = datetime.now(tz)
+    curr_time = curr_time.replace(tzinfo=None)
     stop = stop if stop < curr_time else curr_time
     return start, stop
 
@@ -185,7 +189,8 @@ def getDailyProcData(cellID, day):
 
 def getCurrStatoData(cellID):
     output = {"AlarmSrt":"无", "Status":"运行中", "img":"aasd.gif", "Mode":"", "Color":"sra2"}
-    curr_time = datetime.now() + timedelta(minutes=-5)
+    curr_time = datetime.now(tz) + timedelta(minutes=-5)
+    curr_time = curr_time.replace(tzinfo=None)
     day = curr_time.strftime("%Y-%m-%d")
     if (not isCellLive(cellID, curr_time)):
         return {"AlarmSrt":"无", "Status":"离线中", "img":"aaac.png",  "Mode":"", "Color":"sra4"}
