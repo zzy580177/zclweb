@@ -154,8 +154,14 @@ def getDataForIndex(day):
     q_set = LiveStats.objects.values_list("CellaID", flat=True).distinct()
     celleList = [livestats for livestats in q_set]
     output = []
+    sub_output = []
     for i in range(len(celleList)):
-        output.append(getCellaDataForIndex(celleList[i], day))
+        if len(sub_output) == 3:
+            output.append(sub_output)
+            sub_output = []
+        sub_output.append(getCellaDataForIndex(celleList[i], day))
+    if len(sub_output) > 0:
+        output.append(sub_output)
     return output
 
 def getCellaDataForIndex(cellID, day):

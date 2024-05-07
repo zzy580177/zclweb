@@ -18,507 +18,80 @@
 <div class="about_edu">
     <div class="about_edulist web">
         <ul class="clearfix">
+			{%for cellIDQ in cellIDQList%}
             <li class="clearfix">
-            	 <div class=" flex-column align-center">
-			<div style="width: 18rem;">
-				<div class="pt-2 flex-row flex-wrap justify-between ">
-					{%for cellQ in cellIDQ%}
-					<div class="box-a pd-3 flex-column  postion-relative">
-						<div class="pt-2 pl-2 font-s4 color-blue postion-relative"> <div class="hengx postion-absolute"></div>{{cellQ.Note_Id}}</div>
-						<div style="width: 5rem;" class="pt-4 flex-row justify-between ">
-							<div class="dingdal" style="width: 2.0rem;">
-								<div class="tel font-weight-bold ">订单信息</div>
-								<div class="dingdanshu flex-row justify-between flex-1 pt-2">
-									<div class="dingdanshul">
-										<p class="fep-12">订单信息</p>
-										<p class="fep-16 font-weight-bold ">10110</p>
-									</div>
-									<div class="dingdanshul">
-										<p class="fep-12">订单总数量</p>
-										<p class="fep-16 font-weight-bold ">{{cellQ.Pezz.TotPezzi}}</p>
-									</div>
-								</div>
-								<div class="hengg"></div>
+            	<div class=" flex-column align-center">
+					<div style="width: 18rem;">
+						<div class="pt-2 flex-row flex-wrap justify-between ">
+							{%for cellQ in cellIDQ%}
+							<div class="box-a pd-3 flex-column  postion-relative">
+								<div class="pt-2 pl-2 font-s4 color-blue postion-relative"> <div class="hengx postion-absolute"></div>{{cellQ.Note_Id}}</div>
+								<div style="width: 5rem;" class="pt-4 flex-row justify-between ">
+									<div class="dingdal" style="width: 2.0rem;">
+										<div class="tel font-weight-bold ">订单信息</div>
+										<div class="dingdanshu flex-row justify-between flex-1 pt-2">
+											<div class="dingdanshul">
+												<p class="fep-12">订单信息</p>
+												<p class="fep-16 font-weight-bold ">10110</p>
+											</div>
+											<div class="dingdanshul">
+												<p class="fep-12">订单总数量</p>
+												<p class="fep-16 font-weight-bold ">{{cellQ.Pezz.TotPezzi}}</p>
+											</div>
+										</div>
+										<div class="hengg"></div>
 
-								<div class="dingdanshu flex-row justify-between flex-1 pt-2">
-									<div class="dingdanshul">
-										<p class="fep-12">已生产</p>
-										<p class="fep-16 font-weight-bold ">{{cellQ.Pezz.Pezzi}}</p>
+										<div class="dingdanshu flex-row justify-between flex-1 pt-2">
+											<div class="dingdanshul">
+												<p class="fep-12">已生产</p>
+												<p class="fep-16 font-weight-bold ">{{cellQ.Pezz.Pezzi}}</p>
+											</div>
+											<div class="dingdanshul">
+												<p class="fep-12">待生产</p>
+												<p class="fep-16 font-weight-bold ">{{cellQ.Pezz.ReqPezzi}}</p>
+											</div>
+										</div>
+									<div class="jintud">
+										<h3  class="fep-12b font-weight-normal">订单加工{{cellQ.Pezz.Reach}}%</h3>
+										<progress id="myProgress" value= "0"  class= "mypro"   max= "100" ></progress>
+										<script>
+											// 获取进度条元素
+											var progress = document.getElementById("myProgress");
+											
+											// 设置进度条的长度
+											progress.value = {{cellQ.Pezz.Reach}}; // 设置为50%的长度
+										</script>
 									</div>
-									<div class="dingdanshul">
-										<p class="fep-12">待生产</p>
-										<p class="fep-16 font-weight-bold ">{{cellQ.Pezz.ReqPezzi}}</p>
+									</div>
+
+									<div class="zhuangt" style="width: 2.4rem;">
+
+										<div class="yuxnzt font-weight-bold">
+											设备状态: <span>{{cellQ.Stato.Status}}</span>
+										</div>
+
+										<div class="yuxnztjl font-weight-bold">
+											<div class="fep-16 font-weight-bold">今日生产记录</div>
+											<div class="pt-2">
+												<div class="sez font-weight-normal "> 今日运行时长：  {{cellQ.Proc.WorkTm}}</div>
+												<div class="sez font-weight-normal "> 今日在线时长：  {{cellQ.Proc.OnlineTm}}</div>
+												<div class="sez font-weight-normal "> 故障信息： {{cellQ.Stato.AlarmSrt}}</div>
+											</div>
+										</div>
+										
 									</div>
 								</div>
-							   <div class="jintud">
-								   <h3  class="fep-12b font-weight-normal">订单加工{{cellQ.Pezz.Reach}}%</h3>
-								   <progress id="myProgress" value= "0"  class= "mypro"   max= "100" ></progress>
-								   <script>
-									 // 获取进度条元素
-									 var progress = document.getElementById("myProgress");
-									
-									 // 设置进度条的长度
-									 progress.value = {{cellQ.Pezz.Reach}}; // 设置为50%的长度
-								   </script>
-							   </div>
+								<div class="paruct align-center">
+									<img  src="./static/img/ca2.png" alt="" class="tupas">
+									<img  src="./static/img/aasd.gif" alt="" class="tupasa">
+								</div>
 							</div>
-
-							<div class="zhuangt" style="width: 2.4rem;">
-
-								<div class="yuxnzt font-weight-bold">
-									设备状态: <span>{{cellQ.Stato.Status}}</span>
-								</div>
-
-								<div class="yuxnztjl font-weight-bold">
-									<div class="fep-16 font-weight-bold">今日生产记录</div>
-									<div class="pt-2">
-										<div class="sez font-weight-normal "> 今日运行时长：  {{cellQ.Proc.WorkTm}}</div>
-										<div class="sez font-weight-normal "> 今日在线时长：  {{cellQ.Proc.OnlineTm}}</div>
-										<div class="sez font-weight-normal "> 故障信息： {{cellQ.Stato.AlarmSrt}}</div>
-									</div>
-								</div>
-								
-							</div>
-						</div>
-						<div class="paruct align-center">
-							<img  src="./static/img/ca2.png" alt="" class="tupas">
-							<img  src="./static/img/aasd.gif" alt="" class="tupasa">
+							{%endfor%}			
 						</div>
 					</div>
-					{%endfor%}			
 				</div>
-			</div>
-		</div>
-            </li>
-          <li class="clearfix" >
-           <div class=" flex-column align-center">
-			<div style="width: 18rem;">
-				
-				<div class="pt-2 flex-row flex-wrap justify-between ">
-					<div class="box-a pd-3 flex-column  postion-relative">
-						<div class="pt-2 pl-2 font-s4 color-blue postion-relative"> <div class="hengx postion-absolute"></div>双站式全自动花式机</div>
-						 <div style="width: 5rem;" class="pt-4 flex-row justify-between ">
-						 	<div class="dingdal" style="width: 2.0rem;">
-						 		<div class="tel font-weight-bold ">订单信息</div>
-						 		<div class="dingdanshu flex-row justify-between flex-1 pt-2">
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">订单总数量</p>
-						 				<p class="fep-16 font-weight-bold ">01010</p>
-						 			</div>
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">订单总数量</p>
-						 				<p class="fep-16 font-weight-bold ">01010</p>
-						 			</div>
-						 		</div>
-						 		<div class="hengg"></div>
-
-						 		<div class="dingdanshu flex-row justify-between flex-1 pt-2">
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">已生产</p>
-						 				<p class="fep-16 font-weight-bold ">1750</p>
-						 			</div>
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">待生产</p>
-						 				<p class="fep-16 font-weight-bold ">3230</p>
-						 			</div>
-						 		</div>
-                                <div class="jintud">
-                                	<h3  class="fep-12b font-weight-normal">订单加工35%</h3>
-						        	<progress id="myProgress4" value= "0"  class= "mypro"   max= "100" ></progress>
-                                    <script>
-									  // 获取进度条元素
-									  var progress = document.getElementById("myProgress4");
-									 
-									  // 设置进度条的长度
-									  progress.value = 35; // 设置为50%的长度
-									</script>
-
-                                </div>
-								
-						 		
-
-
-						 	</div>
-
-						 	<div class="zhuangt" style="width: 2.4rem;">
-
-						 		<div class="yuxnzt font-weight-bold">
-						 			设备状态: <span class="sra4">离线中</span>
-						 		</div>
-
-						 		<div class="yuxnztjl font-weight-bold">
-						 			<div class="fep-16 font-weight-bold">今日生产记录</div>
-						 			<div class="pt-2">
-							 			<div class="sez font-weight-normal "> 今日运行时长：  11:01:52</div>
-							 			<div class="sez font-weight-normal "> 今日加工数量：  0003261</div>
-							 			<div class="sez font-weight-normal "> 故障信息： 无</div>
-						 			</div>
-						 		</div>
-						 		
-						 	</div>
-						 </div>
-						 <div class="paruct align-center">
-						 	<img  src="../static/img/ca1.png" alt="" class="tupas">
-						 	<img  src="../static/img/aasd.gif" alt="" class="tupasa">
-						 </div>
-					</div>
-					<div class="box-b pd-3 flex-column postion-relative">
-						<div class="pt-2 pl-2 font-s4 color-blue postion-relative"> <div class="hengx postion-absolute"></div>DDDSE双站式全自动花式机</div>
-						 <div style="width: 5rem;" class="pt-4 flex-row justify-between ">
-						 	<div class="dingdal" style="width: 2.0rem;">
-						 		<div class="tel font-weight-bold ">订单信息</div>
-						 		<div class="dingdanshu flex-row justify-between flex-1 pt-2">
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">订单总数量</p>
-						 				<p class="fep-16 font-weight-bold ">01010</p>
-						 			</div>
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">订单总数量</p>
-						 				<p class="fep-16 font-weight-bold ">01010</p>
-						 			</div>
-						 		</div>
-						 		<div class="hengg"></div>
-
-						 		<div class="dingdanshu flex-row justify-between flex-1 pt-2">
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">已生产</p>
-						 				<p class="fep-16 font-weight-bold ">1750</p>
-						 			</div>
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">待生产</p>
-						 				<p class="fep-16 font-weight-bold ">3230</p>
-						 			</div>
-						 		</div>
-                                <div class="jintud">
-                                	<h3  class="fep-12b font-weight-normal">订单加工15%</h3>
-						        	<progress id="myProgress5" value= "0"  class= "mypro"   max= "100" ></progress>
-                                    <script>
-									  // 获取进度条元素
-									  var progress = document.getElementById("myProgress5");
-									 
-									  // 设置进度条的长度
-									  progress.value = 15; // 设置为50%的长度
-									</script>
-
-                                </div>
-								
-						 		
-
-
-						 	</div>
-
-						 	<div class="zhuangt" style="width: 2.4rem;">
-
-						 		<div class="yuxnzt font-weight-bold">
-						 			设备状态: <span class="sra3">故障中</span>
-						 		</div>
-
-						 		<div class="yuxnztjl font-weight-bold">
-						 			<div class="fep-16 font-weight-bold">今日生产记录</div>
-						 			<div class="pt-2">
-							 			<div class="sez font-weight-normal "> 今日运行时长：  11:01:52</div>
-							 			<div class="sez font-weight-normal "> 今日加工数量：  0003261</div>
-							 			<div class="sez font-weight-normal seza"> 故障信息： 芯片故障</div>
-						 			</div>
-						 		</div>
-						 		
-						 	</div>
-						 </div>
-						 <div class="paruct align-center">
-						 	<img  src="../static/img/ca3.png" alt="" class="tupas">
-						 	<img  src="../static/img/aaac.png" alt="" class="tupasa">
-						 </div>
-					</div>
-					<div class="box-c pd-3 flex-column postion-relative">
-						<div class="pt-2 pl-2 font-s4 color-blue postion-relative"> <div class="hengx postion-absolute"></div>3333333333双站式全自动花式机</div>
-						 <div style="width: 5rem;" class="pt-4 flex-row justify-between ">
-						 	<div class="dingdal" style="width: 2.0rem;">
-						 		<div class="tel font-weight-bold ">订单信息</div>
-						 		<div class="dingdanshu flex-row justify-between flex-1 pt-2">
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">订单总数量</p>
-						 				<p class="fep-16 font-weight-bold ">01010</p>
-						 			</div>
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">订单总数量</p>
-						 				<p class="fep-16 font-weight-bold ">01010</p>
-						 			</div>
-						 		</div>
-						 		<div class="hengg"></div>
-
-						 		<div class="dingdanshu flex-row justify-between flex-1 pt-2">
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">已生产</p>
-						 				<p class="fep-16 font-weight-bold ">1750</p>
-						 			</div>
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">待生产</p>
-						 				<p class="fep-16 font-weight-bold ">3230</p>
-						 			</div>
-						 		</div>
-                                <div class="jintud">
-                                	<h3  class="fep-12b font-weight-normal">订单加工30%</h3>
-						        	<progress id="myProgress6" value= "0"  class= "mypro"   max= "100" ></progress>
-                                    <script>
-									  // 获取进度条元素
-									  var progress = document.getElementById("myProgress6");
-									 
-									  // 设置进度条的长度
-									  progress.value = 30; // 设置为50%的长度
-									</script>
-
-                                </div>
-								
-						 		
-
-
-						 	</div>
-
-						 	<div class="zhuangt" style="width: 2.4rem;">
-
-						 		<div class="yuxnzt font-weight-bold">
-						 			设备状态: <span class="sra2">运行中</span>
-						 		</div>
-
-						 		<div class="yuxnztjl font-weight-bold">
-						 			<div class="fep-16 font-weight-bold">今日生产记录</div>
-						 			<div class="pt-2">
-							 			<div class="sez font-weight-normal "> 今日运行时长：  11:01:52</div>
-							 			<div class="sez font-weight-normal "> 今日加工数量：  0003261</div>
-							 			<div class="sez font-weight-normal "> 故障信息： 无</div>
-						 			</div>
-						 		</div>
-						 		
-						 	</div>
-						 </div>
-						 <div class="paruct align-center">
-						 	<img  src="../static/img/ca1.png" alt="" class="tupas">
-						 	<img  src="../static/img/aasd.gif" alt="" class="tupasa">
-						 </div>
-					</div>
-				
-				</div>
-			</div>
-		</div>
-
-              
-            </li>
-
-
-             <li class="clearfix" >
-
-           <div class=" flex-column align-center">
-			<div style="width: 18rem;">
-				
-				<div class="pt-2 flex-row flex-wrap justify-between ">
-					<div class="box-a pd-3 flex-column  postion-relative">
-						<div class="pt-2 pl-2 font-s4 color-blue postion-relative"> <div class="hengx postion-absolute"></div>aaaaaa双站式全自动花式机</div>
-						 <div style="width: 5rem;" class="pt-4 flex-row justify-between ">
-						 	<div class="dingdal" style="width: 2.0rem;">
-						 		<div class="tel font-weight-bold ">订单信息</div>
-						 		<div class="dingdanshu flex-row justify-between flex-1 pt-2">
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">订单总数量</p>
-						 				<p class="fep-16 font-weight-bold ">01010</p>
-						 			</div>
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">订单总数量</p>
-						 				<p class="fep-16 font-weight-bold ">01010</p>
-						 			</div>
-						 		</div>
-						 		<div class="hengg"></div>
-
-						 		<div class="dingdanshu flex-row justify-between flex-1 pt-2">
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">已生产</p>
-						 				<p class="fep-16 font-weight-bold ">1750</p>
-						 			</div>
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">待生产</p>
-						 				<p class="fep-16 font-weight-bold ">3230</p>
-						 			</div>
-						 		</div>
-                                <div class="jintud">
-                                	<h3  class="fep-12b font-weight-normal">订单加工35%</h3>
-						        	<progress id="myProgress7" value= "0"  class= "mypro"   max= "100" ></progress>
-                                    <script>
-									  // 获取进度条元素
-									  var progress = document.getElementById("myProgress7");
-									 
-									  // 设置进度条的长度
-									  progress.value = 35; // 设置为50%的长度
-									</script>
-
-                                </div>
-								
-						 		
-
-
-						 	</div>
-
-						 	<div class="zhuangt" style="width: 2.4rem;">
-
-						 		<div class="yuxnzt font-weight-bold">
-						 			设备状态: <span class="sra4">运行中</span>
-						 		</div>
-
-						 		<div class="yuxnztjl font-weight-bold">
-						 			<div class="fep-16 font-weight-bold">今日生产记录</div>
-						 			<div class="pt-2">
-							 			<div class="sez font-weight-normal "> 今日运行时长：  11:01:52</div>
-							 			<div class="sez font-weight-normal "> 今日加工数量：  0003261</div>
-							 			<div class="sez font-weight-normal "> 故障信息： 无</div>
-						 			</div>
-						 		</div>
-						 		
-						 	</div>
-						 </div>
-						 <div class="paruct align-center">
-						 	<img  src="../static/img/ca1.png" alt="" class="tupas">
-						 	<img  src="../static/img/aasd.gif" alt="" class="tupasa">
-						 </div>
-					</div>
-					<div class="box-b pd-3 flex-column postion-relative">
-						<div class="pt-2 pl-2 font-s4 color-blue postion-relative"> <div class="hengx postion-absolute"></div>bbbbbb双站式全自动花式机</div>
-						 <div style="width: 5rem;" class="pt-4 flex-row justify-between ">
-						 	<div class="dingdal" style="width: 2.0rem;">
-						 		<div class="tel font-weight-bold ">订单信息</div>
-						 		<div class="dingdanshu flex-row justify-between flex-1 pt-2">
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">订单总数量</p>
-						 				<p class="fep-16 font-weight-bold ">01010</p>
-						 			</div>
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">订单总数量</p>
-						 				<p class="fep-16 font-weight-bold ">01010</p>
-						 			</div>
-						 		</div>
-						 		<div class="hengg"></div>
-
-						 		<div class="dingdanshu flex-row justify-between flex-1 pt-2">
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">已生产</p>
-						 				<p class="fep-16 font-weight-bold ">1750</p>
-						 			</div>
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">待生产</p>
-						 				<p class="fep-16 font-weight-bold ">3230</p>
-						 			</div>
-						 		</div>
-                                <div class="jintud">
-                                	<h3  class="fep-12b font-weight-normal">订单加工15%</h3>
-						        	<progress id="myProgress8" value= "0"  class= "mypro"   max= "100" ></progress>
-                                    <script>
-									  // 获取进度条元素
-									  var progress = document.getElementById("myProgress8");
-									 
-									  // 设置进度条的长度
-									  progress.value = 15; // 设置为50%的长度
-									</script>
-
-                                </div>
-								
-						 		
-
-
-						 	</div>
-
-						 	<div class="zhuangt" style="width: 2.4rem;">
-
-						 		<div class="yuxnzt font-weight-bold">
-						 			设备状态: <span class="sra3">故障中</span>
-						 		</div>
-
-						 		<div class="yuxnztjl font-weight-bold">
-						 			<div class="fep-16 font-weight-bold">今日生产记录</div>
-						 			<div class="pt-2">
-							 			<div class="sez font-weight-normal "> 今日运行时长：  11:01:52</div>
-							 			<div class="sez font-weight-normal "> 今日加工数量：  0003261</div>
-							 			<div class="sez font-weight-normal seza"> 故障信息： 芯片故障</div>
-						 			</div>
-						 		</div>
-						 		
-						 	</div>
-						 </div>
-						 <div class="paruct align-center">
-						 	<img  src="../static/img/ca3.png" alt="" class="tupas">
-						 	<img  src="../static/img/aasd.gif" alt="" class="tupasa">
-						 </div>
-					</div>
-					<div class="box-c pd-3 flex-column postion-relative">
-						<div class="pt-2 pl-2 font-s4 color-blue postion-relative"> <div class="hengx postion-absolute"></div>双站式全自动花式机</div>
-						 <div style="width: 5rem;" class="pt-4 flex-row justify-between ">
-						 	<div class="dingdal" style="width: 2.0rem;">
-						 		<div class="tel font-weight-bold ">订单信息</div>
-						 		<div class="dingdanshu flex-row justify-between flex-1 pt-2">
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">订单总数量</p>
-						 				<p class="fep-16 font-weight-bold ">01010</p>
-						 			</div>
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">订单总数量</p>
-						 				<p class="fep-16 font-weight-bold ">01010</p>
-						 			</div>
-						 		</div>
-						 		<div class="hengg"></div>
-
-						 		<div class="dingdanshu flex-row justify-between flex-1 pt-2">
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">已生产</p>
-						 				<p class="fep-16 font-weight-bold ">1750</p>
-						 			</div>
-						 			<div class="dingdanshul">
-						 				<p class="fep-12">待生产</p>
-						 				<p class="fep-16 font-weight-bold ">3230</p>
-						 			</div>
-						 		</div>
-                                <div class="jintud">
-                                	<h3  class="fep-12b font-weight-normal">订单加工30%</h3>
-						        	<progress id="myProgress9" value= "0"  class= "mypro"   max= "100" ></progress>
-                                    <script>
-									  // 获取进度条元素
-									  var progress = document.getElementById("myProgress9");
-									 
-									  // 设置进度条的长度
-									  progress.value = 30; // 设置为50%的长度
-									</script>
-
-                                </div>
-								
-						 		
-
-
-						 	</div>
-
-						 	<div class="zhuangt" style="width: 2.4rem;">
-
-						 		<div class="yuxnzt font-weight-bold">
-						 			设备状态: <span class="sra2">运行中</span>
-						 		</div>
-
-						 		<div class="yuxnztjl font-weight-bold">
-						 			<div class="fep-16 font-weight-bold">今日生产记录</div>
-						 			<div class="pt-2">
-							 			<div class="sez font-weight-normal "> 今日运行时长：  11:01:52</div>
-							 			<div class="sez font-weight-normal "> 今日加工数量：  0003261</div>
-							 			<div class="sez font-weight-normal "> 故障信息： 无</div>
-						 			</div>
-						 		</div>
-						 		
-						 	</div>
-						 </div>
-						 <div class="paruct align-center">
-						 	<img  src="../static/img/ca1.png" alt="" class="tupas">
-						 	<img  src="../static/img/aasd.gif" alt="" class="tupasa">
-						 </div>
-					</div>
-				
-				</div>
-			</div>
-		</div>
-
-              
-            </li>
+        	</li>
+			{%endfor%}
         </ul>
     </div>
     <div class="edu_btn">
