@@ -106,6 +106,10 @@ def calcd_dailyLiveTm(cellID, day):
         check2 = np.append(check2, [np.datetime64(start)])
     if (check1.size == check2.size):
         deltaTsum = (check1-check2).sum()
+    if len(check1) == 0:
+        check1 = ["null"]
+    if len(check2) == 0:
+        check2 = ["null"]
     return deltaTsum,check1[0],check2[-1]
 
 def calcd_dailyWorkTm(statolist, stop, start):
@@ -114,11 +118,11 @@ def calcd_dailyWorkTm(statolist, stop, start):
     for i in range(len(statolist)):
         if statolist[i]["Stato"] == 1:
             startTms.append(datetimeCom(statolist[i]["Data"],str2Time(statolist[i]["Ora"])))
-            if i==0:
+            if i==0 and stop != "null":
                 stopTms.append(stop.astype(datetime))
         else:
             stopTms.append(datetimeCom(statolist[i]["Data"],str2Time(statolist[i]["Ora"])))
-            if i+1 == len(statolist):
+            if i+1 == len(statolist) and start != "null":
                 startTms.append(start.astype(datetime))
     startTms, stopTms = np.array(startTms, dtype= np_dtype), np.array(stopTms, dtype= np_dtype)
     if ( startTms.size == stopTms.size):
@@ -133,11 +137,11 @@ def calcd_dailyIdleTm(statolist, stop, start):
     for i in range(len(statolist)):
         if statolist[i]["Stato"] == 1:
             startTms.append(datetimeCom(statolist[i]["Data"],str2Time(statolist[i]["Ora"])))
-            if i+1 == len(statolist):
+            if i+1 == len(statolist) and start != "null":
                 stopTms.append(start.astype(datetime))
         else:
             stopTms.append(datetimeCom(statolist[i]["Data"],str2Time(statolist[i]["Ora"])))
-            if i == 0:
+            if i == 0 and stop != "null":
                 startTms.append(stop.astype(datetime))
     startTms, stopTms = np.array(startTms, dtype= np_dtype), np.array(stopTms, dtype= np_dtype)
     if ( startTms.size == stopTms.size):

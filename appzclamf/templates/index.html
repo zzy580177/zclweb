@@ -17,7 +17,7 @@
 				<div class="pt-2 flex-row flex-wrap justify-between ">
 					{%for cellQ in cellIDQ%}
 					<div class="box-a pd-3 flex-column  postion-relative">
-						<div class="pt-2 pl-2 font-s4 color-blue postion-relative"> <div class="hengx postion-absolute"></div>{{cellQ.Note_Id}}-{{cellQ.CellaID}}</div>
+						<div class="pt-2 pl-2 font-s4 color-blue postion-relative"> <div class="hengx postion-absolute"></div>{{cellQ.Note_Id}}</div>
 						<div style="width: 5rem;" class="pt-4 flex-row justify-between ">
 							<div class="dingdal" style="width: 2.0rem;">
 								<div class="tel font-weight-bold ">订单信息</div>
@@ -28,7 +28,7 @@
 									</div>
 									<div class="dingdanshul">
 										<p class="fep-12">订单总数量</p>
-										<p class="fep-16 font-weight-bold ">{{cellQ.PezziDic.TotPezzi}}</p>
+										<p class="fep-16 font-weight-bold ">{{cellQ.PezzDic.TotPezzi}}</p>
 									</div>
 								</div>
 								<div class="hengg"></div>
@@ -36,22 +36,22 @@
 								<div class="dingdanshu flex-row justify-between flex-1 pt-2">
 									<div class="dingdanshul">
 										<p class="fep-12">已生产</p>
-										<p class="fep-16 font-weight-bold ">{{cellQ.PezziDic.Pezzi}}</p>
+										<p class="fep-16 font-weight-bold ">{{cellQ.PezzDic.Pezzi}}</p>
 									</div>
 									<div class="dingdanshul">
 										<p class="fep-12">待生产</p>
-										<p class="fep-16 font-weight-bold ">{{cellQ.PezziDic.ReqPezzi}}</p>
+										<p class="fep-16 font-weight-bold ">{{cellQ.PezzDic.ReqPezzi}}</p>
 									</div>
 								</div>
 							   <div class="jintud">
-								   <h3  class="fep-12b font-weight-normal">订单加工{{cellQ.PezziDic.Reach}}%</h3>
+								   <h3  class="fep-12b font-weight-normal">订单加工{{cellQ.PezzDic.Reach}}%</h3>
 								   <progress id="myProgress" value= "0"  class= "mypro"   max= "100" ></progress>
 								   <script>
 									 // 获取进度条元素
 									 var progress = document.getElementById("myProgress");
 									
 									 // 设置进度条的长度
-									 progress.value = {{cellQ.PezziDic.Reach}}; // 设置为50%的长度
+									 progress.value = {{cellQ.PezzDic.Reach}}; // 设置为50%的长度
 								   </script>
 							   </div>
 							</div>
