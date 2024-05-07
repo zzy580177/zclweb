@@ -184,23 +184,23 @@ def getDailyProcData(cellID, day):
     return output
 
 def getCurrStatoData(cellID):
-    output = {"AlarmSrt":"无", "Status":"运行中", "img":"aasd.gif"}
+    output = {"AlarmSrt":"无", "Status":"运行中", "img":"aasd.gif", "Mode":"", "Color":"sra2"}
     curr_time = datetime.now() + timedelta(minutes=-5)
     day = curr_time.strftime("%Y-%m-%d")
     if (not isCellLive(cellID, curr_time)):
-        return {"AlarmSrt":"无", "Status":"离线中", "img":"aaac.png"}
+        return {"AlarmSrt":"无", "Status":"离线中", "img":"aaac.png",  "Mode":"", "Color":"sra4"}
     if (not isDailyStatoChang(cellID, day)):
         output["Status"] = "待机中"
-        output["StatoID"] = "ilde"        
+        output["StatoID"] = "ilde" 
+        output["Color"] = "sra1"       
     else:
         lastStato = get_value_lastStato(cellID, day)
         if lastStato["Alarm"] > 0:
-            output["Status"] = "故障中" 
-            output["img"] = "aaac.png" 
-            output["AlarmSrt"] = get_value_AlarmStr[lastStato["Alarm"]]
+            output = {"AlarmSrt":get_value_AlarmStr[lastStato["Alarm"]], "Status":"故障中", "img":"aaac.png", "Mode":"seza", "Color":"sra3"}
         elif lastStato["Stato"] ==0:
             output["Status"] = "待机中"
-            output["img"] = "aaac.png" 
+            output["img"] = "aaac.png"
+            output["Color"] = "sra1"  
     return output
 
 def getDailyPezzData(cellID, day):
