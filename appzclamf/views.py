@@ -7,6 +7,8 @@ from datetime import datetime, timezone, timedelta, date, time
 from plotly.offline import plot
 from plotly.graph_objs import Scatter
 import appzclamf.api.dbFilter as mydb
+import pytz
+tz = pytz.timezone('Asia/Shanghai')
 
 colorList = ['red', 'green', 'orange', 'purple', 'brown', 'plum', 'yellow']
 def getAlarmStr(alarmID):
@@ -37,7 +39,7 @@ def getCellQ(isGetTmD = False):
     return l_Celle
 
 def getLastCheck1(cellID):
-    curr_time = datetime.now(timezone.utc) + timedelta(minutes=-5)
+    curr_time = datetime.now(tz) + timedelta(minutes=-5)
     l_lastCheck1 = LiveStats.objects.filter( CellaID=cellID).values("Check1", "Check2").last()
     isOnline =  curr_time < l_lastCheck1['Check1']
     return isOnline
@@ -129,7 +131,7 @@ def login(req):
     return redirect("/inex/");
 
 def index(req):
-    day = datetime.now().strftime('%Y-%m-%d')
+    day = datetime.now(tz).strftime('%Y-%m-%d')
     q_cellaDic = mydb.getDataForIndex(day)
     return render(req, "index.html", {"Title":"index", "cellIDQList":q_cellaDic});
 
