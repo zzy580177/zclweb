@@ -114,19 +114,19 @@ def calcd_dailyLiveTm(cellID, day):
     if (check1.size == check2.size):
         deltaTsum = (check1-check2).sum()
     if len(check1) == 0:
-        check1 = ["null"]
+        check1 = [datetime.now().strftime('%Y-%m-%dT%H:%M:%S')]
     if len(check2) == 0:
-        check2 = ["null"]
+        check2 = [datetime.now().strftime('%Y-%m-%d')]
     deltaTsum = convert_to_hhmmss(deltaTsum)
     return deltaTsum,check1[0],check2[-1]
 
 def calcd_dailyWorkTm(statolist, stop, start):
     DtList = np.array([data['Dt'] for data in statolist], dtype= np_dtype)
     StatoList = np.array([data['Stato'] for data in statolist], dtype= int)
-    if StatoList[0] == 1 and stop != "null" and start != "null":
+    if StatoList[0] == 1:
         DtList = np.insert(DtList, 0, np.datetime64(stop))
         StatoList = np.insert(StatoList, 0, 0)
-    if StatoList[-1] == 0 and stop != "null" and start != "null":
+    if StatoList[-1] == 0:
         DtList = np.append(DtList, np.datetime64(start))
         StatoList = np.append(StatoList, 1)
     if not is_zero_one_seq(StatoList):

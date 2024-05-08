@@ -136,7 +136,8 @@
                     {%endfor%}
                 </ul>
             </div>
-            <div class="edu_btn">
+			{% csrf_token %}
+            <div class="edu_btn" >
                 <span class="edu_leftbtn">
                 </span>
                 <span class="edu_rgbtn">
@@ -166,5 +167,9 @@
             }
         });
     </script>
+	<script language="JavaScript">
+		setTimeout(function(){location.reload()},10000); 
+		//指定10秒刷新一次
+	</script>
 
 </html>
