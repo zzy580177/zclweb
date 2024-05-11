@@ -24,7 +24,7 @@ def get_serq_stato(cellID):
     return ser_q
 
 def get_value_AlarmStr(alarmID):
-    ser_q = Alarm.objects.filter(Q(AllarmID__get = alarmID))
+    ser_q = Alarm.objects.filter(AllarmID = alarmID)
     return ser_q[0].AllarmString
 
 def get_value_dailyPezzi(cellID, day):
@@ -179,7 +179,7 @@ def getDailyProcData(cellID, day):
     output={"WorkTm":0, "IldeTm":0, "AbnormTm": 0}
     liveTm, stop, start = calcd_dailyLiveTm(cellID, day)
     output["OnlineTm"] = liveTm
-    if isDailyStatoChang(cellID, day):
+    if isDailyStatoChang(cellID, day): 
         statolist = get_valueList_statoFull(cellID, day)
         output["WorkTm"] = calcd_dailyWorkTm(statolist, stop, start)
         output["IldeTm"] = calcd_dailyIdleTm(statolist, stop, start)
@@ -187,7 +187,7 @@ def getDailyProcData(cellID, day):
 
 def getCurrStatoData(cellID):
     output = {"AlarmSrt":"无", "Status":"运行中", "img":"aasd.gif", "Mode":"", "Color":"sra2"}
-    curr_time = datetime.now(tz) + timedelta(minutes=-5)
+    curr_time = datetime.now(tz) + timedelta(minutes=-485)
     curr_time = curr_time.replace(tzinfo=None)
     day = curr_time.strftime("%Y-%m-%d")
     if (not isCellLive(cellID, curr_time)):
@@ -195,6 +195,7 @@ def getCurrStatoData(cellID):
     if (not isDailyStatoChang(cellID, day)):
         output["Status"] = "待机中"
         output["StatoID"] = "ilde" 
+        output["img"] = "aaac.png"
         output["Color"] = "sra1"       
     else:
         lastStato = get_value_lastStato(cellID, day)
@@ -207,14 +208,14 @@ def getCurrStatoData(cellID):
     return output
 
 def getDailyPezzData(cellID, day):
-    output = {"Pezzi":"0","ReqPezzi":"0", "TotPezzi":"0", "Reach":"0"}
+    output = {"Pezzi":"0","ReqPezzi":"0", "TotPezzi":"0", "Reach":"0" }
     if not(isDailyPezzisChang(cellID, day)):
         return output
     pezz_v = get_value_dailyPezzi(cellID, day)
     output["Pezzi"] = pezz_v[1]
     output["ReqPezzi"] = pezz_v[2]
-    output["TotPezzi"] = pezz_v[3]  
+    output["TotPezzi"] = pezz_v[2]-pezz_v[1]  if pezz_v[2]>pezz_v[1] else 0
     if output["TotPezzi"] >0:
-        output["Reach"] = round((output["Pezzi"]*100/output["TotPezzi"]) )
+        output["Reach"] = round((output["Pezzi"]*100/output["ReqPezzi"]) )
     return output
 

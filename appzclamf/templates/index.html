@@ -50,7 +50,7 @@
 															订单信息
 														</p>
 														<p class="fep-16 font-weight-bold ">
-															10110
+															客户1-OK001
 														</p>
 													</div>
 													<div class="dingdanshul">
@@ -58,7 +58,7 @@
 															订单总数量
 														</p>
 														<p class="fep-16 font-weight-bold ">
-															{{cellQ.Pezz.TotPezzi}}
+															{{cellQ.Pezz.ReqPezzi}}
 														</p>
 													</div>
 												</div>
@@ -78,7 +78,7 @@
 															待生产
 														</p>
 														<p class="fep-16 font-weight-bold ">
-															{{cellQ.Pezz.ReqPezzi}}
+															{{cellQ.Pezz.TotPezzi}}
 														</p>
 													</div>
 												</div>
@@ -111,10 +111,10 @@
 													</div>
 													<div class="pt-2">
 														<div class="sez font-weight-normal ">
-															今日运行时长： {{cellQ.Proc.WorkTm}}
+															今日在线时长： {{cellQ.Proc.OnlineTm}}
 														</div>
 														<div class="sez font-weight-normal ">
-															今日在线时长： {{cellQ.Proc.OnlineTm}}
+															今日生产数量： {{cellQ.Pezz.Pezzi}}
 														</div>
 														<div class="sez font-weight-normal {{cellQ.Stato.Mode}}">
 															故障信息： {{cellQ.Stato.AlarmSrt}}
@@ -168,7 +168,7 @@
         });
     </script>
 	<script language="JavaScript">
-		setTimeout(function(){location.reload()},10000); 
+		setTimeout(function(){location.reload()},15000); 
 		//指定10秒刷新一次
 	</script>
 
