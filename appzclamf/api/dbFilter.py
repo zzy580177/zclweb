@@ -6,6 +6,18 @@ from datetime import datetime, timedelta, date, time
 import pandas as pd
 
 import pytz
+
+imglink = {
+    "CNC全自动双站式花式机":"1.png",
+    "全自动机器人钉胶机" : "2.png",
+    "多功能高精密五轴机":"3.png",
+    "高光机":"4.png",
+    "精雕切比一体机":"5.png",
+    "全自动开料机":"6.png", 
+    "全自动刨比开料机": "7.png",
+    "全智能打比机":"8.png",
+    "比后工序自动机":"9.png"}
+
 tz = pytz.timezone('Asia/Shanghai')
 
 np_dtype = "datetime64[us]"
@@ -167,9 +179,11 @@ def getDataForIndex(day):
         output.append(sub_output)
     return output
 
-def getCellaDataForIndex(cellID, day):
+def getCellaDataForIndex(cellID, day = ''):
+    if day == '':
+        day = datetime.now(tz).strftime('%Y-%m-%d')
     nodeinfo = LiveStats.objects.filter(CellaID = cellID).values_list("Note_Id", flat=True).last()
-    output = {"CellaID": cellID, "Note_Id": nodeinfo}
+    output = {"CellaID": cellID, "Note_Id": nodeinfo, "Note_Img": imglink[nodeinfo]}
     output["Proc"] = getDailyProcData(cellID, day)
     output["Pezz"] = getDailyPezzData(cellID, day)
     output["Stato"] = getCurrStatoData(cellID)
@@ -196,7 +210,7 @@ def getCurrStatoData(cellID):
         output["Status"] = "待机中"
         output["StatoID"] = "ilde" 
         output["img"] = "aaac.png"
-        output["Color"] = "sra1"       
+        output["Color"] = "sra1"
     else:
         lastStato = get_value_lastStato(cellID, day)
         if lastStato["Alarm"] > 0:

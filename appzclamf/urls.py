@@ -11,7 +11,8 @@ urlpatterns = [
     path("stato/", views.stato),
     path("livestats/", views.livestats),
     path("livestats/detal/", views.livestats_detal),
-    path("building/", views.building)
+    path("building/", views.building),
+    path("api/CellData/<cellaId>", api_views.CellsView.as_view())
     #path("api/livestats/<cellaId>", api_views.LiveStatsView.as_view()),
     #path("api/Stato/<cellaId>", api_views.StatoView.as_view()),
     #path("api/Pezzi/<cellaId>", api_views.PezziView.as_view()),

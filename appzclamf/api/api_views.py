@@ -1,3 +1,4 @@
+from django.http import JsonResponse
 from django.shortcuts import render, redirect
 #Create your views here.
 from django.db.models import Q
@@ -8,6 +9,13 @@ from rest_framework import status
 from appzclamf.api.serializars import *
 from appzclamf.api.dbFilter import *
 #from rest_framework_extensions.cache.decorators import cache_response
+
+class CellsView(APIView):
+    #@cache_response(timeout = 60*1, cache="default")
+    def get(self, request, *args, **kwargs):
+        l_cellaID = kwargs.get("cellaId") #request.CellaID
+        l_cellDatas = getCellaDataForIndex(l_cellaID)
+        return JsonResponse(l_cellDatas, safe=False, json_dumps_params={'ensure_ascii': False})
 
 class LiveStatsView(APIView):
     #@cache_response(timeout = 60*1, cache="default")
