@@ -78,8 +78,8 @@ WSGI_APPLICATION = 'zclwed.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE':'mssql',
-        'HOST':'123.57.213.195',
-        'NAME':'zclamfdb2',
+        'HOST':'47.121.177.127',
+        'NAME':'yadi',
         'PORT':'1433',
         'USER':'zclamf',
         'PASSWORD':'Zclamfdb123',

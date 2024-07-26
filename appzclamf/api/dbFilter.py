@@ -1,7 +1,7 @@
 from django.db.models import Q, F, Value, DateTimeField
 from django.db.models.functions import Concat
 import numpy as np
-from appzclamf.models import  Alarm, Pezzi, Stato, LiveStats
+from appzclamf.models import  Alarmi, Pezzi, Stato, LiveState, Order, OrderHistory
 from datetime import datetime, timedelta, date, time
 import pandas as pd
 
@@ -28,11 +28,11 @@ def get_serq_Live(cellID):
     return ser_q
 
 def get_serq_pezzi(cellID):
-    ser_q = Pezzi.objects.filter( CellaID=cellID).order_by("-EventID")
+    ser_q = Pezzi.objects.filter( CellaID=cellID).order_by("-Id")
     return ser_q
 
 def get_serq_stato(cellID):
-    ser_q = Stato.objects.filter( CellaID=cellID).order_by("-StatoID")
+    ser_q = Stato.objects.filter( CellaID=cellID).order_by("-Id")
     return ser_q
 
 def get_value_AlarmStr(alarmID):
@@ -40,7 +40,7 @@ def get_value_AlarmStr(alarmID):
     return ser_q[0].AllarmString
 
 def get_value_dailyPezzi(cellID, day):
-    date_v = Pezzi.objects.filter( CellaID=cellID, Data = day).values_list("EventID","Pezzi","ReqPezzi","TotPezzi").last()
+    date_v = Pezzi.objects.filter( CellaID=cellID, Data = day).values_list("Id","Pezzi","ReqPezzi","ResidPezzi", "OrderID", "TotWorkTm").last()
     return date_v
 
 def get_valueList_check1(cellID, start, stop):
@@ -55,27 +55,35 @@ def get_valueList_check2(cellID, start, stop):
 
 def get_valueList_statoTmF(cellID, start, stop):
     ser_q = Stato.objects.annotate(Dt=Concat(F('Data'), Value(' '), F('Ora'), output_field= DateTimeField()))
-    ser_q = Stato.objects.filter( CellaID=cellID, Dt__range=(start, stop)).values("Data","Ora", "Stato", "Alarm").order_by("-StatoID")
+    ser_q = Stato.objects.filter( CellaID=cellID, Dt__range=(start, stop)).values("Data","Ora", "Stato", "Alarm").order_by("-Id")
     date_v = [data for data in ser_q]
     return date_v
 
 def get_valueList_statoFull(cellID, day):
-    ser_q = Stato.objects.filter( CellaID=cellID, Data = day).values("Data","Ora", "Stato", "Alarm").order_by("-StatoID")
+    ser_q = Stato.objects.filter( CellaID=cellID, Data = day).values("Data","Ora", "Stato", "Alarm").order_by("-Id")
     ser_q = ser_q.annotate(Dt=Concat(F('Data'), Value(' '), F('Ora'), output_field= DateTimeField()))
     date_v = [data for data in ser_q]
     return date_v
 
 def get_valueList_statosFull(day):
-    ser_q = Stato.objects.filter(Data = day).values("CellaID","Data","Ora", "Stato", "Alarm").order_by("-StatoID")
+    ser_q = Stato.objects.filter(Data = day).values("CellaID","Data","Ora", "Stato", "Alarm").order_by("-Id")
     ser_q = ser_q.annotate(Dt=Concat(F('Data'), Value(' '), F('Ora'), output_field= DateTimeField()))
     date_v = [data for data in ser_q]
+    return date_v
+
+def get_value_Order(orderId):
+    date_v = Order.objects.filter( OrderID=orderId).values_list("OrderID","StytleNum","FinishParts","RequireParts", "WorkStatus").last()
+    return date_v
+
+def get_value_LastOrderRecord(orderId, cellID):
+    date_v = OrderHistory.objects.filter( OrderID=orderId, CellaID = cellID).last()
     return date_v
 
 def get_value_lastStato(cellID, day):
     result = Stato.objects.filter( CellaID=cellID, Data = day).values("Ora","Stato","Alarm").last()
     return result
 
-def isCellLive(cellID ,time):
+def isCellOnline(cellID ,time):
     result = LiveStats.objects.filter( CellaID=cellID,Check1__gt=time)
     return result.exists()
 
@@ -201,10 +209,9 @@ def getDailyProcData(cellID, day):
 
 def getCurrStatoData(cellID):
     output = {"AlarmSrt":"无", "Status":"运行中", "img":"aasd.gif", "Mode":"", "Color":"sra2"}
-    curr_time = datetime.now(tz) + timedelta(minutes=-485)
-    curr_time = curr_time.replace(tzinfo=None)
+    curr_time = (datetime.now(tz) + timedelta(minutes=-2)).replace(tzinfo=None)
     day = curr_time.strftime("%Y-%m-%d")
-    if (not isCellLive(cellID, curr_time)):
+    if (not isCellOnline(cellID, curr_time)):
         return {"AlarmSrt":"无", "Status":"离线中", "img":"aaac.png",  "Mode":"", "Color":"sra4"}
     if (not isDailyStatoChang(cellID, day)):
         output["Status"] = "待机中"
@@ -222,14 +229,15 @@ def getCurrStatoData(cellID):
     return output
 
 def getDailyPezzData(cellID, day):
-    output = {"Pezzi":"0","ReqPezzi":"0", "TotPezzi":"0", "Reach":"0" }
+    output = {"Pezzi":"0","ReqPezzi":"0", "TotPezzi":"0", "Reach":"0" ,"OrderID": "", "WorkTm": "", "IldeTm": ""}
     if not(isDailyPezzisChang(cellID, day)):
         return output
     pezz_v = get_value_dailyPezzi(cellID, day)
     output["Pezzi"] = pezz_v[1]
     output["ReqPezzi"] = pezz_v[2]
-    output["TotPezzi"] = pezz_v[2]-pezz_v[1]  if pezz_v[2]>pezz_v[1] else 0
-    if output["TotPezzi"] >0:
-        output["Reach"] = round((output["Pezzi"]*100/output["ReqPezzi"]) )
+    output["TotPezzi"] = pezz_v[3]
+    output["OrderID"] = pezz_v[4]
+    output["WorkTm"] = pezz_v[5]
+    output["Reach"] = round((output["Pezzi"]*100/output["ReqPezzi"]) )
     return output
 

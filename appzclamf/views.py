@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 #Create your views here.
 from django.db.models import Q
-from appzclamf.models import  Alarm, Pezzi, Stato, LiveStats
+from appzclamf.models import  Alarmi, Pezzi, Stato, LiveState
 
 from datetime import datetime, timezone, timedelta, date, time
 from plotly.offline import plot
