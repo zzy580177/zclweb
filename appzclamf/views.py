@@ -12,11 +12,11 @@ tz = pytz.timezone('Asia/Shanghai')
 
 colorList = ['red', 'green', 'orange', 'purple', 'brown', 'plum', 'yellow']
 def getAlarmStr(alarmID):
-    ser_q = Alarm.objects.filter(Q(AllarmID__get = alarmID))
+    ser_q = Alarmi.objects.filter(Q(AllarmID__get = alarmID))
     return ser_q[0].AllarmString
 
 def getCellLiveStats(cellID):
-    l_liveStatses = LiveStats.objects.order_by('-id').filter( CellaID=cellID)
+    l_liveStatses = LiveState.objects.order_by('-id').filter( CellaID=cellID)
     return l_liveStatses
 
 def getCellPezzi(cellID):
@@ -28,7 +28,7 @@ def getCellStato(cellID):
     return l_Stato
 
 def getCellQ(isGetTmD = False):
-    l_CelleQ = LiveStats.objects.values("CellaID").distinct()
+    l_CelleQ = LiveState.objects.values("CellaID").distinct()
     l_Celle = []
     for i in range(len(l_CelleQ)):
         dic = {"CellaID": l_CelleQ[i]["CellaID"]}
@@ -40,10 +40,9 @@ def getCellQ(isGetTmD = False):
 
 def getLastCheck1(cellID):
     curr_time = datetime.now(tz) + timedelta(minutes=-5)
-    l_lastCheck1 = LiveStats.objects.filter( CellaID=cellID).values("Check1", "Check2").last()
+    l_lastCheck1 = LiveState.objects.filter( CellaID=cellID).values("Check1", "Check2").last()
     isOnline =  curr_time < l_lastCheck1['Check1']
     return isOnline
-
 def getCheckTime(cellID, isGetTmD):
     checktimeList = []
     totOnlineTm = 0
@@ -51,7 +50,7 @@ def getCheckTime(cellID, isGetTmD):
     totOnlineday = 0
     if not(isGetTmD):
         return checktimeList, totOnlineTm, totWorkTm, totOnlineday;
-    checkList = LiveStats.objects.order_by('-id').filter( CellaID=cellID).values("Check1", "Check2")
+    checkList = LiveState.objects.order_by('-id').filter( CellaID=cellID).values("Check1", "Check2")
     for i in range(len(checkList)):
         check1 = checkList[i]['Check1']
         check1 = check1.replace(tzinfo=None)
@@ -137,8 +136,8 @@ def index(req):
 
 def alarm(req):
     q_cellaDic = getCellQ()
-    queryset = Alarm.objects.all()
-    return render(req, "alarm.html", {"Title":"alarm","cellIDQ":q_cellaDic, "queryset":queryset})
+    queryset = Alarmi.objects.all()
+    return render(req, "Alarmihtml", {"Title":"alarm","cellIDQ":q_cellaDic, "queryset":queryset})
 
 def livestats(req):
     q_cellaDic = getCellQ()
@@ -147,7 +146,7 @@ def livestats(req):
     elif req.method == 'POST':
         cellaID =req.POST.get("cellID");
     queryset = getCellLiveStats(cellaID)
-    return render(req, "livestats.html", {"Title":"livestats", "cellIDQ":q_cellaDic, "cellID":cellaID, "queryset":queryset});
+    return render(req, "LiveState.html", {"Title":"livestats", "cellIDQ":q_cellaDic, "cellID":cellaID, "queryset":queryset});
 
 def pezzi(req):
     q_cellaDic = getCellQ()

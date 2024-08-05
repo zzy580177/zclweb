@@ -3,18 +3,17 @@ from django.db import models
 schema = "CNC700Cutting"
 class Alarmi(models.Model):
 	""""告警索引表"""
-	Id = models.IntegerField();
+	#Id = models.IntegerField();
 	AllarmID = models.SmallIntegerField()
 	AllarmString = models.CharField(max_length=50, null=True, blank=True)
 	TypeID = models.IntegerField(null=True, blank=True)
 	Description_Id = models.IntegerField(null=True, blank=True)
 	class Meta:
 		db_table = "[%s].[Alarmi]"% schema
-		#db_table = "[AutoSheet1].[Alarmi]"
 
 class LiveState(models.Model):
 	"""在线日志"""
-	Id = models.IntegerField();
+	#Id = models.IntegerField();
 	CellaID = models.IntegerField(null=True, blank=True);
 	Plant = models.CharField(max_length=50,  blank=True);
 	Check1 = models.DateTimeField(null=True, blank=True);
@@ -25,7 +24,7 @@ class LiveState(models.Model):
 
 class Pezzi(models.Model):
 	"""产量信息日志"""
-	Id = models.IntegerField();
+	#Id = models.IntegerField();
 	CellaID = models.IntegerField(null=True, blank=True);
 	Plant = models.CharField(null=True,max_length=50);
 	OrderID = models.CharField(null=True, max_length =50);
@@ -41,7 +40,7 @@ class Pezzi(models.Model):
 
 class Stato(models.Model):
 	"""工作状态切换日志"""
-	Id = models.IntegerField();
+	#Id = models.IntegerField();
 	CellaID = models.IntegerField(null=True, blank=True);
 	Plant = models.CharField(max_length=50);
 	OrderID = models.CharField(null=True, max_length =50); 
@@ -57,7 +56,7 @@ class Stato(models.Model):
 
 class Order(models.Model):
 	"""订单表"""
-	Id = models.IntegerField();
+	#Id = models.IntegerField();
 	CellaID = models.IntegerField(null=True, blank=True);
 	Plant = models.CharField(max_length=50);
 	OrderID = models.CharField(null=True, max_length =50); 
@@ -69,7 +68,7 @@ class Order(models.Model):
 		db_table = "[%s].[Order]"% schema
 
 class OrderHistory(models.Model):
-	Id = models.IntegerField();
+	#Id = models.IntegerField();
 	CellaID = models.IntegerField(null=True, blank=True);
 	Plant = models.CharField(max_length=50);
 	OrderID = models.CharField(null=True, max_length =50); 

@@ -24,7 +24,7 @@ np_dtype = "datetime64[us]"
 startTm = datetime.min.time()
 
 def get_serq_Live(cellID):
-    ser_q = LiveStats.objects.order_by("-id").filter( CellaID=cellID)
+    ser_q = LiveState.objects.order_by("-id").filter( CellaID=cellID)
     return ser_q
 
 def get_serq_pezzi(cellID):
@@ -36,7 +36,7 @@ def get_serq_stato(cellID):
     return ser_q
 
 def get_value_AlarmStr(alarmID):
-    ser_q = Alarm.objects.filter(AllarmID = alarmID)
+    ser_q = Alarmi.objects.filter(AllarmID = alarmID)
     return ser_q[0].AllarmString
 
 def get_value_dailyPezzi(cellID, day):
@@ -44,12 +44,12 @@ def get_value_dailyPezzi(cellID, day):
     return date_v
 
 def get_valueList_check1(cellID, start, stop):
-    ser_q = LiveStats.objects.filter(CellaID=cellID, Check1__range=(start, stop)).values_list("Check1", flat=True).order_by("-Check1")
+    ser_q = LiveState.objects.filter(CellaID=cellID, Check1__range=(start, stop)).values_list("Check1", flat=True).order_by("-Check1")
     date_v = [data for data in ser_q]
     return np.array(date_v, dtype= np_dtype)
 
 def get_valueList_check2(cellID, start, stop):
-    ser_q = LiveStats.objects.filter(CellaID=cellID, Check2__range=(start, stop)).values_list("Check2", flat=True).order_by("-Check2")
+    ser_q = LiveState.objects.filter(CellaID=cellID, Check2__range=(start, stop)).values_list("Check2", flat=True).order_by("-Check2")
     date_v = [data for data in ser_q]
     return np.array(date_v, dtype= np_dtype)
 
@@ -84,7 +84,7 @@ def get_value_lastStato(cellID, day):
     return result
 
 def isCellOnline(cellID ,time):
-    result = LiveStats.objects.filter( CellaID=cellID,Check1__gt=time)
+    result = LiveState.objects.filter( CellaID=cellID,Check1__gt=time)
     return result.exists()
 
 def isDailyStatoChang(cellID, day):
@@ -173,7 +173,7 @@ def calcd_dailyIdleTm(statolist, stop, start):
     return deltaT
 
 def getDataForIndex(day):
-    q_set = LiveStats.objects.values_list("CellaID", flat=True).distinct()
+    q_set = LiveState.objects.values_list("CellaID", flat=True).distinct()
     celleList = [livestats for livestats in q_set]
     output = []
     sub_output = []
@@ -190,7 +190,7 @@ def getDataForIndex(day):
 def getCellaDataForIndex(cellID, day = ''):
     if day == '':
         day = datetime.now(tz).strftime('%Y-%m-%d')
-    nodeinfo = LiveStats.objects.filter(CellaID = cellID).values_list("Note_Id", flat=True).last()
+    nodeinfo = LiveState.objects.filter(CellaID = cellID).values_list("Note_Id", flat=True).last()
     output = {"CellaID": cellID, "Note_Id": nodeinfo, "Note_Img": imglink[nodeinfo]}
     output["Proc"] = getDailyProcData(cellID, day)
     output["Pezz"] = getDailyPezzData(cellID, day)
