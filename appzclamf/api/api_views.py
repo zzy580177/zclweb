@@ -10,11 +10,12 @@ from appzclamf.api.serializars import *
 from appzclamf.api.dbFilter import *
 #from rest_framework_extensions.cache.decorators import cache_response
 
+day = '2024-08-05'
 class CellsView(APIView):
     #@cache_response(timeout = 60*1, cache="default")
     def get(self, request, *args, **kwargs):
         l_cellaID = kwargs.get("cellaId") #request.CellaID
-        l_cellDatas = getCellaDataForIndex(l_cellaID)
+        l_cellDatas = getCellaDataForIndex(l_cellaID, day)
         return JsonResponse(l_cellDatas, safe=False, json_dumps_params={'ensure_ascii': False})
 
 class LiveStatsView(APIView):

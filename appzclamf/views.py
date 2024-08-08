@@ -40,6 +40,7 @@ def getCellQ(isGetTmD = False):
 
 def getLastCheck1(cellID):
     curr_time = datetime.now(tz) + timedelta(minutes=-5)
+    curr_time = curr_time.replace(tzinfo=None)
     l_lastCheck1 = LiveState.objects.filter( CellaID=cellID).values("Check1", "Check2").last()
     isOnline =  curr_time < l_lastCheck1['Check1']
     return isOnline
@@ -130,7 +131,8 @@ def login(req):
     return redirect("/inex/");
 
 def index(req):
-    day = datetime.now(tz).strftime('%Y-%m-%d')
+    day = datetime.now().strftime('%Y-%m-%d')
+    #day = '2024-08-05'
     q_cellaDic = mydb.getDataForIndex(day)
     return render(req, "index.html", {"Title":"index", "cellIDQList":q_cellaDic});
 
