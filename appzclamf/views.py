@@ -131,9 +131,8 @@ def login(req):
     return redirect("/inex/");
 
 def index(req):
-    day = datetime.now().strftime('%Y-%m-%d')
-    #day = '2024-08-05'
-    q_cellaDic = mydb.getDataForIndex(day)
+    #day = datetime.now(tz).strftime('%Y-%m-%d')
+    q_cellaDic = mydb.getDataForIndex("")
     return render(req, "index.html", {"Title":"index", "cellIDQList":q_cellaDic});
 
 def alarm(req):

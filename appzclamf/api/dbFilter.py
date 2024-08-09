@@ -140,9 +140,9 @@ def calcd_dailyLiveTm(cellID, day):
     if (check1.size == check2.size):
         deltaTsum = (check1-check2).sum()
     if len(check1) == 0:
-        check1 = [datetime.now()]
+        check1 = [datetime.now(tz)]
     if len(check2) == 0:
-        check2 = [datetime.combine(datetime.now().date(), datetime.min.time())]
+        check2 = [datetime.combine(datetime.now(tz).date(), datetime.min.time())]
     deltaTsum = convert_to_hhmmss(deltaTsum)
     return deltaTsum,check1[0],check2[-1]
 
@@ -199,7 +199,7 @@ def nupDt2DateTime(nupDt):
     return nupDt.astype(datetime)
 def getCellaDataForIndex(cellID, day):
     if day == '':
-        day = datetime.now(tz).strptime('%Y-%m-%d')
+        day = datetime.now(tz).strftime('%Y-%m-%d')
     day = datetime.strptime(day, '%Y-%m-%d')
     nodeinfo = LiveState.objects.filter(CellaID = cellID).values_list("Note_Id", flat=True).last()
     output = {"CellaID": cellID, "Note_Id": nodeinfo, "Note_Img": imglink[nodeinfo]}

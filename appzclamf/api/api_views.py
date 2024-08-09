@@ -14,8 +14,10 @@ day = '2024-08-05'
 class CellsView(APIView):
     #@cache_response(timeout = 60*1, cache="default")
     def get(self, request, *args, **kwargs):
-        l_cellaID = kwargs.get("cellaId") #request.CellaID
-        l_cellDatas = getCellaDataForIndex(l_cellaID, day)
+        l_cellaIDs = kwargs.get("cellaId").split("-")
+        l_cellDatas =[]
+        for cellID in l_cellaIDs:
+            l_cellDatas.append(getCellaDataForIndex(cellID, ""))
         return JsonResponse(l_cellDatas, safe=False, json_dumps_params={'ensure_ascii': False})
 
 class LiveStatsView(APIView):

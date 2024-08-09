@@ -5,7 +5,7 @@ from appzclamf.api import api_views
 
 urlpatterns = [
     path('index/', views.index),
-    path('', views.building),
+    path('', views.index),
     path("alarm/", views.alarm),
     path("pezzi/", views.pezzi),
     path("stato/", views.stato),
