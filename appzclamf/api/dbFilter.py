@@ -26,8 +26,6 @@ tz = pytz.timezone('Asia/Shanghai')
 np_dtype = "datetime64[us]"
 startTm = datetime.min.time()
 
-
-
 def get_serq_Live(cellID):
     ser_q = LiveState.objects.order_by("-id").filter( CellaID=cellID)
     return ser_q
@@ -86,6 +84,11 @@ def get_value_lastStato(cellID, start, stop):
     ser_q = Stato.objects.annotate(Dt=Cast('DataTime', output_field= DateTimeField()))
     result = ser_q.filter( CellaID=cellID, Dt__range=(nupDt2DateTime(start), nupDt2DateTime(stop))).values("Ora","Stato","Alarm", "OrderID").last()
     return result
+
+def getOrderList():
+    ser_q = Order.objects.all()
+    date_v = [data for data in ser_q]
+    return date_v
 
 def isCellOnline(cellID ,time):
     result = LiveState.objects.filter( CellaID=cellID,Check1__gt=time)
@@ -197,6 +200,7 @@ def nupDt2DateTime(nupDt):
     if isinstance(nupDt, datetime):
         return nupDt
     return nupDt.astype(datetime)
+
 def getCellaDataForIndex(cellID, day):
     if day == '':
         day = datetime.now(tz).strftime('%Y-%m-%d')

@@ -201,4 +201,7 @@ def test(req):
     context = {'plot_div':plot_div, "cellIDQ":q_cellaDic}
     return render(req,'test1.html',context=context)
 
+def listOrder(req):
+    queryset = mydb.getOrderList()
+    return render(req, "orderList.html", {"Title":"listOrder", "queryset":queryset});
 

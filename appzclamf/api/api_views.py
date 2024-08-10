@@ -44,3 +44,11 @@ class StatoView(APIView):
         l_Stato_json = PezziModelSerializer(l_Stato, many=True)
         return Response(l_Stato_json.data)
 
+class OrderView(APIView):
+    #@cache_response(timeout = 60*1, cache="default")
+    def get(self, request, *args, **kwargs):
+        l_status = kwargs.get("status") #request.CellaID
+        l_Order = Order.objects.all()
+        l_Order_json = OrderModelSerializer(l_Order, many=True)
+        return Response(l_Order_json.data)
+
