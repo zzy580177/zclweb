@@ -1,0 +1,33 @@
+*{ 
+    margin:0;
+    padding: 0;
+}
+body{
+    background-color: #030410;
+    min-height: 100vh;
+    box-sizing: border-box;
+    color: #fff;
+    font-size: 0;
+}
+panel panel-default{
+    position: fixed;
+    bottom: 0;
+    left: 0;
+}
+.account{
+    width: 400px;
+    border: 1px solid #dddddd;
+    border-radius: 5px;
+
+    box-shadow: 10px 5px 20px #aaa;
+
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 100px;
+    background-color:rgba(231, 233, 243);
+    padding: 20px 40px;
+}
+.account h3{
+    text-align: center;
+    margin-top: 10px;
+}

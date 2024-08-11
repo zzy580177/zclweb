@@ -1,0 +1,53 @@
+{%extends 'layout.html'%}
+{%block content%}
+    <div class="container">
+        <form id= "CellaIDForm" method="post" action="/livestats/">
+            {% csrf_token %}
+            {%for cellQ in cellIDQ%}
+            <a class="btn btn-primary" onclick="selectCellIdPost('{{cellQ.CellaID}}')" value={{cellQ.CellaID}}>
+                <span class = "glyhicon glyhicon-plus-sign" aria-hidden="true"></span>{{cellQ.CellaID}}# 机
+            </a>
+            {%endfor%}
+        </form>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                {{cellID}}# 工单信息
+            </div>
+            <!--Table-->
+            <Table class="table table-bordered">
+                <thead>
+                <tr>            
+                    <th>工单编号</th>
+                    <th>订单编号</th>
+                    <th>产品款号</th>
+                    <th>产品颜色</th>
+                    <th>工序标注</th>
+                    <th>加工机台</th>
+                    <th>计划生产件数</th>
+                    <th>计划追加生产件数</th>
+                    <th>实际生产件数</th>
+                    <th>工单状态</th>
+                </tr>
+                </thead>
+                <tbody>
+                {%for obj in queryset%}
+                    <tr>
+                        <td>{{obj.OrderID}}</td>
+                        <td>{{obj.StytleNum}}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td>{{obj.CellaID}}</td>
+                        <td>{{obj.RequireParts}}</td>
+                        <td></td>
+                        <td>{{obj.FinishParts}}</td>
+                        <td>{{obj.WorkStatus}}</td>
+                    </tr>
+                {%endfor%}
+                </tbody>
+            </Table>
+        </div>
+
+    </div>
+{%endblock%}
