@@ -11,6 +11,17 @@
         .navbar{
             border-radius:0;
         }
+        td input {
+          width: 100%; 
+          box-sizing: border-box;
+        }
+        td {
+          white-space: nowrap;
+        }
+        th {
+          white-space: nowrap;  
+          background-color: #f0f0f0;        
+        }
     </style>
 </head>
 <body>
@@ -30,11 +41,14 @@
     <!-- Collect the nav links, forms, and other content for toggling -->
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
       <ul class="nav navbar-nav">
+        <li><a href="/index/">车间看板</a></li> 
+        <li><a href="/order/">订单查询</a></li> 
+        <li><a href="/record/">加工记录查询</a></li>         
+        <li><a href="/working/">当前加工进度查询</a></li> 
       <!---    <li><a href="/livestats/detal/">设备能动率</a></li>
         <li><a href="/building/">产能稼动率</a></li>
-        <li><a href="/building/">产量查询</a></li> -->
-        <li><a href="/building/">订单查询</a></li> 
-      <!---   <li><a href="/livestats/">设备在线查询</a></li>
+        <li><a href="/building/">产量查询</a></li>
+        <li><a href="/livestats/">设备在线查询</a></li>
         <li><a href="/stato/">设备工作状态查询</a></li>
         <li><a href="/pezzi/">产能查询</a></li>
         <li><a href="/alarm/">告警索引</a></li>-->
@@ -64,16 +78,42 @@
 -->
 
 </body>
-<script> function selectCellIdPost(value) {
-  var temp = document.getElementById("CellaIDForm");
+<script> function selectOperatePost(operateV) {
+  var temp = document.getElementById("EtidForm");
   var opt = document.createElement("textarea");    
-  opt.name = 'cellID';
-  opt.id = 'cellID';        
-  opt.value = value;
+  opt.name = 'operate';
+  opt.id = 'operate';        
+  opt.value = operateV;
   temp.appendChild(opt);        
   temp.submit();
   temp.removeChild(opt)
 }
+</script>
+<script>
+  function filterTable() {
+    var filter = document.getElementById("filter").value;
+    var table = document.getElementById("orderTable");
+    var rows = table.getElementsByTagName("tr");
+    
+    for (var i = 0; i < rows.length; i++) {
+      var cells = rows[i].getElementsByTagName("td");
+      var showRow = false;
+    
+      if (filter === "all") {
+      showRow = true;
+      } else {
+      if (cells[1].innerHTML === filter) {
+        showRow = true;
+      }
+      }
+    
+      if (showRow) {
+      rows[i].style.display = "";
+      } else {
+      rows[i].style.display = "none";
+      }
+    }
+    }
 </script>
 <script src="(% static 'plugins\highcharts\highcharts.js%)">  </script>
 <script src= "{% static 'plugins\jquery-3.7.0.min.js'%}"></script>

@@ -26,6 +26,13 @@ tz = pytz.timezone('Asia/Shanghai')
 np_dtype = "datetime64[us]"
 startTm = datetime.min.time()
 
+def str_time_to_s(str_time):
+    time_parts = str_time.split(':')
+    hours, minutes, seconds = map(int, time_parts)
+    dt_object = time(hour=hours, minute=minutes, second=seconds)
+    since_midnight = dt_object.hour * 3600 * 10**9  + dt_object.minute * 60 * 10**9 + dt_object.second * 10**9
+    return since_midnight
+
 def get_serq_Live(cellID):
     ser_q = LiveState.objects.order_by("-id").filter( CellaID=cellID)
     return ser_q
@@ -42,8 +49,8 @@ def get_value_AlarmStr(alarmID):
     ser_q = Alarmi.objects.filter(AllarmID = alarmID)
     return ser_q[0].AllarmString
 
-def get_value_LastPezzi(cellID, orderID):
-    date_v = Pezzi.objects.filter( CellaID=cellID, OrderID=orderID).values_list("Pezzi","ReqPezzi","ResidPezzi", "EstimatedTm","TotWorkTm").last()
+def get_value_workSheetPezzi(cellID, workSheetID):
+    date_v = Pezzi.objects.filter( CellaID=cellID, WorkSheetID=workSheetID).values_list("Pezzi","ReqPezzi","ResidPezzi", "EstimatedTm","TotWorkTm").last()
     return date_v
 
 def get_value_DailyPezzi(cellID, start, stop):
@@ -53,8 +60,12 @@ def get_value_DailyPezzi(cellID, start, stop):
 
 def get_value_LastPezzi(cellID, start, stop):
     ser_q = Pezzi.objects.annotate(Dt=Cast('DataTime', output_field= DateTimeField()))
-    date_v = ser_q.filter( CellaID=cellID, Dt__range=(nupDt2DateTime(start), nupDt2DateTime(stop))).values_list("Pezzi","ReqPezzi","ResidPezzi", "EstimatedTm","TotWorkTm", "OrderID").last()
+    date_v = ser_q.filter( CellaID=cellID, Dt__range=(nupDt2DateTime(start), nupDt2DateTime(stop))).values_list("Pezzi","ReqPezzi","ResidPezzi", "EstimatedTm","TotWorkTm", "WorkSheetID").last()
     return date_v
+
+def get_EstimatedTm(cellID, workSheetID):
+    date_v = Pezzi.objects.filter( CellaID=cellID, WorkSheetID=workSheetID).values_list("EstimatedTm").last()
+    return date_v[0]
 
 def get_valueList_check1(cellID, start, stop):
     ser_q = LiveState.objects.filter(CellaID=cellID, Check1__range=(start, stop)).values_list("Check1", flat=True).order_by("-Check1")
@@ -68,25 +79,72 @@ def get_valueList_check2(cellID, start, stop):
 
 def get_valueList_statoTmF(cellID, start, stop):
     ser_q = Stato.objects.annotate(Dt=Cast('DataTime', output_field= DateTimeField()))
-    ser_q = ser_q.filter( CellaID=cellID, Dt__range=(nupDt2DateTime(start), nupDt2DateTime(stop))).values("CellaID","DataTime", "Stato", "Alarm","OrderID").order_by("-DataTime")
+    ser_q = ser_q.filter( CellaID=cellID, Dt__range=(nupDt2DateTime(start), nupDt2DateTime(stop))).values("CellaID","DataTime", "Stato", "Alarm","WorkSheetID").order_by("-DataTime")
     date_v = [data for data in ser_q]
-    return date_v
-
-def get_value_Order(orderId):
-    date_v = Order.objects.filter( OrderID=orderId).values_list("OrderID","StytleNum","FinishParts","RequireParts", "WorkStatus").last()
-    return date_v
-
-def get_value_LastOrderRecord(orderId, cellID):
-    date_v = OrderHistory.objects.filter( OrderID=orderId, CellaID = cellID).last()
     return date_v
 
 def get_value_lastStato(cellID, start, stop):
     ser_q = Stato.objects.annotate(Dt=Cast('DataTime', output_field= DateTimeField()))
-    result = ser_q.filter( CellaID=cellID, Dt__range=(nupDt2DateTime(start), nupDt2DateTime(stop))).values("Ora","Stato","Alarm", "OrderID").last()
+    result = ser_q.filter( CellaID=cellID, Dt__range=(nupDt2DateTime(start), nupDt2DateTime(stop))).values("DataTime","Stato","Alarm", "WorkSheetID").last()
     return result
 
 def getOrderList():
     ser_q = Order.objects.all()
+    date_v = [data for data in ser_q]
+    return date_v
+
+def getOrderListDetail():
+    #ser_q = Order.objects.annotate(Dt=Cast('DataTime', output_field= DateTimeField()))
+    ser_q = Order.objects.all()
+    date_v = [data for data in ser_q]
+    result =[]
+    for data in date_v:
+        dataDic = {"CellaID": data.CellaID,"Colour":data.Colour,"AddReqParts":data.AddReqParts, "FinishParts":data.FinishParts, "OrderID": data.OrderID, "Process": data.Process, "RequireParts": data.RequireParts, "StytleNum": data.StytleNum, "WorkStatus": data.WorkStatus}
+        tmp = {"WorkSheetID": data.WorkSheetID, "startTM": "", "endTM": "", "PowerOnSum": "", "WorkingSum": "", "EstimatedTime": "00:00:00"}
+        if data.WorkStatus == "已完成" or data.WorkStatus== "暂停" :
+            tmp.update(getWorkSheetRecordFromHistory(data.WorkSheetID, data.CellaID))
+        elif data.WorkStatus == "加工中":
+            tmp.update(getWorkSheetRecordFromOngoing(data.WorkSheetID, data.CellaID))
+        dataDic.update(tmp)
+        result.append(dataDic)
+    return result
+
+def getWorkSheetRecordFromHistory(worksheetID, cellaID):
+    ser_q = OrderHistory.objects.filter(WorkSheetID = worksheetID, CellaID= cellaID).order_by("StartTime")
+    PowerOnTMs =  np.array([str_time_to_s(data.PowerOnTM) for data in ser_q])
+    WorkingTMs =  np.array([str_time_to_s(data.WorkingTM) for data in ser_q])
+    PowerOnTsum = convert_to_hhmmss(PowerOnTMs.sum())
+    WorkingTsum = convert_to_hhmmss(WorkingTMs.sum())
+    result = {"workSheetID": worksheetID, "startTM": ser_q.first().StartTime, "endTM": ser_q.last().StopTime, "PowerOnSum": PowerOnTsum, "WorkingSum": WorkingTsum}
+    return result
+
+def getWorkSheetRecordFromOngoing(worksheetID, cellaID):
+    ser_q = OrderHistory.objects.filter(WorkSheetID = worksheetID, CellaID = cellaID).order_by("StartTime")
+    WorkingTMs =  np.array([str_time_to_s(data.WorkingTM) for data in ser_q])
+    WorkingTsum = convert_to_hhmmss(WorkingTMs.sum())   
+    pezzis= get_value_workSheetPezzi(cellaID, worksheetID) 
+    result = {"workSheetID": worksheetID, "startTM": ser_q.first().StartTime, "endTM": "--", "PowerOnSum": "--", "WorkingSum": WorkingTsum, "FinishParts":pezzis[0]}
+    tmp = pezzis[3].split(".")
+    result['EstimatedTime'] = tmp[0] if len(tmp)==2 else tmp[0]+"T "+tmp[1]
+    return result
+
+def addNewOrder(order):
+    orderNum = Order.objects.all().count()%255
+    worksheetID = "GD"+ datetime.now().strftime("%y%m%d_") + str(orderNum)
+    instance = Order.objects.create(WorkStatus="未就绪", WorkSheetID=worksheetID, StytleNum=order["StytleNum"], OrderID=order["OrderID"], Process=order["Process"], Colour=order["Colour"], RequireParts=order["RequireParts"])
+    return instance
+
+def updateOrderList(ser_q):
+    for i in range(0, len(ser_q)):
+        if ser_q[i]['StytleNum'] != "None" or ser_q[i]['Colour'] != "None" or ser_q[i]['Process'] != "None":
+            Order.objects.filter(WorkSheetID=ser_q[i]['WorkSheetID']).update(StytleNum=ser_q[i]['StytleNum'], Colour=ser_q[i]['Colour'], Process=ser_q[i]['Process'])
+
+def DelFromOrderList(delList):
+    for worksheetID in delList:
+        Order.objects.filter(WorkSheetID=worksheetID).delete()
+
+def getWorkRecordList():
+    ser_q = OrderHistory.objects.all()
     date_v = [data for data in ser_q]
     return date_v
 
@@ -96,7 +154,7 @@ def isCellOnline(cellID ,time):
 
 def isDailyStatoChang(cellID, start, stop):
     ser_q = Stato.objects.annotate(Dt=Cast('DataTime', output_field= DateTimeField()))
-    result = ser_q.filter( CellaID=cellID, OrderID__isnull=False, Dt__range=(nupDt2DateTime(start), nupDt2DateTime(stop)))
+    result = ser_q.filter( CellaID=cellID, WorkSheetID__isnull=False, Dt__range=(nupDt2DateTime(start), nupDt2DateTime(stop)))
     return result.exists()
 
 def isStatoIdle(cellID, day, time, alarm_v = 0):
@@ -238,14 +296,14 @@ def getCurrStatoData(cellID, stop, start):
         lastStato = get_value_lastStato(cellID, start, stop)
         if lastStato["Alarm"] > 0:
             output = {"AlarmSrt":get_value_AlarmStr[lastStato["Alarm"]], "Status":"故障中", "img":"aaac.png", "Mode":"seza", "Color":"sra3"}
-        elif lastStato["Stato"] ==0 | lastStato["OrderID"].isNull():
+        elif lastStato["Stato"] ==0 or lastStato["WorkSheetID"]== "":
             output["Status"] = "待机中"
             output["img"] = "aaac.png"
             output["Color"] = "sra1"  
     return output
 
 def getDailyPezzData(cellID, stop, start):
-    output = {"DailyPezzi":"0","Pezzi":"0","ReqPezzi":"0", "TotPezzi":"0", "Reach":"0" ,"OrderID": "", "WorkTm": "", "EstimatedTm": ""}
+    output = {"DailyPezzi":"0","Pezzi":"0","ReqPezzi":"0", "TotPezzi":"0", "Reach":"0" ,"WorkSheetID": "", "WorkTm": "", "EstimatedTm": ""}
     if not(isDailyPezzisChang(cellID, start, stop)):
         return output
     pezz_v = get_value_LastPezzi(cellID, start, stop)
@@ -253,11 +311,11 @@ def getDailyPezzData(cellID, stop, start):
     output["Pezzi"] = pezz_v[0]
     output["ReqPezzi"] = pezz_v[1]
     output["TotPezzi"] = pezz_v[2]
-    output["OrderID"] = pezz_v[5]
+    output["WorkSheetID"] = pezz_v[5]
     output["WorkTm"] = pezz_v[4]
     output["EstimatedTm"] = pezz_v[3]
+    output["Reach"] = "--"
     if (output["ReqPezzi"]>0 ):
         output["Reach"] = round((output["Pezzi"]*100/output["ReqPezzi"]))
-    output["Reach"] = "--"
     return output
 

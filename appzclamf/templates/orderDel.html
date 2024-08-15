@@ -1,0 +1,61 @@
+{%extends 'layout.html'%}
+{%block content%}
+    <div class="container">
+        <div class="panel panel-default">
+            <form id= "EtidForm" method="post" action="/order/">
+                {% csrf_token %}
+            <div class="panel-heading">
+                <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                <a class="btn btn-primary" onclick="selectOperatePost(4)" value='EditOrder'>
+                    <span class = "glyhicon glyhicon-plus-sign" aria-hidden="true"></span>保存
+                </a>                
+                <input type=text name="type" value="DelOrder" hidden>
+            </div>
+            <!--Table-->
+            <Table Id="orderTable"  class="table table-bordered">
+                <thead>
+                    <tr> 
+                        <th>选择删除</th>
+                        <th>订单号</th>
+                        <th>工序标注</th>
+                        <th>产品款号</th>
+                        <th>产品颜色</th>          
+                        <th>工单号</th>
+                        <th>加工机台</th>
+                        <th>计划生产件数</th>
+                        <th>计划追加生产件数</th>
+                        <th>实际生产件数</th>
+                        <th>加工状态</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {%for obj in queryset%}
+                        <tr>
+                            <td><input type="checkbox" name="selected_items" id="selected_items_{{ forloop.counter }}" value="{{obj.WorkSheetID}}" /></td>
+                            <td>{{obj.OrderID}}</td>
+                            <td>{{obj.Process}}</td>
+                            <td>{{obj.StytleNum}}</td>
+                            <td>{{obj.Colour}}</td>
+                            <td>{{obj.WorkSheetID}}</td>
+                            <td>{{obj.CellaID}}</td>
+                            <td>{{obj.RequireParts}}</td>
+                            <td>{{obj.AddReqParts}}</td>
+                            <td>{{obj.FinishParts}}</td>
+                            <td Id="OrderStatus">{{obj.WorkStatus}}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </tbody>
+            </Table>
+            <script>
+                var table = document.getElementById("orderTable");
+                var row = table.insertRow(-1)
+                for(var i = 0 ; i<10; i++){
+                    var td1 = tr1.insertCell(i);
+                    td1.innerHTML = '<input type="text" id="cell'+i+'" />';
+                }
+            </script>
+        </form>
+        </div>
+    </div>
+{%endblock%}

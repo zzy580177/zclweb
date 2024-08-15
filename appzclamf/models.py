@@ -27,7 +27,7 @@ class Pezzi(models.Model):
 	#Id = models.IntegerField();
 	CellaID = models.IntegerField(null=True, blank=True);
 	Plant = models.CharField(null=True,max_length=50);
-	OrderID = models.CharField(null=True, max_length =50);
+	WorkSheetID = models.CharField(null=True, max_length =50);
 	DataTime = models.CharField(null=True, max_length =50); 
 	Pezzi = models.IntegerField(null=True, blank=True);
 	ReqPezzi = models.IntegerField(null=True, blank=True);
@@ -43,7 +43,7 @@ class Stato(models.Model):
 	#Id = models.IntegerField();
 	CellaID = models.IntegerField(null=True, blank=True);
 	Plant = models.CharField(max_length=50);
-	OrderID = models.CharField(null=True, max_length =50); 
+	WorkSheetID = models.CharField(null=True, max_length =50); 
 	DataTime = models.CharField(null=True, max_length =50); 
 	stato_choics =(
 		(True, "运行"),
@@ -59,11 +59,15 @@ class Order(models.Model):
 	#Id = models.IntegerField();
 	CellaID = models.IntegerField(null=True, blank=True);
 	Plant = models.CharField(max_length=50);
+	WorkSheetID = models.CharField(null=True, max_length =50);	
 	OrderID = models.CharField(null=True, max_length =50); 
 	WorkStatus = models.CharField(null=True, max_length =50); 
+	Colour = models.CharField(null=True, max_length =50); 	
+	Process = models.CharField(null=True, max_length =50); 
 	StytleNum = models.CharField(null=True, max_length =50); 
 	FinishParts = models.CharField(null=True, max_length =50); 
-	RequireParts = models.CharField(null=True, max_length =50); 
+	RequireParts = models.CharField(null=True, max_length =50); 	
+	AddReqParts = models.CharField(null=True, max_length =50); 
 	class Meta:
 		db_table = "[%s].[Order]"% schema
 
@@ -71,7 +75,7 @@ class OrderHistory(models.Model):
 	#Id = models.IntegerField();
 	CellaID = models.IntegerField(null=True, blank=True);
 	Plant = models.CharField(max_length=50);
-	OrderID = models.CharField(null=True, max_length =50); 
+	WorkSheetID = models.CharField(null=True, max_length =50); 
 	StartTime = models.CharField(null=True, max_length =50); 
 	StopTime = models.CharField(null=True, max_length =50); 
 	Status = models.CharField(null=True, max_length =50); 

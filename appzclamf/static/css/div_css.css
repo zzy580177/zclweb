@@ -3,11 +3,7 @@
     padding: 0;
 }
 body{
-    background-color: #030410;
-    min-height: 100vh;
-    box-sizing: border-box;
-    color: #fff;
-    font-size: 0;
+    background-image: url(../img/2.jpg);
 }
 panel panel-default{
     position: fixed;

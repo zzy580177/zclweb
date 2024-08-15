@@ -123,3 +123,4 @@ function copy(message) {
 	document.body.removeChild(input);
 	alert("复制成功");
 }
+

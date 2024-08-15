@@ -202,6 +202,51 @@ def test(req):
     return render(req,'test1.html',context=context)
 
 def listOrder(req):
-    queryset = mydb.getOrderList()
-    return render(req, "orderList.html", {"Title":"listOrder", "queryset":queryset});
+    queryset = mydb.getOrderListDetail()
+    if req.method=="POST":
+        operate = req.POST.get("operate")
+        if operate =="1":
+            return render(req, "orderNew.html", {"Title":"新增订单", "queryset":queryset});
+        elif operate == "2":
+            return render(req, "orderEdit.html", {"Title":"订单编辑", "queryset":queryset});
+        elif operate == "3":
+            return render(req, "orderDel.html", {"Title":"订单删除", "queryset":queryset});
+        elif operate == "4":
+            type = req.POST.get("type")
+            if (type == "NewOrder"):
+                data = {"Colour":"", "StytleNum":"", "Process":"", "OrderID":"", "RequireParts":""}
+                data["Colour"] = req.POST.get("Colour")
+                data["StytleNum"] = req.POST.get("StytleNum")
+                data["Process"] = req.POST.get("Process")
+                data["OrderID"] = req.POST.get("OrderID")            
+                data["RequireParts"] = req.POST.get("RequireParts")
+                if (data["Colour"] and data["StytleNum"] and data["Process"] and data["OrderID"] and data["RequireParts"]):
+                    mydb.addNewOrder(data)
+            elif(type == "DelOrder"):
+                selected_items = req.POST.getlist('selected_items')
+                mydb.DelFromOrderList(selected_items)
+            elif(type == "EditOrder"):
+                for data in queryset:            
+                    data['Colour'] = req.POST.get(data['WorkSheetID']+"-Colour")
+                    data['StytleNum'] = req.POST.get(data['WorkSheetID']+"-StytleNum")
+                    data['Process'] = req.POST.get(data['WorkSheetID']+"-Process")
+                mydb.updateOrderList(queryset)
+            queryset = mydb.getOrderListDetail()
+    return render(req, "order.html", {"Title":"订单管理", "queryset":queryset});
+
+def listWorkRecord(req):
+    queryset = mydb.getWorkRecordList()
+    if req.method=="POST":
+        targetId = req.POST.get("OrderID")
+        return render(req, "orderListEdit.html", {"Title":"listOrder edit", "queryset":queryset, "targetId": targetId});
+    else:
+        return render(req, "workrecords.html", {"Title":"listWorkRecord", "queryset":queryset});
+
+def listWorkingRecord(req):
+    queryset = mydb.getWorkRecordList()
+    if req.method=="POST":
+        targetId = req.POST.get("OrderID")
+        return render(req, "orderListEdit.html", {"Title":"listOrder edit", "queryset":queryset, "targetId": targetId});
+    else:
+        return render(req, "working.html", {"Title":"listWorkingRecord", "queryset":queryset});
 

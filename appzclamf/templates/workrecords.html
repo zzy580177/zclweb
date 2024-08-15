@@ -1,0 +1,46 @@
+{%extends 'layout.html'%}
+{%block content%}
+    <div class="container">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
+                # 加工记录信息
+            </div>
+            <!--Table-->
+            <Table class="table table-bordered">
+                <thead>
+                <tr>            
+                    <th>工单编号</th>
+                    <th>加工机台</th>
+                    <th>加工模式</th>
+                    <th>加工状态</th>
+                    <th>加工开始时间</th>
+                    <th>加工结束时间</th>
+                    <th>设备上电时长</th>
+                    <th>加工工时时长</th>
+                    <th>实际生产件数</th>
+                </tr>
+                </thead>
+                <tbody>
+                {%for obj in queryset%}                
+                <form action="" method="post">
+                    {% csrf_token %}
+                    <tr>
+                        <td>{{obj.OrderID}}</td>
+                        <td>{{obj.CellaID}}</td>
+                        <td>{{obj.Mode}}</td>
+                        <td>{{obj.WorkStatus}}</td>
+                        <td>{{obj.StartTime}}</td>
+                        <td>{{obj.StopTime}}</td>
+                        <td>{{obj.PowerOnTM}}</td>
+                        <td>{{obj.WorkingTM}}</td>
+                        <td>{{obj.FinishParts}}</td>
+                    </tr>
+                </form>
+                {%endfor%}
+                </tbody>
+            </Table>
+        </div>
+
+    </div>
+{%endblock%}
