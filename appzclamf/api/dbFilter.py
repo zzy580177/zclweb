@@ -63,9 +63,12 @@ def get_value_LastPezzi(cellID, start, stop):
     date_v = ser_q.filter( CellaID=cellID, Dt__range=(nupDt2DateTime(start), nupDt2DateTime(stop))).values_list("Pezzi","ReqPezzi","ResidPezzi", "EstimatedTm","TotWorkTm", "WorkSheetID").last()
     return date_v
 
-def get_EstimatedTm(cellID, workSheetID):
-    date_v = Pezzi.objects.filter( CellaID=cellID, WorkSheetID=workSheetID).values_list("EstimatedTm").last()
-    return date_v[0]
+def change_EstimatedTm(date):
+    if date.__contains__(".") == True:
+        tmp = date.split(".")
+        return tmp[0] if len(tmp)==2 else tmp[0]+"Day "+ tmp[1]
+    else:
+        return date
 
 def get_valueList_check1(cellID, start, stop):
     ser_q = LiveState.objects.filter(CellaID=cellID, Check1__range=(start, stop)).values_list("Check1", flat=True).order_by("-Check1")
@@ -124,8 +127,7 @@ def getWorkSheetRecordFromOngoing(worksheetID, cellaID):
     WorkingTsum = convert_to_hhmmss(WorkingTMs.sum())   
     pezzis= get_value_workSheetPezzi(cellaID, worksheetID) 
     result = {"workSheetID": worksheetID, "startTM": ser_q.first().StartTime, "endTM": "--", "PowerOnSum": "--", "WorkingSum": WorkingTsum, "FinishParts":pezzis[0]}
-    tmp = pezzis[3].split(".")
-    result['EstimatedTime'] = tmp[0] if len(tmp)==2 else tmp[0]+"T "+tmp[1]
+    result['EstimatedTime'] = change_EstimatedTm(pezzis[3])
     return result
 
 def addNewOrder(order):
@@ -295,7 +297,8 @@ def getCurrStatoData(cellID, stop, start):
     else:
         lastStato = get_value_lastStato(cellID, start, stop)
         if lastStato["Alarm"] > 0:
-            output = {"AlarmSrt":get_value_AlarmStr[lastStato["Alarm"]], "Status":"故障中", "img":"aaac.png", "Mode":"seza", "Color":"sra3"}
+            alarmStr = get_value_AlarmStr(lastStato["Alarm"])
+            output = {"AlarmSrt":alarmStr, "Status":"故障中", "img":"aaac.png", "Mode":"seza", "Color":"sra3"}
         elif lastStato["Stato"] ==0 or lastStato["WorkSheetID"]== "":
             output["Status"] = "待机中"
             output["img"] = "aaac.png"
@@ -313,7 +316,7 @@ def getDailyPezzData(cellID, stop, start):
     output["TotPezzi"] = pezz_v[2]
     output["WorkSheetID"] = pezz_v[5]
     output["WorkTm"] = pezz_v[4]
-    output["EstimatedTm"] = pezz_v[3]
+    output["EstimatedTm"] = change_EstimatedTm(pezz_v[3])
     output["Reach"] = "--"
     if (output["ReqPezzi"]>0 ):
         output["Reach"] = round((output["Pezzi"]*100/output["ReqPezzi"]))
