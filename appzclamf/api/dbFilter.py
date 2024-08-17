@@ -1,3 +1,4 @@
+import math
 from django.db.models import Q, F, Value, DateTimeField
 from django.db.models.functions import Concat, Cast
 from django.db.models.expressions import RawSQL
@@ -27,7 +28,10 @@ np_dtype = "datetime64[us]"
 startTm = datetime.min.time()
 
 def str_time_to_s(str_time):
+    if str_time.__contains__(":") == False:
+        return 0
     time_parts = str_time.split(':')
+    time_parts = [math.fabs(float(num)) for num in time_parts]
     hours, minutes, seconds = map(int, time_parts)
     dt_object = time(hour=hours, minute=minutes, second=seconds)
     since_midnight = dt_object.hour * 3600 * 10**9  + dt_object.minute * 60 * 10**9 + dt_object.second * 10**9
@@ -96,6 +100,10 @@ def getOrderList():
     date_v = [data for data in ser_q]
     return date_v
 
+def getOrderIdFromWorkSheet(WorkSheetID):
+    date_v = Order.objects.filter( WorkSheetID =WorkSheetID).last()
+    return date_v.OrderID
+
 def getOrderListDetail():
     #ser_q = Order.objects.annotate(Dt=Cast('DataTime', output_field= DateTimeField()))
     ser_q = Order.objects.all()
@@ -109,6 +117,9 @@ def getOrderListDetail():
         elif data.WorkStatus == "加工中":
             tmp.update(getWorkSheetRecordFromOngoing(data.WorkSheetID, data.CellaID))
         dataDic.update(tmp)
+        nodeinfo = LiveState.objects.filter(CellaID = data.CellaID).values_list("Note_Id", flat=True).last()
+        if(dataDic["CellaID"]):
+            dataDic["CellaID"] = nodeinfo + "_" +str(dataDic["CellaID"])
         result.append(dataDic)
     return result
 
@@ -126,8 +137,10 @@ def getWorkSheetRecordFromOngoing(worksheetID, cellaID):
     WorkingTMs =  np.array([str_time_to_s(data.WorkingTM) for data in ser_q])
     WorkingTsum = convert_to_hhmmss(WorkingTMs.sum())   
     pezzis= get_value_workSheetPezzi(cellaID, worksheetID) 
-    result = {"workSheetID": worksheetID, "startTM": ser_q.first().StartTime, "endTM": "--", "PowerOnSum": "--", "WorkingSum": WorkingTsum, "FinishParts":pezzis[0]}
-    result['EstimatedTime'] = change_EstimatedTm(pezzis[3])
+    result = {"workSheetID": worksheetID, "startTM": ser_q.first().StartTime if ser_q.first() else "", "endTM": "--", "PowerOnSum": "--", "WorkingSum": WorkingTsum}
+    if pezzis:
+        result["FinishParts"] = pezzis[0]
+        result['EstimatedTime'] = change_EstimatedTm(pezzis[3])
     return result
 
 def addNewOrder(order):
@@ -146,7 +159,7 @@ def DelFromOrderList(delList):
         Order.objects.filter(WorkSheetID=worksheetID).delete()
 
 def getWorkRecordList():
-    ser_q = OrderHistory.objects.all()
+    ser_q = OrderHistory.objects.all( ).order_by("-StartTime")
     date_v = [data for data in ser_q]
     return date_v
 
@@ -315,6 +328,7 @@ def getDailyPezzData(cellID, stop, start):
     output["ReqPezzi"] = pezz_v[1]
     output["TotPezzi"] = pezz_v[2]
     output["WorkSheetID"] = pezz_v[5]
+    output["OrderID"] = getOrderIdFromWorkSheet(pezz_v[5])
     output["WorkTm"] = pezz_v[4]
     output["EstimatedTm"] = change_EstimatedTm(pezz_v[3])
     output["Reach"] = "--"
