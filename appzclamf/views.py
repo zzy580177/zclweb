@@ -147,7 +147,7 @@ def livestats(req):
     elif req.method == 'POST':
         cellaID =req.POST.get("cellID");
     queryset = getCellLiveStats(cellaID)
-    return render(req, "LiveState.html", {"Title":"livestats", "cellIDQ":q_cellaDic, "cellID":cellaID, "queryset":queryset});
+    return render(req, "livestats.html", {"Title":"livestats", "cellIDQ":q_cellaDic, "cellID":cellaID, "queryset":queryset});
 
 def pezzi(req):
     q_cellaDic = getCellQ()
@@ -235,18 +235,20 @@ def listOrder(req):
     return render(req, "order.html", {"Title":"订单管理", "queryset":queryset});
 
 def listWorkRecord(req):
-    queryset = mydb.getWorkRecordList()
-    if req.method=="POST":
-        targetId = req.POST.get("OrderID")
-        return render(req, "orderListEdit.html", {"Title":"listOrder edit", "queryset":queryset, "targetId": targetId});
-    else:
-        return render(req, "workrecords.html", {"Title":"listWorkRecord", "queryset":queryset});
+    q_cellaDic = getCellQ()
+    if req.method == 'GET': 
+        cellaID = q_cellaDic[0]["CellaID"];
+    elif req.method == 'POST':
+        cellaID =req.POST.get("cellID");
+    queryset = mydb.getWorkRecordList(cellaID)
+    return render(req, "workrecords.html", {"Title":"listWorkRecord", "cellIDQ":q_cellaDic, "cellID":cellaID, "queryset":queryset});
 
-def listWorkingRecord(req):
-    queryset = mydb.getWorkRecordList()
-    if req.method=="POST":
-        targetId = req.POST.get("OrderID")
-        return render(req, "orderListEdit.html", {"Title":"listOrder edit", "queryset":queryset, "targetId": targetId});
-    else:
-        return render(req, "working.html", {"Title":"listWorkingRecord", "queryset":queryset});
+def listCellRecord(req):
+    q_set = LiveState.objects.values_list("CellaID", flat=True).distinct()
+    celleList = [livestats for livestats in q_set]
+    output = []
+    for i in range(len(celleList)):
+        subinfo = mydb.getCellaDataForIndex(celleList[i],"")
+        output.append(subinfo)
+    return render(req, "working.html", {"Title":"机台当日工作报表", "queryset":output});
 

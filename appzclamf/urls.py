@@ -8,7 +8,7 @@ urlpatterns = [
     path('', views.listOrder),
     path('order/', views.listOrder),
     path('record/', views.listWorkRecord),
-    path('working/', views.listWorkingRecord),
+    path('working/', views.listCellRecord),
     path("alarm/", views.alarm),
     path("pezzi/", views.pezzi),
     path("stato/", views.stato),

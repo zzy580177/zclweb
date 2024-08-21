@@ -2,24 +2,24 @@
 {%block content%}
     <div class="container">
         <div class="panel panel-default">
-            <div class="panel-heading">
-                <span class="glyphicon glyphicon-th-list" aria-hidden="true"></span>
-                # 当前设备加工进度查看
-            </div>
             <!--Table-->
 
             <Table class="table table-bordered">
                 <thead>
                 <tr>
-                    <th>加工机台</th>            
-                    <th>当前加工工单编号</th>
-                    <th>当前时间</th>
-                    <th>以生产数量</th>
-                    <th>计划生产数量</th>
-                    <th>待加工数量</th>
-                    <th>单件加工时长</th>
-                    <th>预计完成时长</th>
-                    <th>已用工时</th>
+                    <th>机台名称</th>
+                    <th>机台编号</th>
+                    <th>开机时长</th>
+                    <th>在线时长</th>
+                    <th>加工时长</th>
+                    <th>调机时长</th>
+                    <th>待机时长</th>
+                    <th>掉线率</th>
+                    <th>日生产工件数</th>
+                    <th>当前工单</th>
+                    <th>当前模式</th>
+                    <th>当前工单剩余</th>
+                    <th>待加工工单</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -27,15 +27,19 @@
                 <form action="" method="post">
                     {% csrf_token %}
                     <tr>
+                        <td>{{obj.Note_Id}}</td>
                         <td>{{obj.CellaID}}</td>
-                        <td>{{obj.OrderID}}</td>
-                        <td>{{obj.DataTime}}</td>
-                        <td>{{obj.WorkStatus}}</td>
-                        <td>{{obj.StartTime}}</td>
-                        <td>{{obj.StopTime}}</td>
-                        <td>{{obj.PowerOnTM}}</td>
-                        <td>{{obj.WorkingTM}}</td>
-                        <td>{{obj.FinishParts}}</td>
+                        <td>{{obj.Proc.PowonTM}}</td>
+                        <td>{{obj.Proc.OnlineTM}}</td>
+                        <td>{{obj.Proc.WorkTM}}</td>
+                        <td>{{obj.Proc.AdjTM}}</td>
+                        <td>{{obj.Proc.IdlTM}}</td>
+                        <td>{{obj.Proc.OfflineRate}}%</td>
+                        <td>{{obj.Pezz.DailyPezzi}}</td>
+                        <td>{{obj.Pezz.WorkSheetID}}</td>
+                        <td>{{obj.Stato.WorkMode}}</td>
+                        <td>{{obj.Pezz.EstimatedTm}}</td>
+                        <td>{{obj.IdlOrder}}</td>
                     </tr>
                 </form>
                 {%endfor%}

@@ -1,6 +1,6 @@
 import math
-from django.db.models import Q, F, Value, DateTimeField
-from django.db.models.functions import Concat, Cast
+from django.db.models import Q, F, Value, DateTimeField, DateField
+from django.db.models.functions import Concat, Cast, TruncDate
 from django.db.models.expressions import RawSQL
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
@@ -57,42 +57,67 @@ def get_value_workSheetPezzi(cellID, workSheetID):
     date_v = Pezzi.objects.filter( CellaID=cellID, WorkSheetID=workSheetID).values_list("Pezzi","ReqPezzi","ResidPezzi", "EstimatedTm","TotWorkTm").last()
     return date_v
 
-def get_value_DailyPezzi(cellID, start, stop):
-    ser_q = Pezzi.objects.annotate(Dt=Cast('DataTime', output_field= DateTimeField()))
-    ser_q = ser_q.filter( CellaID=cellID, Dt__range=(nupDt2DateTime(start), nupDt2DateTime(stop))).values_list("Pezzi", "DataTime")
+def get_value_DailyPezzi(cellID, day):    
+    ser_q = Pezzi.objects.annotate(date=Cast('DataTime', output_field= DateField()))
+    ser_q = ser_q.filter( CellaID=cellID, date = day).values_list("Pezzi", "DataTime")
     return ser_q.count()
 
-def get_value_LastPezzi(cellID, start, stop):
-    ser_q = Pezzi.objects.annotate(Dt=Cast('DataTime', output_field= DateTimeField()))
-    date_v = ser_q.filter( CellaID=cellID, Dt__range=(nupDt2DateTime(start), nupDt2DateTime(stop))).values_list("Pezzi","ReqPezzi","ResidPezzi", "EstimatedTm","TotWorkTm", "WorkSheetID").last()
+def get_value_LastPezzi(cellID, day):
+    ser_q = Pezzi.objects.annotate(date=Cast('DataTime', output_field= DateField()))
+    date_v = ser_q.filter( CellaID=cellID, date = day).values_list("Pezzi","ReqPezzi","ResidPezzi", "EstimatedTm","TotWorkTm", "WorkSheetID").last()
     return date_v
+
+def get_dailyRecord(cellID, day):
+    ser_q = OrderHistory.objects.annotate(startday=Cast('StartTime', output_field= DateField()), startTM=Cast('StartTime', output_field= DateTimeField()))
+    ser_q = ser_q.filter(CellaID= cellID, startday= day).order_by("StartTime")
+
+    PowerOnTMs =  np.array([str_time_to_s(data.PowerOnTM) for data in ser_q])
+    WorkingTMs =  np.array([str_time_to_s(data.WorkingTM) for data in ser_q])
+
+    adjSer_q = ser_q.filter(Mode = "调校模式")
+    adjPowerOnTMs =  np.array([str_time_to_s(data.PowerOnTM) for data in adjSer_q])
+    adjWorkingTMs =  np.array([str_time_to_s(data.WorkingTM) for data in adjSer_q])
+    result ={"PowonTM":"", "WorkTM":"", "AdjTM":"", "IdlTM":""};
+
+    result["PowonTM"] = convert_to_hhmm(PowerOnTMs.sum())
+    result["WorkTM"] = convert_to_hhmm(WorkingTMs.sum() - adjWorkingTMs.sum())
+    result["AdjTM"] = convert_to_hhmm(adjPowerOnTMs.sum())
+    result["IdlTM"] = convert_to_hhmm(PowerOnTMs.sum()-adjPowerOnTMs.sum()- WorkingTMs.sum() - adjWorkingTMs.sum())
+    result["StartTM"] = ser_q.first().startTM
+    result["PowonMs"] = int(PowerOnTMs.sum())/10**3
+    return result
 
 def change_EstimatedTm(date):
     if date.__contains__(".") == True:
         tmp = date.split(".")
-        return tmp[0] if len(tmp)==2 else tmp[0]+"Day "+ tmp[1]
+        day = ""; tm= tmp[0]
+        if tm.__contains__(":") != True:
+            day = tmp[0]+"D ";tm= tmp[1]
+        return day +tm.split(":")[0]+"H " + tm.split(":")[1] + "M "
     else:
         return date
 
-def get_valueList_check1(cellID, start, stop):
-    ser_q = LiveState.objects.filter(CellaID=cellID, Check1__range=(start, stop)).values_list("Check1", flat=True).order_by("-Check1")
+def get_valueList_check1(cellID, day):    
+    ser_q = LiveState.objects.annotate(Dt=Cast('Check1', output_field= DateField()))
+    ser_q = ser_q.filter(CellaID=cellID, Dt = day).values_list("Check1", flat=True).order_by("-Check1")
     date_v = [data for data in ser_q]
     return np.array(date_v, dtype= np_dtype)
 
-def get_valueList_check2(cellID, start, stop):
-    ser_q = LiveState.objects.filter(CellaID=cellID, Check2__range=(start, stop)).values_list("Check2", flat=True).order_by("-Check2")
+def get_valueList_check2(cellID, day):
+    ser_q = LiveState.objects.annotate(Dt=Cast('Check2', output_field= DateField()))
+    ser_q = ser_q.filter(CellaID=cellID, Dt = day).values_list("Check2", flat=True).order_by("-Check2")
     date_v = [data for data in ser_q]
     return np.array(date_v, dtype= np_dtype)
 
-def get_valueList_statoTmF(cellID, start, stop):
-    ser_q = Stato.objects.annotate(Dt=Cast('DataTime', output_field= DateTimeField()))
-    ser_q = ser_q.filter( CellaID=cellID, Dt__range=(nupDt2DateTime(start), nupDt2DateTime(stop))).values("CellaID","DataTime", "Stato", "Alarm","WorkSheetID").order_by("-DataTime")
+def get_valueList_statoTmF(cellID, day):
+    ser_q = Stato.objects.annotate(Dt=Cast('DataTime', output_field= DateField()))
+    ser_q = ser_q.filter( CellaID=cellID, Dt=day).values("CellaID","DataTime", "Stato", "Alarm","WorkSheetID").order_by("-DataTime")
     date_v = [data for data in ser_q]
     return date_v
 
-def get_value_lastStato(cellID, start, stop):
-    ser_q = Stato.objects.annotate(Dt=Cast('DataTime', output_field= DateTimeField()))
-    result = ser_q.filter( CellaID=cellID, Dt__range=(nupDt2DateTime(start), nupDt2DateTime(stop))).values("DataTime","Stato","Alarm", "WorkSheetID").last()
+def get_value_lastStato(cellID, day):
+    ser_q = Stato.objects.annotate(Dt=Cast('DataTime', output_field= DateField()))
+    result = ser_q.filter( CellaID=cellID, Dt=day).values("DataTime","Stato","Alarm", "WorkSheetID").last()
     return result
 
 def getOrderList():
@@ -100,26 +125,29 @@ def getOrderList():
     date_v = [data for data in ser_q]
     return date_v
 
-def getOrderIdFromWorkSheet(WorkSheetID):
-    date_v = Order.objects.filter( WorkSheetID =WorkSheetID).last()
+def getUnFinishOrderList(cellID):
+    ser_q = Order.objects.filter(CellaID=cellID,WorkStatus = "就绪")
+    date_v = [data for data in ser_q]
+    return date_v
+
+def getOrderIdFromWorkSheet(cellID, WorkSheetID):
+    date_v = Order.objects.filter(CellaID=cellID, WorkSheetID =WorkSheetID).last()
     return date_v.OrderID
 
 def getOrderListDetail():
     #ser_q = Order.objects.annotate(Dt=Cast('DataTime', output_field= DateTimeField()))
-    ser_q = Order.objects.all()
+    ser_q = Order.objects.all().order_by("WorkStatus")
     date_v = [data for data in ser_q]
     result =[]
     for data in date_v:
         dataDic = {"CellaID": data.CellaID,"Colour":data.Colour,"AddReqParts":data.AddReqParts, "FinishParts":data.FinishParts, "OrderID": data.OrderID, "Process": data.Process, "RequireParts": data.RequireParts, "StytleNum": data.StytleNum, "WorkStatus": data.WorkStatus}
-        tmp = {"WorkSheetID": data.WorkSheetID, "startTM": "", "endTM": "", "PowerOnSum": "", "WorkingSum": "", "EstimatedTime": "00:00:00"}
+        tmp = {"WorkSheetID": data.WorkSheetID, "startTM": "", "endTM": "", "WorkTM": "--", "IdlTM": "--","AdjTM":"--", "EstimatedTime": "--"}
         if data.WorkStatus == "已完成" or data.WorkStatus== "暂停" :
             tmp.update(getWorkSheetRecordFromHistory(data.WorkSheetID, data.CellaID))
         elif data.WorkStatus == "加工中":
             tmp.update(getWorkSheetRecordFromOngoing(data.WorkSheetID, data.CellaID))
         dataDic.update(tmp)
         nodeinfo = LiveState.objects.filter(CellaID = data.CellaID).values_list("Note_Id", flat=True).last()
-        if(dataDic["CellaID"]):
-            dataDic["CellaID"] = nodeinfo + "_" +str(dataDic["CellaID"])
         result.append(dataDic)
     return result
 
@@ -127,21 +155,38 @@ def getWorkSheetRecordFromHistory(worksheetID, cellaID):
     ser_q = OrderHistory.objects.filter(WorkSheetID = worksheetID, CellaID= cellaID).order_by("StartTime")
     PowerOnTMs =  np.array([str_time_to_s(data.PowerOnTM) for data in ser_q])
     WorkingTMs =  np.array([str_time_to_s(data.WorkingTM) for data in ser_q])
-    PowerOnTsum = convert_to_hhmmss(PowerOnTMs.sum())
-    WorkingTsum = convert_to_hhmmss(WorkingTMs.sum())
-    result = {"workSheetID": worksheetID, "startTM": ser_q.first().StartTime, "endTM": ser_q.last().StopTime, "PowerOnSum": PowerOnTsum, "WorkingSum": WorkingTsum}
+
+    adjSer_q = ser_q.filter(Mode = "调校模式")
+    adjPowerOnTMs =  np.array([str_time_to_s(data.PowerOnTM) for data in adjSer_q])
+    adjWorkingTMs =  np.array([str_time_to_s(data.WorkingTM) for data in adjSer_q])
+
+    WorkTmSum = convert_to_hhmmss(WorkingTMs.sum() - adjWorkingTMs.sum())
+    AdjTmSum = convert_to_hhmmss(adjPowerOnTMs.sum())
+    IdlTmsum = convert_to_hhmmss(PowerOnTMs.sum()-adjPowerOnTMs.sum()- WorkingTMs.sum() - adjWorkingTMs.sum())
+    result = {"workSheetID": worksheetID, "startTM": time2Date(ser_q.first().StartTime), "endTM": time2Date(ser_q.last().StopTime), "WorkTM": WorkTmSum, "AdjTM": AdjTmSum, "IdlTM":IdlTmsum}
     return result
 
 def getWorkSheetRecordFromOngoing(worksheetID, cellaID):
     ser_q = OrderHistory.objects.filter(WorkSheetID = worksheetID, CellaID = cellaID).order_by("StartTime")
+    PowerOnTMs =  np.array([str_time_to_s(data.PowerOnTM) for data in ser_q])
     WorkingTMs =  np.array([str_time_to_s(data.WorkingTM) for data in ser_q])
-    WorkingTsum = convert_to_hhmmss(WorkingTMs.sum())   
+
+    adjSer_q = ser_q.filter(Mode = "调校模式")
+    adjPowerOnTMs =  np.array([str_time_to_s(data.PowerOnTM) for data in adjSer_q])
+    adjWorkingTMs =  np.array([str_time_to_s(data.WorkingTM) for data in adjSer_q])
+
+    WorkTmSum = convert_to_hhmmss(WorkingTMs.sum() - adjWorkingTMs.sum())
+    AdjTmSum = convert_to_hhmmss(adjPowerOnTMs.sum())
+    IdlTmsum = convert_to_hhmmss(PowerOnTMs.sum()-adjPowerOnTMs.sum()- WorkingTMs.sum() - adjWorkingTMs.sum())
     pezzis= get_value_workSheetPezzi(cellaID, worksheetID) 
-    result = {"workSheetID": worksheetID, "startTM": ser_q.first().StartTime if ser_q.first() else "", "endTM": "--", "PowerOnSum": "--", "WorkingSum": WorkingTsum}
-    if pezzis:
+    result = {"workSheetID": worksheetID, "startTM": time2Date(ser_q.first().StartTime) if ser_q.first() else "", "endTM": "--", "WorkTM": WorkTmSum, "AdjTM": AdjTmSum, "IdlTM":IdlTmsum}
+    if(pezzis):
         result["FinishParts"] = pezzis[0]
         result['EstimatedTime'] = change_EstimatedTm(pezzis[3])
     return result
+
+def time2Date(time):
+    return time.split()[0].replace("-","/")
 
 def addNewOrder(order):
     orderNum = Order.objects.all().count()%255
@@ -158,8 +203,8 @@ def DelFromOrderList(delList):
     for worksheetID in delList:
         Order.objects.filter(WorkSheetID=worksheetID).delete()
 
-def getWorkRecordList():
-    ser_q = OrderHistory.objects.all( ).order_by("-StartTime")
+def getWorkRecordList(cellID):
+    ser_q = OrderHistory.objects.filter( CellaID=cellID).order_by("-StartTime")
     date_v = [data for data in ser_q]
     return date_v
 
@@ -167,18 +212,18 @@ def isCellOnline(cellID ,time):
     result = LiveState.objects.filter( CellaID=cellID,Check1__gt=time)
     return result.exists()
 
-def isDailyStatoChang(cellID, start, stop):
-    ser_q = Stato.objects.annotate(Dt=Cast('DataTime', output_field= DateTimeField()))
-    result = ser_q.filter( CellaID=cellID, WorkSheetID__isnull=False, Dt__range=(nupDt2DateTime(start), nupDt2DateTime(stop)))
+def isDailyStatoChang(cellID, day):
+    ser_q = Stato.objects.annotate(Dt=Cast('DataTime', output_field= DateField()))
+    result = ser_q.filter( CellaID=cellID, WorkSheetID__isnull=False, Dt=day)
     return result.exists()
 
 def isStatoIdle(cellID, day, time, alarm_v = 0):
     result = Stato.objects.filter( CellaID=cellID, Data = day, Ora__gt=time, Stato = False, Alarm = alarm_v)
     return result.exists()
 
-def isDailyPezzisChang(cellID, start, stop):
-    ser_q = Pezzi.objects.annotate(Dt=Cast('DataTime', output_field= DateTimeField()))
-    result = ser_q.filter( CellaID=cellID, Dt__range=(nupDt2DateTime(start), nupDt2DateTime(stop)))
+def isDailyPezzisChang(cellID, day):
+    ser_q = Pezzi.objects.annotate(date=Cast('DataTime', output_field= DateField()))
+    result = ser_q.filter( CellaID=cellID, date=day)
     return result.exists()
 
 def str2Date(datestr):
@@ -203,24 +248,32 @@ def convert_to_hhmmss(td_array):
     td = td.strftime('%H:%M:%S')
     return td
 
+def convert_to_hhmm(td_array):
+    td = pd.Timestamp('2021-01-01') + pd.Timedelta(td_array)
+    td = td.strftime('%H:%M')
+    return td
+
 def is_zero_one_seq(arr):
     return np.all(np.abs(np.diff(arr)) == 1) and (arr[0] in [0, 1]) and (arr[-1] in [0, 1])
 
-def calcd_dailyLiveTm(cellID, day):
-    start, stop = generateTmRange(day)
-    check1 = get_valueList_check1(cellID, start, stop)
-    check2 = get_valueList_check2(cellID, start, stop)
-    deltaTsum = np.timedelta64(0,'us')
+def calcd_dailyLiveTm(cellID, day, start):
+    check1 = get_valueList_check1(cellID, day)
+    check2 = get_valueList_check2(cellID, day)
+    deltamMs = np.timedelta64(0,'us')
     if (check1.size > check2.size):
         check2 = np.append(check2, [np.datetime64(start)])
     if (check1.size == check2.size):
-        deltaTsum = (check1-check2).sum()
+        deltamMs = (check1-check2).sum()
     if len(check1) == 0:
         check1 = [datetime.now(tz)]
     if len(check2) == 0:
         check2 = [datetime.combine(datetime.now(tz).date(), datetime.min.time())]
-    deltaTsum = convert_to_hhmmss(deltaTsum)
-    return deltaTsum,check1[0],check2[-1]
+    deltaTsum = convert_to_hhmm(deltamMs)
+    if (isDailyStatoChang(cellID, day)):
+        statoList = get_valueList_statoTmF(cellID,day)
+        return deltaTsum,deltamMs.astype('int64'),calcd_dailyWorkTm(statoList,check1[0],check2[-1]),calcd_dailyIdleTm(statoList,check1[0],check2[-1])
+    else:
+        return deltaTsum,deltamMs.astype('int64'),0,0
 
 def calcd_dailyWorkTm(statolist, stop, start):
     DtList = np.array([data['DataTime'] for data in statolist], dtype= np_dtype)
@@ -235,7 +288,7 @@ def calcd_dailyWorkTm(statolist, stop, start):
         return convert_to_hhmmss(np.timedelta64(0,'us'))
     DtList = DtList.reshape([2,-1],order="F")
     deltaT = (DtList[0]-DtList[1]).sum()
-    deltaT = convert_to_hhmmss(deltaT)
+    deltaT = convert_to_hhmm(deltaT)
     return deltaT
 
 def calcd_dailyIdleTm(statolist, stop, start):
@@ -251,7 +304,7 @@ def calcd_dailyIdleTm(statolist, stop, start):
         return convert_to_hhmmss(np.timedelta64(0,'us'))
     DtList = DtList.reshape([2,-1],order="F")
     deltaT = (DtList[0]-DtList[1]).sum()
-    deltaT = convert_to_hhmmss(deltaT)
+    deltaT = convert_to_hhmm(deltaT)
     return deltaT
 
 def getDataForIndex(day):
@@ -281,34 +334,30 @@ def getCellaDataForIndex(cellID, day):
     nodeinfo = LiveState.objects.filter(CellaID = cellID).values_list("Note_Id", flat=True).last()
     output = {"CellaID": cellID, "Note_Id": nodeinfo, "Note_Img": imglink[nodeinfo]}
 
-    liveTm, stop, start = calcd_dailyLiveTm(cellID, day)
-    output["Proc"] = getDailyProcData(cellID, liveTm, stop, start)
-    output["Pezz"] = getDailyPezzData(cellID, stop, start)
-    output["Stato"] = getCurrStatoData(cellID, stop, start)
+    output["Proc"] = get_dailyRecord(cellID, day)
+    output["Proc"]["OnlineTM"],onlineTmsum, output["Proc"]["OnlineWorkTM"],output["Proc"]["OnlineIdlTM"] = calcd_dailyLiveTm(cellID, day, output["Proc"]["StartTM"])
+    output["Proc"]["OfflineRate"] = round((output["Proc"]["PowonMs"]-onlineTmsum)*100/output["Proc"]["PowonMs"]) if output["Proc"]["PowonMs"] > 0 else "--"
+    output["Pezz"] = getDailyPezzData(cellID, day)
+    output["Stato"] = getCurrStatoData(cellID, day)
+    orderlist = getUnFinishOrderList(cellID)
+    output["IdlOrder"] = [data.OrderID for data in orderlist]
     return output
 
-def getDailyProcData(cellID, liveTm, stop, start):
-    output={"WorkTm":0, "IldeTm":0, "AbnormTm": 0}
-    output["OnlineTm"] = liveTm
-    if isDailyStatoChang(cellID, start, stop): 
-        statolist = get_valueList_statoTmF(cellID, start, stop)
-        output["WorkTm"] = calcd_dailyWorkTm(statolist, stop, start)
-        output["IldeTm"] = calcd_dailyIdleTm(statolist, stop, start)
-    return output
-
-def getCurrStatoData(cellID, stop, start):
-    output = {"AlarmSrt":"无", "Status":"运行中", "img":"aasd.gif", "Mode":"", "Color":"sra2"}
+def getCurrStatoData(cellID, day):
+    output = {"AlarmSrt":"无", "Status":"运行中", "img":"aasd.gif", "Mode":"", "Color":"sra2", "WorkMode":""}
     curr_time = (datetime.now(tz) + timedelta(minutes=-2)).replace(tzinfo=None)
+    
+    OrderRecord = OrderHistory.objects.filter(CellaID= cellID).order_by("StartTime").last()
 
     if (not isCellOnline(cellID, curr_time)):
         return {"AlarmSrt":"无", "Status":"离线中", "img":"aaac.png",  "Mode":"", "Color":"sra4"}
-    if (not isDailyStatoChang(cellID, start, stop)): 
+    if (not isDailyStatoChang(cellID, day)): 
         output["Status"] = "待机中"
         output["StatoID"] = "ilde" 
         output["img"] = "aaac.png"
         output["Color"] = "sra1"
     else:
-        lastStato = get_value_lastStato(cellID, start, stop)
+        lastStato = get_value_lastStato(cellID, day)
         if lastStato["Alarm"] > 0:
             alarmStr = get_value_AlarmStr(lastStato["Alarm"])
             output = {"AlarmSrt":alarmStr, "Status":"故障中", "img":"aaac.png", "Mode":"seza", "Color":"sra3"}
@@ -316,19 +365,20 @@ def getCurrStatoData(cellID, stop, start):
             output["Status"] = "待机中"
             output["img"] = "aaac.png"
             output["Color"] = "sra1"  
+    output["WorkMode"] = OrderRecord.Mode
     return output
 
-def getDailyPezzData(cellID, stop, start):
+def getDailyPezzData(cellID, day):
     output = {"DailyPezzi":"0","Pezzi":"0","ReqPezzi":"0", "TotPezzi":"0", "Reach":"0" ,"WorkSheetID": "", "WorkTm": "", "EstimatedTm": ""}
-    if not(isDailyPezzisChang(cellID, start, stop)):
+    if not(isDailyPezzisChang(cellID, day)):
         return output
-    pezz_v = get_value_LastPezzi(cellID, start, stop)
-    output["DailyPezzi"] = get_value_DailyPezzi(cellID, start, stop)
+    pezz_v = get_value_LastPezzi(cellID, day)
+    output["DailyPezzi"] = get_value_DailyPezzi(cellID, day)
     output["Pezzi"] = pezz_v[0]
     output["ReqPezzi"] = pezz_v[1]
     output["TotPezzi"] = pezz_v[2]
     output["WorkSheetID"] = pezz_v[5]
-    output["OrderID"] = getOrderIdFromWorkSheet(pezz_v[5])
+    output["OrderID"] = getOrderIdFromWorkSheet(cellID, pezz_v[5])
     output["WorkTm"] = pezz_v[4]
     output["EstimatedTm"] = change_EstimatedTm(pezz_v[3])
     output["Reach"] = "--"
