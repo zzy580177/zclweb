@@ -1,7 +1,7 @@
 {%extends 'layout.html'%}
 {%block content%}
     <div class="container">
-        <form id= "CellaIDForm" method="post" action="/livestats/">
+        <form id= "CellaIDForm" method="post" action="/record/">
             {% csrf_token %}
             {%for cellQ in cellIDQ%}
             <a class="btn btn-primary" onclick="selectCellIdPost('{{cellQ.CellaID}}')" value={{cellQ.CellaID}}>
@@ -37,7 +37,7 @@
                         <td>{{obj.WorkSheetID}}</td>
                         <td>{{obj.CellaID}}</td>
                         <td>{{obj.Mode}}</td>
-                        <td>{{obj.WorkStatus}}</td>
+                        <td>{{obj.Status}}</td>
                         <td>{{obj.StartTime}}</td>
                         <td>{{obj.StopTime}}</td>
                         <td>{{obj.PowerOnTM}}</td>

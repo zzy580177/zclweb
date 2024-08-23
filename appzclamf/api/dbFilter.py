@@ -62,9 +62,8 @@ def get_value_DailyPezzi(cellID, day):
     ser_q = ser_q.filter( CellaID=cellID, date = day).values_list("Pezzi", "DataTime")
     return ser_q.count()
 
-def get_value_LastPezzi(cellID, day):
-    ser_q = Pezzi.objects.annotate(date=Cast('DataTime', output_field= DateField()))
-    date_v = ser_q.filter( CellaID=cellID, date = day).values_list("Pezzi","ReqPezzi","ResidPezzi", "EstimatedTm","TotWorkTm", "WorkSheetID").last()
+def get_value_LastPezzi(cellID):
+    date_v = Pezzi.objects.filter( CellaID=cellID).last()
     return date_v
 
 def get_dailyRecord(cellID, day):
@@ -83,7 +82,7 @@ def get_dailyRecord(cellID, day):
     result["WorkTM"] = convert_to_hhmm(WorkingTMs.sum() - adjWorkingTMs.sum())
     result["AdjTM"] = convert_to_hhmm(adjPowerOnTMs.sum())
     result["IdlTM"] = convert_to_hhmm(PowerOnTMs.sum()-adjPowerOnTMs.sum()- WorkingTMs.sum() - adjWorkingTMs.sum())
-    result["StartTM"] = ser_q.first().startTM
+    result["StartTM"] = ser_q.first().startTM if ser_q.first() != None else ""
     result["PowonMs"] = int(PowerOnTMs.sum())/10**3
     return result
 
@@ -130,9 +129,9 @@ def getUnFinishOrderList(cellID):
     date_v = [data for data in ser_q]
     return date_v
 
-def getOrderIdFromWorkSheet(cellID, WorkSheetID):
-    date_v = Order.objects.filter(CellaID=cellID, WorkSheetID =WorkSheetID).last()
-    return date_v.OrderID
+def getOrderInfoFromWorkSheet(cellID):
+    date_v = Order.objects.filter(CellaID=cellID, WorkStatus = "加工中").last()
+    return date_v
 
 def getOrderListDetail():
     #ser_q = Order.objects.annotate(Dt=Cast('DataTime', output_field= DateTimeField()))
@@ -366,21 +365,24 @@ def getCurrStatoData(cellID, day):
             output["img"] = "aaac.png"
             output["Color"] = "sra1"  
     output["WorkMode"] = OrderRecord.Mode
+    if output["WorkMode"]=="调校模式":
+        output["Status"] = "调机/"+ output["Status"]
     return output
 
 def getDailyPezzData(cellID, day):
     output = {"DailyPezzi":"0","Pezzi":"0","ReqPezzi":"0", "TotPezzi":"0", "Reach":"0" ,"WorkSheetID": "", "WorkTm": "", "EstimatedTm": ""}
-    if not(isDailyPezzisChang(cellID, day)):
-        return output
-    pezz_v = get_value_LastPezzi(cellID, day)
+    pezz_v = get_value_LastPezzi(cellID)
+    orderInfo = getOrderInfoFromWorkSheet(cellID)
+    if pezz_v:
+        pezz_v = None if pezz_v.WorkSheetID != orderInfo.WorkSheetID else pezz_v
     output["DailyPezzi"] = get_value_DailyPezzi(cellID, day)
-    output["Pezzi"] = pezz_v[0]
-    output["ReqPezzi"] = pezz_v[1]
-    output["TotPezzi"] = pezz_v[2]
-    output["WorkSheetID"] = pezz_v[5]
-    output["OrderID"] = getOrderIdFromWorkSheet(cellID, pezz_v[5])
-    output["WorkTm"] = pezz_v[4]
-    output["EstimatedTm"] = change_EstimatedTm(pezz_v[3])
+    output["Pezzi"] = pezz_v.Pezzi if pezz_v else ""
+    output["ReqPezzi"] = pezz_v.ReqPezzi if pezz_v else ""
+    output["TotPezzi"] = pezz_v.ResidPezzi if pezz_v else ""
+    output["WorkSheetID"] = orderInfo.WorkSheetID if orderInfo else ""  
+    output["OrderID"] = orderInfo.OrderID if orderInfo else ""
+    output["WorkTm"] = pezz_v.TotWorkTm if pezz_v else ""
+    output["EstimatedTm"] = change_EstimatedTm(pezz_v.EstimatedTm) if pezz_v else ""
     output["Reach"] = "--"
     if (output["ReqPezzi"]>0 ):
         output["Reach"] = round((output["Pezzi"]*100/output["ReqPezzi"]))
