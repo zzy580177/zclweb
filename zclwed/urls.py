@@ -19,7 +19,8 @@ from django.urls import path,include
 
 
 urlpatterns = [
-    path('admine/', admin.site.urls),
     path('', include('appzclamf.urls')),
+    path("accounts/", include("django.contrib.auth.urls")),
+    path("admin/", admin.site.urls),
 ]
 

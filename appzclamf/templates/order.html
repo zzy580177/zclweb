@@ -3,15 +3,11 @@
     <div class="container">
         <form id= "EtidForm" method="post" action="/order/">
             {% csrf_token %}
-            <a class="btn btn-primary" onclick="selectOperatePost(1)" value='NewOrder'>
-                <span class = "glyhicon glyhicon-plus-sign" aria-hidden="true"></span>新增工单
-            </a>             
+       <!---<a class="btn btn-primary" onclick="selectOperatePost(1)" value='NewOrder'> <span class = "glyhicon glyhicon-plus-sign" aria-hidden="true"></span>新增工单</a> -->           
             <a class="btn btn-primary" onclick="selectOperatePost(2)" value='EditOrder'>
-                <span class = "glyhicon glyhicon-plus-sign" aria-hidden="true"></span>编辑已有订单
+                <span class = "glyhicon glyhicon-plus-sign" aria-hidden="true"></span>编辑订单信息
             </a>
-            <a class="btn btn-primary" onclick="selectOperatePost(3)" value='EditOrder'>
-                <span class = "glyhicon glyhicon-plus-sign" aria-hidden="true"></span>删除订单
-            </a>
+       <!---<a class="btn btn-primary" onclick="selectOperatePost(3)" value='EditOrder'> <span class = "glyhicon glyhicon-plus-sign" aria-hidden="true"></span>删除订单 </a>  -->
         <div class="panel panel-default">
 
         </div>

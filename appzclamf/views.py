@@ -8,6 +8,8 @@ from plotly.offline import plot
 from plotly.graph_objs import Scatter
 import appzclamf.api.dbFilter as mydb
 import pytz
+from django.contrib.auth.decorators import login_required
+
 tz = pytz.timezone('Asia/Shanghai')
 
 colorList = ['red', 'green', 'orange', 'purple', 'brown', 'plum', 'yellow']
@@ -120,6 +122,7 @@ def getWorkTime(cellID, day, check1, check2):
     if not(statoList[0]['Stato']):
         worktime = worktime-check2 
     return round(worktime/timedelta(hours= 1),2),  round(abnomalTm/timedelta(hours= 1),2)
+
 def login(req):
     if req.method == 'GET':        
         return render(req, "login.html", {"Title":'login'});
@@ -201,6 +204,7 @@ def test(req):
     context = {'plot_div':plot_div, "cellIDQ":q_cellaDic}
     return render(req,'test1.html',context=context)
 
+@login_required
 def listOrder(req):
     queryset = mydb.getOrderListDetail()
     if req.method=="POST":
@@ -234,6 +238,7 @@ def listOrder(req):
             queryset = mydb.getOrderListDetail()
     return render(req, "order.html", {"Title":"订单管理", "queryset":queryset});
 
+@login_required
 def listWorkRecord(req):
     q_cellaDic = getCellQ()
     if req.method == 'GET': 
@@ -243,6 +248,7 @@ def listWorkRecord(req):
     queryset = mydb.getWorkRecordList(cellaID)
     return render(req, "workrecords.html", {"Title":"listWorkRecord", "cellIDQ":q_cellaDic, "cellID":cellaID, "queryset":queryset});
 
+@login_required
 def listCellRecord(req):
     q_set = LiveState.objects.values_list("CellaID", flat=True).distinct()
     celleList = [livestats for livestats in q_set]

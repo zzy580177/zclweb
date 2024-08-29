@@ -260,6 +260,10 @@ def calcd_dailyLiveTm(cellID, day, start):
     check2 = get_valueList_check2(cellID, day)
     deltamMs = np.timedelta64(0,'us')
     if (check1.size > check2.size):
+        if start == "":
+            start = day
+        elif (check2.size > 0 and [np.datetime64(start)] > check2[-1]):
+            start = day
         check2 = np.append(check2, [np.datetime64(start)])
     if (check1.size == check2.size):
         deltamMs = (check1-check2).sum()
@@ -388,3 +392,10 @@ def getDailyPezzData(cellID, day):
         output["Reach"] = round((output["Pezzi"]*100/output["ReqPezzi"]))
     return output
 
+def addUserPre(user):
+    Order.user = user
+    OrderHistory.user = user
+    Pezzi.objects.user = user
+    LiveState.user = user
+    Stato.user = user
+    Alarmi.user = user

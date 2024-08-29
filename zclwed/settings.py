@@ -48,8 +48,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'appzclamf.middleware.CustomMiddleware',
 ]
 
+LOGGED_IN_USER = ''
 ROOT_URLCONF = 'zclwed.urls'
 
 TEMPLATES = [
@@ -78,6 +80,17 @@ DATABASES = {
     'default': {
         'ENGINE':'mssql',
         'HOST':'47.121.177.127',
+        'NAME':'amfAuth',
+        'PORT':'1433',
+        'USER':'amfAuth1234',
+        'PASSWORD':'Zclamfdb1234',
+        'OPTIONS':{
+            'DRIVER':'SQL server Native Client 11.0',
+        }
+    },
+    'yadi': {
+        'ENGINE':'mssql',
+        'HOST':'47.121.177.127',
         'NAME':'yadi',
         'PORT':'1433',
         'USER':'zclamf',
@@ -85,7 +98,25 @@ DATABASES = {
         'OPTIONS':{
             'DRIVER':'SQL server Native Client 11.0',
         }
+    },
+    'jinya': {
+        'ENGINE':'mssql',
+        'HOST':'47.121.177.127',
+        'NAME':'jinya',
+        'PORT':'1433',
+        'USER':'zclamf',
+        'PASSWORD':'Zclamfdb123',
+        'OPTIONS':{
+            'DRIVER':'SQL server Native Client 11.0',
+        }
     }
+}
+
+DATABASE_ROUTERS =['appzclamf.database_router.DatabaseRouter']
+DATABASE_APPS_MAPPING = {
+    'default':'default',
+    'yadi':'yadi',
+    'jinya':'jinya',
 }
 
 REST_FRAMEWORK_EXTENSIONS = {

@@ -1,4 +1,7 @@
+from __future__ import unicode_literals
+
 from django.db import models
+from django.contrib import admin
 
 schema = "CNC700Cutting"
 class Alarmi(models.Model):
@@ -10,6 +13,7 @@ class Alarmi(models.Model):
 	Description_Id = models.IntegerField(null=True, blank=True)
 	class Meta:
 		db_table = "[%s].[Alarmi]"% schema
+		app_label = 'appzclamf'
 
 class LiveState(models.Model):
 	"""在线日志"""
@@ -21,6 +25,7 @@ class LiveState(models.Model):
 	Note_Id = models.CharField(max_length=50, blank=True);
 	class Meta:
 		db_table = "[%s].[LiveState]"% schema
+		app_label = 'appzclamf'
 
 class Pezzi(models.Model):
 	"""产量信息日志"""
@@ -37,6 +42,7 @@ class Pezzi(models.Model):
 	TotWorkTm = models.CharField(null=True, max_length=50);
 	class Meta:
 		db_table = "[%s].[Pezzi]"% schema
+		app_label = 'appzclamf'
 
 class Stato(models.Model):
 	"""工作状态切换日志"""
@@ -53,7 +59,8 @@ class Stato(models.Model):
 	Alarm = models.IntegerField(null=True, blank=True);
 	class Meta:
 		db_table = "[%s].[Stato]"% schema
-
+		app_label = 'appzclamf'
+		
 class Order(models.Model):
 	"""订单表"""
 	#Id = models.IntegerField();
@@ -70,7 +77,8 @@ class Order(models.Model):
 	AddReqParts = models.CharField(null=True, max_length =50); 
 	class Meta:
 		db_table = "[%s].[Order]"% schema
-
+		app_label = 'appzclamf'
+		
 class OrderHistory(models.Model):
 	#Id = models.IntegerField();
 	CellaID = models.IntegerField(null=True, blank=True);
@@ -85,3 +93,5 @@ class OrderHistory(models.Model):
 	FinishParts = models.CharField(null=True, max_length =50); 
 	class Meta:
 		db_table = "[%s].[OrderHistory]"% schema
+		app_label = 'appzclamf'
+
