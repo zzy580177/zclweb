@@ -4,7 +4,7 @@ class ProjectInfo(object):
         self.description = description
 
 
-project_info = ProjectInfo('DjangoStarter')
+project_info = ProjectInfo('ZCL生产管理云平台', 'ZCL生产管理云平台')
 
 # DjangoStarter 框架配置
 DJANGO_STARTER = {

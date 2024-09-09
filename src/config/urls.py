@@ -7,12 +7,13 @@ from django_starter.contrib.guide import views
 from config.apis import api
 
 urlpatterns = [
-    path('', views.index),
+    #path('', views.index),
     path('api/', api.urls),
-    path('demo', include('apps.demo.urls')),
+    #path('demo', include('apps.demo.urls')),    
+    path('amf', include('apps.amfui.urls')),
 
-    # DjangoStarter
-    path('django-starter/', include('django_starter.urls')),
+    # DjangoStarter, django-starter/
+    path('', include('django_starter.urls')),
 
     # 管理后台
     path('admin/', include('django_starter.contrib.admin.urls')),  # 实现 admin 登录验证码

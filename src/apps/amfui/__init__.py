@@ -1,0 +1,1 @@
+default_app_config = 'apps.amfui.apps.AmfuiConfig'

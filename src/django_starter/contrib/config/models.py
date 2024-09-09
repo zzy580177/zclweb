@@ -5,7 +5,7 @@ from django_starter.utilities import table_name_wrapper
 
 class ConfigItem(ModelExt):
     key = models.CharField('配置项名称', unique=True, max_length=200)
-    value = models.CharField('配置项的值', max_length=5000)
+    value = models.CharField('配置项的值', max_length=1000)
     display_name = models.TextField('显示名称', default='')
 
     def __str__(self):

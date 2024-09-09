@@ -50,7 +50,8 @@ INSTALLED_APPS: Tuple[str, ...] = (
 
     # 我们自己的应用
     'apps.account',
-    'apps.demo',
+    'apps.amfui',
+    #'apps.demo',
 )
 
 MIDDLEWARE: Tuple[str, ...] = (
@@ -62,6 +63,7 @@ MIDDLEWARE: Tuple[str, ...] = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'apps.amfui.middleware.middleware.CustomMiddleware',
 )
 
 ROOT_URLCONF = 'config.urls_root'
