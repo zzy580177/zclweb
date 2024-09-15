@@ -25,6 +25,7 @@ ALLOWED_HOSTS = ['*']
 INSTALLED_APPS: Tuple[str, ...] = (
     # 后台扩展
     'simpleui',
+    'import_export',
     'multi_captcha_admin',
 
     # Django核心

@@ -9,8 +9,7 @@ from config.apis import api
 urlpatterns = [
     #path('', views.index),
     path('api/', api.urls),
-    #path('demo', include('apps.demo.urls')),    
-    path('amf', include('apps.amfui.urls')),
+    path('amfui/', include('apps.amfui.urls')),
 
     # DjangoStarter, django-starter/
     path('', include('django_starter.urls')),

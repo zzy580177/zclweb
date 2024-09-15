@@ -6,28 +6,55 @@ from .models import *
 
 @admin.register(Alarmi)
 class AlarmiAdmin(admin.ModelAdmin):
-    list_display = ['AllarmID','AllarmString']
-    list_display_links =  ['AllarmID','AllarmString']
+    list_display = ['id','AllarmID','AllarmString','TypeID','Description_Id',]
+
+    
 
 @admin.register(LiveState)
 class LiveStateAdmin(admin.ModelAdmin):
-    list_display = ['Note_Id','CellaID','Plant','Check1','Check2']
+    list_display = ['id','Cell_id','Check1','Check2','TimeOff','OnLineSec']
+
+    
+
+@admin.register(LiveStateManage)
+class LiveStateManageAdmin(admin.ModelAdmin):
+    list_display = ['id','Cell_id','Check1','Check2','TimeOff','OnLine',]
+
 
 @admin.register(Pezzi)
 class PezziAdmin(admin.ModelAdmin):
-    list_display = ['DataTime','Pezzi','ReqPezzi','ResidPezzi','EstimatedTm','WorkSheetID','CellaID']
+    list_display = ['id','Cell_id','WorkSheetID','Data','DataTime','Pezzi','ReqPezzi','ResidPezzi','PieceTime','EstimatedTm','TotWorkTm',]
+    
 
 @admin.register(Stato)
 class StatoAdmin(admin.ModelAdmin):
-    list_display = ['DataTime','get_Stato_display','Alarm','CellaID','Plant','WorkSheetID']
+    list_display = ['id','Cell_id','WorkSheetID','Data','DataTime','Stato','Alarm',]
+
+    
+
+@admin.register(Cell)
+class CellAdmin(admin.ModelAdmin):
+    list_display = ['id','CellID','Plant','Name','Type','Status','IP','Create','OnLine','WorkTM',]
+
+    
+
+@admin.register(Record)
+class RecordAdmin(admin.ModelAdmin):
+    list_display = ['id','Cell_id','WorkSheetID','Date','StartTime','StopTime','Status','Mode','PowerOnTM','WorkingTM','FinishParts','IdleTMSec','PowerOnSec','WorkingSec',]
+
+
+    
+
+@admin.register(WorkSheet)
+class WorkSheetAdmin(admin.ModelAdmin):
+    list_display = ['id','Id','Cell_id','Order_id','WorkSheetID','OrderID','Status','ProcessID','FinishParts','ReqParts','AddReqParts',]
+
+
+    
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['OrderID','WorkSheetID','WorkStatus','Colour','Process','StytleNum','FinishParts','RequireParts','AddReqParts','CellaID','Plant',]
-
-@admin.register(OrderHistory)
-class OrderHistoryAdmin(admin.ModelAdmin):
-    list_display = ['Mode','WorkSheetID','StartTime','StopTime','WorkingTM','FinishParts','CellaID','Plant',]
+    list_display = ['id','OrderID','Status','Colour','ProductID','ReqParts',]
 
 
     

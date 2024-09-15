@@ -14,13 +14,13 @@ DATABASES = {
             'DRIVER':'SQL server Native Client 11.0',
         }
     },
-    'default1': {
+    'zcl': {
         'ENGINE':'mssql',
         'HOST':'47.121.177.127',
-        'NAME':'amfAuth',
+        'NAME':'zcl',
         'PORT':'1433',
-        'USER':'amfAuth1234',
-        'PASSWORD':'Zclamfdb1234',
+        'USER':'zclamf',
+        'PASSWORD':'Zclamfdb123',
         'OPTIONS':{
             'DRIVER':'SQL server Native Client 11.0',
         }
