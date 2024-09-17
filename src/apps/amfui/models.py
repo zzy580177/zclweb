@@ -41,7 +41,7 @@ class Alarmi(models.Model):
 class LiveState(models.Model):
 	"""在线日志"""
 	#Id = models.IntegerField();
-	Cell_id = models.IntegerField("设备编号",null=True, blank=True);
+	Cell = models.ForeignKey('Cell', on_delete=models.CASCADE)
 	Check1 = models.DateTimeField("连线状态时间更新",null=True, blank=True);
 	Check2 =  models.DateTimeField("掉线状态时间更新",null=True, blank=True);
 	TimeOff = models.FloatField(null=True, blank=True)
@@ -49,7 +49,7 @@ class LiveState(models.Model):
 
 
 	def __str__(self):
-		return self.Check1
+		return self.Cell_Name + str(self.Cell_id)  + " " + self.Check1.strftime("%Y-%m-%d") 
 	class Meta:
 		db_table = "[%s].[LiveState]"% schema
 		app_label = app_name
@@ -70,7 +70,7 @@ class LiveStateManage(LiveState):
 class Pezzi(models.Model):
 	"""产量信息日志"""
 	#Id = models.IntegerField();
-	Cell_id = models.IntegerField("设备编号",null=True, blank=True);
+	Cell = models.ForeignKey('Cell', on_delete=models.CASCADE)
 	WorkSheetID = models.CharField("工单号",null=True, max_length =50);
 	Data = models.CharField("日期",null=True, max_length =20); 
 	DataTime = models.CharField("时间",null=True, max_length =20); 
@@ -92,7 +92,7 @@ class Pezzi(models.Model):
 class Stato(models.Model):
 	"""工作状态切换日志"""
 	#Id = models.IntegerField();
-	Cell_id = models.IntegerField("设备编号",null=True, blank=True);
+	Cell = models.ForeignKey('Cell', on_delete=models.CASCADE)
 	WorkSheetID = models.CharField("工单号",null=True, max_length =50); 
 	Data = models.CharField("日期",null=True, max_length =20); 
 	DataTime = models.CharField("时间",null=True, max_length =20); 
@@ -112,6 +112,7 @@ class Stato(models.Model):
 		verbose_name_plural = verbose_name
 		
 class Cell(models.Model):
+	id = models.AutoField(primary_key=True)
 	status_choics = ( ('0', '作业'), ('-1', '待机'), ('-2', '离线'), ('*' , '异常'))
 	type_choics = ((1, "新代系统"), (2, "PLC"))
 	CellID = models.IntegerField("设备编号",null=True, blank=True);
@@ -132,7 +133,7 @@ class Cell(models.Model):
 	OnLineStr.short_description = '在线时长'
 	WorkTMStr.short_description = '作业时长'
 	def __str__(self):
-		return self.CellID
+		return self.Name + str(self.CellID) 
 	class Meta:
 		db_table = "[%s].[Cell]"% schema
 		app_label = app_name
@@ -141,7 +142,7 @@ class Cell(models.Model):
 
 class Record(models.Model):
 	#Id = models.IntegerField();
-	Cell_id = models.IntegerField("设备编号",null=True, blank=True);
+	Cell = models.ForeignKey('Cell', on_delete=models.CASCADE)
 	WorkSheetID = models.CharField("工单号",null=True, max_length =50);	
 	Date = models.CharField("日期",null=True, max_length =20);
 	StartTime = models.CharField("开始时间",null=True, max_length =20);
@@ -175,7 +176,7 @@ class RecordManage(Record):
 class WorkSheet(models.Model):
 	"""订单表"""
 	Id = models.IntegerField();
-	Cell_id = models.IntegerField("设备编号",null=True, blank=True, editable=False);
+	Cell = models.ForeignKey('Cell', on_delete=models.CASCADE)
 	Order_id = models.IntegerField("订单序列号",null=True, blank=True, editable=False);
 	WorkSheetID = models.CharField("工单号",null=True, max_length =50, editable=False);	
 	OrderID = models.CharField("订单号",null=True, max_length =50, editable=False); 

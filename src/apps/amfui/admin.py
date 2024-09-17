@@ -2,7 +2,7 @@ from django.contrib import admin
 from django_starter.contrib.admin.tags import html_tags
 from django.db.models.functions import Concat, Cast, TruncDate,Trunc, Extract, Coalesce
 
-from django.db.models import Sum, Q, FloatField
+from django.db.models import Sum, Q, FloatField,F,Value, CharField
 
 from .models import *
 
@@ -47,22 +47,20 @@ class LiveStateManageAdmin(admin.ModelAdmin):
     list_filter = ['Cell_id', LiveStateFilter]
     change_list_template = 'amfui/livestate_change_list.html'
     def changelist_view(self, request, extra_context=None):
-        response = super().changelist_view(request, extra_context)
         try:
+            response = super().changelist_view(request, extra_context)
             qs = response.context_data['cl'].queryset
         except (AttributeError, KeyError):
             return response
         metrics = {
-           # 'onlineTm': Cast('OnLine',output_field=FloatField()),
+            'onlineTm': Cast('OnLine',output_field=FloatField()),
             'tot_offline': Sum('TimeOff'),
-            'tot_online':  Sum('OnLineTM'),    }
-        response.context_data['headers'] = ['日期','设备编号','离线时长','在线时长',]
-        response.context_data['summary'] = list(
-            qs.annotate(OnLineTM=Cast('OnLine', FloatField()))
-            .values( 'Check1__date','Cell_id',)
+            'tot_online':  Sum('onlineTm'),    }
+        response.context_data['headers'] = ['日期','车间','设备','编号','在线时长',]
+        response.context_data['summary'] = list(qs
+            .values( 'Check1__date','Cell_id', 'Cell__Name', 'Cell__CellID', 'Cell__Plant')
             .annotate(**metrics)
-            .order_by('Check1__date','Cell_id')
-        )
+            .order_by('-Check1__date','Cell__Plant', 'Cell__Name', 'Cell__CellID'))
         for item in response.context_data['summary']:
             if item['tot_offline'] is not None:
                 item['tot_offline'] = sec2TmStr(item['tot_offline'])
@@ -117,8 +115,8 @@ class RecordAdmin (admin.ModelAdmin):
     list_filter = ['Cell_id', RecordFilter]
     change_list_template = 'amfui/record_change_list.html'
     def changelist_view(self, request, extra_context=None):
-        response = super().changelist_view(request, extra_context)
         try:
+            response = super().changelist_view(request, extra_context)
             qs = response.context_data['cl'].queryset
         except (AttributeError, KeyError):
             return response
@@ -130,21 +128,16 @@ class RecordAdmin (admin.ModelAdmin):
             'tot_parts':    Sum('FinishParts',filter=Q(Mode='普通模式')),
             }
 
-        response.context_data['headers'] = ['日期','设备编号','工单编号','开机时长','调机时长','作业时长','待机时长','完成工件']
+        response.context_data['headers'] = ['日期','车间','设备','编号','工单编号','开机时长','调机时长','作业时长','待机时长','完成工件']
         response.context_data['summary'] = list(
-            qs.filter().values( 'Date','Cell_id','WorkSheetID')
+            qs.filter().values( 'Date','Cell__Plant','Cell__Name','Cell__CellID','WorkSheetID')
             .annotate(**metrics)
-            .order_by()
+            .order_by('-Date','Cell__Plant','Cell__Name','Cell__CellID','WorkSheetID')
         )
         for item in response.context_data['summary']:
-            if item['tot_poweron'] is not None:
-                item['tot_poweron'] = sec2TmStr(item['tot_poweron'])
-            if item['tot_workTM'] is not None:
-                item['tot_workTM'] = sec2TmStr(item['tot_workTM'])
-            if item['tot_idleTM'] is not None:
-                item['tot_idleTM'] = sec2TmStr(item['tot_idleTM'])
-            if item['tot_adjustTM'] is not None:
-                item['tot_adjustTM'] = sec2TmStr(item['tot_adjustTM'])
+            for key in ['tot_poweron','tot_workTM','tot_idleTM','tot_adjustTM']:
+                if item[key] is not None:
+                    item[key] = sec2TmStr(item[key])
         return response
  
 
