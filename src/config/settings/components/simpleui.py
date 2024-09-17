@@ -18,7 +18,7 @@ SIMPLEUI_ICON = {
 SIMPLEUI_CONFIG = {
     'system_keep': True,  # 关闭系统菜单
     'menu_display': ['首页大屏','认证和授权','宏观质量', '品牌建设', '产品安全', '企业质量画像',
-                     '企业基础设施','车间加工数据查看'],
+                     '企业基础设施','数据看板','车间加工数据查看'],
     'dynamic': False,  # 设置是否开启动态菜单, 默认为False. 如果开启, 则会在每次用户登陆时动态展示菜单内容
     'menus': [{
         'name': '首页',
@@ -26,7 +26,7 @@ SIMPLEUI_CONFIG = {
         'url': 'https://gitee.com/tompeppa/simpleui',
         'codename': 'simpleui'
     }, {
-        'name': '车间加工数据查看',
+        'name': '数据看板',
         'icon': 'fa fa-file',
         'codename': 'test',
         'models': [{

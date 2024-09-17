@@ -20,6 +20,8 @@ def sec2TmStr(sec):
 	return " %2d Min" % m
 	
 
+
+
 class Alarmi(models.Model):
 	""""告警索引表"""
 	#Id = models.IntegerField();
@@ -45,12 +47,7 @@ class LiveState(models.Model):
 	TimeOff = models.FloatField(null=True, blank=True)
 	OnLine = models.CharField("在线时长-s", max_length=20, blank=True);
 
-	def OnLineSec(self):
-		if not self.OnLine:
-			return 0
-		elif self.OnLine.__contains__(':'):
-			return (self.Check1 - datetime.strptime(self.OnLine, '%Y-%m-%d %H:%M:%S')).total_seconds()
-		return float(self.OnLine)
+
 	def __str__(self):
 		return self.Check1
 	class Meta:
@@ -64,8 +61,11 @@ class LiveStateManage(LiveState):
 	class Meta:
 		proxy = True
 		app_label = app_name
-		verbose_name = '设备在线管理12'
+		verbose_name = '设备在线管理'
 		verbose_name_plural = verbose_name
+	
+	def date(self):
+		return self.Check1.strftime("%Y-%m-%d")
 
 class Pezzi(models.Model):
 	"""产量信息日志"""
@@ -136,10 +136,9 @@ class Cell(models.Model):
 	class Meta:
 		db_table = "[%s].[Cell]"% schema
 		app_label = app_name
-		ordering = ['Plant','Name','CellID','Type',]
 		verbose_name = '设备管理表'
 		verbose_name_plural = verbose_name
-from django.db.models import Q, F, Value, DateTimeField, DateField,Sum
+
 class Record(models.Model):
 	#Id = models.IntegerField();
 	Cell_id = models.IntegerField("设备编号",null=True, blank=True);
@@ -165,6 +164,13 @@ class Record(models.Model):
 		ordering = ['-StartTime']
 		verbose_name = '加工记录'
 		verbose_name_plural = verbose_name		
+
+class RecordManage(Record):
+	class Meta:
+		proxy = True
+		app_label = app_name
+		verbose_name = '加工记录管理'
+		verbose_name_plural = verbose_name
 
 class WorkSheet(models.Model):
 	"""订单表"""
