@@ -1,0 +1,44 @@
+<!-- sales/templates/admin/record_change_list.html -->
+
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static admin_list simpletags %}
+
+{% block content_title %}
+
+{% endblock %}
+
+{% block result_list %}
+    <!-- Our content goes here... -->
+    {% admin_actions %}
+    <div class="results">
+        <table>     
+            <thead>
+                <tr>
+                    {% for header in headers %}
+                        <th scope="col" class="sortable column-id"><div class="text"><a href="?o=0.-4">{{ header }}</a></div><div class="clear"></div></th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            {% block tbody_list %}
+            <tbody>
+                {% for item in summary %}
+                    <tr class="{% cycle 'row1' 'row2' %}">
+                        <td > {{ item.StartTime__date }} </td>
+                        <td > {{ item.Cell__Plant }} </td>
+                        <td > {{ item.Cell__Name }} </td>
+                        <td > {{ item.Cell__CellID }} </td>
+                        <td > {{ item.WorkSheet_id }} </td>
+                        <td > {{ item.tot_poweron }} </td>
+                        <td > {{ item.tot_workTM }} </td>
+                        <td > {{ item.tot_idleTM }} </td>
+                        <td > {{ item.tot_parts }} </td>
+                        <td > {{ item.min_estiTM }} </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            {% endblock %}
+        </table>
+    </div>
+{% endblock %}
+
+{% block pagination %}{% endblock %}

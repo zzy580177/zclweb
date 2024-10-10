@@ -3,7 +3,7 @@ from config.settings.components.common import URL_PREFIX
 # SimpleUI 配置
 SIMPLEUI_DEFAULT_THEME = 'purple.css'  # 默认主题
 # SIMPLEUI_LOGO = f'/{URL_PREFIX}static/admin/images/custom_logo.png'
-SIMPLEUI_HOME_PAGE = f'/{URL_PREFIX}admin/extend_home/'
+SIMPLEUI_HOME_PAGE = f'/amfui/home/'
 SIMPLEUI_HOME_ICON = 'fa fa-home'
 SIMPLEUI_HOME_INFO = False  # 显示服务器信息
 SIMPLEUI_HOME_QUICK = True  # 快速操作
@@ -28,26 +28,12 @@ SIMPLEUI_CONFIG = {
     }, {
         'name': '数据看板',
         'icon': 'fa fa-file',
-        'codename': 'test',
+        'codename': 'amfui',
         'models': [{
-            'name': 'SimplePro',
+            'name': '设备看板',
             'icon': 'far fa-surprise',
-            'models': [{
-                'name': 'Pro文档',
-                'url': 'https://simpleui.72wo.com/docs/simplepro'
-            }, {
-                'name': '购买Pro',
-                'url': 'http://simpleui.72wo.com/simplepro'
-            }]
-        }, {
-            'name': '社区',
-            'url': 'https://simpleui.72wo.com',
-            'icon': 'fab fa-github'
-        }, {
-            'name': '图片转换器',
-            'url': 'https://convert.72wo.com',
-            'icon': 'fab fa-github',
-            'codename': 'nat'
+            'url': '/amfui/dashboard/',
+            'newTab': True,
         }]
     }]
 }

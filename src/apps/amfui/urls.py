@@ -5,4 +5,6 @@ app_name = 'amfui'
 
 urlpatterns = [
     path('', views.index, name='index'),
+    path('dashboard/', views.dashboard, name='dashboard'),
+    path('home/', views.extend_home, name='home'),
 ]

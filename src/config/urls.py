@@ -12,12 +12,12 @@ urlpatterns = [
     path('amfui/', include('apps.amfui.urls')),
 
     # DjangoStarter, django-starter/
-    path('', include('django_starter.urls')),
+    #path('', include('django_starter.urls')),
 
     # 管理后台
-    path('admin/', include('django_starter.contrib.admin.urls')),  # 实现 admin 登录验证码
-    path('admin/', admin.site.urls),
 
+    path('amf/', include('django_starter.contrib.admin.urls')),  # 实现 admin 登录验证码
+    path('amf/', admin.site.urls),
     # 验证码
     path('captcha/', include('captcha.urls')),
 ]
