@@ -45,7 +45,7 @@ def cell_typeList(request):
          '作业中': Count('id', filter=Q(Alarmi_id='0')), 
          '故障中': Count('id', filter= ~(Q(Alarmi_id='-1')|Q(Alarmi_id='-2')|Q(Alarmi_id='0'))),}
     dictL = list(Cell.objects.values('Plant').annotate(**metrics))
-    rlist = [{'label':'离线中', 'value': dictL[0]['离线中']},
+    rlist = [{'label':'离线中', 'value':dictL[0]['离线中']},
              {'label':'待机中', 'value':dictL[0]['待机中']},
              {'label':'作业中', 'value':dictL[0]['作业中']},
              {'label':'故障中', 'value':dictL[0]['故障中']}]    
@@ -59,12 +59,12 @@ def get_cell_cnt(request):
 def cur_date_data(request):
 
     cur_date = datetime.now().date()
-    _start = cur_date - timedelta(days=0)
+    _start = cur_date - timedelta(days=1)
     _end = cur_date + timedelta(days=1)
     result = {}
     metrics = {'tot_online':  Sum('OnLine')}
     lsResults = list(LiveStateManage.objects.filter(Check1__gte=_start, Check1__lt=_end).values(
-        'Cell_id', 'Cell__Name', 'Cell__CellID', 'Cell__Plant','Cell__Alarmi_id', 'Cell__Alarmi__AllarmString').annotate(**metrics))
+        'Cell_id', 'Cell__Name', 'Cell__CellID', 'Cell__Plant','Cell__Alarmi_id', 'Cell__Alarmi__AllarmString').annotate(**metrics).order_by('Cell_id'))
     metrics = {
         'tot_adjustTM': Sum('PowerOnSec',filter=Q(Mode='调校模式')),
         'tot_poweron':  Sum('PowerOnSec'),
@@ -73,10 +73,10 @@ def cur_date_data(request):
         'tot_parts':    Sum('FinishParts',filter=Q(Mode='普通模式'))}
     recResults = list(Record.objects.filter(StartTime__gte=_start, StartTime__lt=_end).values( 
         'Cell_id','Cell__Plant','Cell__Name','Cell__CellID',).annotate(
-            **metrics))
+            **metrics).order_by('Cell_id'))
     wsResults = list(Record.objects.filter(StartTime__gte=_start, StartTime__lt=_end, Status = '加工中').values( 
         'Cell_id','WorkSheet_id','WorkSheet__FinishParts','WorkSheet__Status', 'EstimatedSec','StartTime__date').annotate(
-            TotReq = F('WorkSheet__AddReqParts')+F('WorkSheet__ReqParts')))
+            TotReq = F('WorkSheet__AddReqParts')+F('WorkSheet__ReqParts')).order_by('Cell_id'))
     for item in wsResults:
         if item['EstimatedSec'] is not None:
             item['EstimatedSec'] = sec2TmStr(item['EstimatedSec'])
@@ -87,7 +87,6 @@ def cur_date_data(request):
     for item in lsResults:
         if item['tot_online'] is not None:
             item['tot_online'] = sec2TmStr(item['tot_online'])
-
     for item in lsResults + recResults + wsResults:
         if str(item['Cell_id']) not in result:
             result[str(item['Cell_id'])] = copy.deepcopy(defule_CellDic)

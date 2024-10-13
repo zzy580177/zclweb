@@ -1,13 +1,13 @@
 const imglink = {
     "CNC全自动双站式花式机":"/static/amfui/img/1.png",
-    "全自动机器人钉胶机" : "2.png",
-    "多功能高精密五轴机":"3.png",
-    "高光机":"4.png",
-    "精雕切比一体机":"5.png",
-    "全自动开料机":"6.png", 
-    "全自动刨比开料机": "7.png",
-    "全智能打比机":"8.png",
-    "比后工序自动机":"9.png"
+    "全自动机器人钉胶机" : "/static/amfui/img/2.png",
+    "多功能高精密五轴机":"/static/amfui/img/3.png",
+    "高光机":"/static/amfui/img/4.png",
+    "精雕切比一体机":"/static/amfui/img/5.png",
+    "全自动开料机":"/static/amfui/img/6.png", 
+    "全自动刨比开料机": "/static/amfui/img/7.png",
+    "全智能打比机":"/static/amfui/img/8.png",
+    "比后工序自动机":"/static/amfui/img/9.png"
 }
 async function fetchDashboardData() {
     try {
@@ -222,13 +222,13 @@ function createProgressReport(cellQ) {
 
     const progressTitle = document.createElement('div');
     progressTitle.className = 'fep-12b font-weight-normal';
-    progressTitle.textContent = '订单加工'+ cellQ.ws_finish_rate +"%";
+    progressTitle.textContent = '订单加工'+ cellQ.ws_finish_rate.toFixed(1) +"%";
     progress.appendChild(progressTitle);
 
     const progressBar = document.createElement('progress');
     progressBar.id = 'myProgress' + cellQ.id;
     progressBar.className = 'mypro';
-    progressBar.value = 89;
+    progressBar.value = Math.round(cellQ.ws_finish_rate);
     progressBar.max = 100;
     progress.appendChild(progressBar);
 

@@ -17,8 +17,9 @@
 		<script type="text/javascript" src="../../static/amfui/js/dashbord_builds.js"></script>
 		<script>
 			window.onload = function() {
-				fetchDashboardData();
-			};
+                fetchDashboardData();
+				setInterval(fetchDashboardData, 2000);
+			};            
 		</script>
     </head>
     
