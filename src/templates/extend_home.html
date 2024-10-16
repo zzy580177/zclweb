@@ -72,10 +72,10 @@
                 <div class="card card-outline card-danger" style="height: 600px;">
                     <div class="card-header">快捷操作</div>
                     <div class="card-body">
-                        <a href="#" class="btn btn-block btn-outline-primary" role="button">订单记录查询</a>
-                        <a href="#" class="btn btn-block btn-outline-success" role="button">工单记录查看</a>
-                        <a href="#" class="btn btn-block btn-outline-danger" role="button">设备管理</a>
-                        <a href="#" class="btn btn-block btn-outline-secondary" role="button">设备在线产看</a>
+                        <a href="/amf/amfui/record/" class="btn btn-block btn-outline-primary" role="button">订单记录查询</a>
+                        <a href="/amf/amfui/recordmanage/" class="btn btn-block btn-outline-success" role="button">工单记录查看</a>
+                        <a href="/amf/amfui/cell/" class="btn btn-block btn-outline-danger" role="button">设备管理</a>
+                        <a href="/amf/amfui/livestate/" class="btn btn-block btn-outline-secondary" role="button">设备在线产看</a>
                         <a href="#" class="btn btn-block btn-outline-warning" role="button">故障码查阅表</a>
                     </div>
                 </div>
@@ -84,8 +84,7 @@
             <div class="col-sm-3">
                 <div class="card card-outline card-info" style="height: 600px;">
                     <div class="card-header">信息栏</div>
-                    <div class="list-group-flush">
-                        <a href="#" class="list-group-item list-group-item-action">最新异常记录</a>
+                    <div class="list-group-flush" id="msg_list">
                     </div>
                 </div>
             </div>
@@ -129,12 +128,11 @@
         return 'rgba(' + color.join(',') + ')'
     }
 
-    function randomColorArray() {
-        return [
-            Math.round(Math.random() * 255),
-            Math.round(Math.random() * 255),
-            Math.round(Math.random() * 255),
-        ]
+    function randomColorArray(status) {
+        if (status === '待机中') {return [255,215,0]}
+        else if (status === '作业中') {return [0,128,0]}
+        else if (status === '故障中') {return [178,34,34]}
+        else if (status === '离线中') {return [123,123,123]}
     }
 
     async function fetchApiData() {
@@ -148,17 +146,29 @@
           }
     }
 
+    function addAmsgHref(text, msgsElem)
+    {
+        let listItem = document.createElement('a');
+        listItem.href = '#';
+        listItem.className = 'list-group-item list-group-item-action';
+        listItem.textContent = text;
+        msgsElem.appendChild(listItem);
+    }
+
     function initChart(exampleData) {
         let chartElem = document.getElementById('myChart2')
+        let msgsElem = document.getElementById('msg_list')
+        chartElem.innerHTML = '';
+        msgsElem.innerHTML = '';
         let labels = []
         let values = []
         let backgroundColors = []
         let borderColors = []
 
-        exampleData.forEach(item => {                               
+        exampleData.cells.forEach(item => {                               
             labels.push(item.label)
             values.push(item.value)
-            let color = randomColorArray()
+            let color = randomColorArray(item.label)
             backgroundColors.push(convertRGBA(color, 0.9))
             borderColors.push(convertRGBA(color, 1))
         })
@@ -187,9 +197,17 @@
 
         let currentChart = new Chart(chartElem, config)
         currentChart.resize(null, 500)
+
+        addAmsgHref('最新异常记录', msgsElem);
+        exampleData.msgs.forEach(item => {
+            if (item.Alarmi__AllarmString !== '无异常') {
+                addAmsgHref(item.combined_string + ' ' + item.Alarmi__AllarmString, msgsElem);
+            }        
+        })
     }
 
     fetchApiData()
+    setInterval(fetchApiData, 30 * 1000);
 </script>
 
 </body>

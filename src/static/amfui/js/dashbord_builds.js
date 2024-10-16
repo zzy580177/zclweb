@@ -9,30 +9,56 @@ const imglink = {
     "全智能打比机":"/static/amfui/img/8.png",
     "比后工序自动机":"/static/amfui/img/9.png"
 }
-async function fetchDashboardData() {
+curr_offset=0
+maxLen = 0
+function fetchDashboardData(offset) {
     try {
-      const response = await fetch('/api/amfui/live_state_manage/live_state_manage_join');
-      const result = await response.json();
-      generateDashboard(result.data, 'dashboard-content');
+      fetch(`/api/amfui/live_state_manage/live_state_manage_join?offset=${offset}&itemsPerPage=0`).then(response => response.json()).then(data => {
+        generateDashboard(data.data, 'dashboard-content');
+      });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     }
 }
 
+function shiftRight() {
+    curr_offset = (curr_offset + 3) > maxLen ? curr_offset : curr_offset + 3;
+    fetchDashboardData(curr_offset)
+}
+
+function shiftLeft() {
+    curr_offset = (curr_offset - 3) < 0 ? curr_offset : curr_offset - 3;
+    fetchDashboardData(curr_offset)
+}
+
 function generateDashboard(objList, element) {
-    const boxContent = document.getElementById(element);		
-    objList.forEach(obj => {
+    const boxContent = document.getElementById(element);
+    boxContent.innerHTML = ''; 
+    maxLen = objList.length;
+    objList.slice(0, 3).forEach(obj => {
         const cellQ = perpareCellInfo(obj);
-        const boxA = document.createElement('div');
-        boxA.className = 'box-a pd-3 flex-column postion-relative';
-        boxA.appendChild(createBoxTitle(cellQ));
-        boxA.appendChild(createBoxBody(cellQ));		
-        boxA.appendChild(createImgsDiv(cellQ));
-        boxContent.appendChild(boxA)
-    });	
+        const box = document.createElement('div');
+        box.className = 'box-a pd-3 flex-column postion-relative';
+        box.appendChild(createBoxTitle(cellQ));
+        box.appendChild(createBoxBody(cellQ));		
+        box.appendChild(createImgsDiv(cellQ));
+        boxContent.appendChild(box);
+    });
+}
+
+function addBtnAction() {
+    const leftBtn = document.getElementById('edu_leftbtn');
+    const rgBtn = document.getElementById('edu_btn');
+    rgBtn.addEventListener('click', function() { shiftRight();});
+    leftBtn.addEventListener('click', function() { shiftLeft();});
 }
 
 function perpareCellInfo(cellQ) {
+    rate=0
+    if(cellQ.WorkSheet__FinishParts > 0)
+    {
+        rate = cellQ.WorkSheet__FinishParts*100/cellQ.TotReq
+    }
     var result = {
         "name": cellQ.Cell__Name,
         "id": cellQ.Cell__CellID,
@@ -52,7 +78,7 @@ function perpareCellInfo(cellQ) {
         "ws_finish": cellQ.WorkSheet__FinishParts,
         "ws_status": cellQ.WorkSheet__Status,
         "ws_estimate": cellQ.EstimatedSec,
-        "ws_finish_rate": cellQ.WorkSheet__FinishParts*100/cellQ.TotReq,
+        "ws_finish_rate": rate,
     };
     if (cellQ.Cell__Alarmi_id == "0")
     {
@@ -237,6 +263,7 @@ function createProgressReport(cellQ) {
     estimatedTime.textContent = '预计剩余时长 ' + cellQ.ws_estimate;
     progress.appendChild(estimatedTime);
     return progress;
-}		
+}
+
 
 

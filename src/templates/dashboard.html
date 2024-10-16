@@ -15,12 +15,7 @@
         <script type="text/javascript" src="../../static/amfui/js/jquery.touchSlider.js">
         </script>
 		<script type="text/javascript" src="../../static/amfui/js/dashbord_builds.js"></script>
-		<script>
-			window.onload = function() {
-                fetchDashboardData();
-				setInterval(fetchDashboardData, 2000);
-			};            
-		</script>
+
     </head>
     
     <body class="page" style="overflow-x:hidden">
@@ -44,12 +39,10 @@
 					</li>
                 </ul>
             </div>
-			{% csrf_token %}
-            <div class="edu_btn" >
-                <span class="edu_leftbtn">
-                </span>
-                <span class="edu_rgbtn">
-                </span>
+
+            <div class="edu_btn" id="edu_btn" >
+                <span class="edu_leftbtn" id="edu_leftbtn" ></span>
+                <span class="edu_rgbtn" id="edu_rgbtn"  ></span>
             </div>
         </div>
         <script src="../../static/amfui/js/jq22.js">
@@ -61,18 +54,15 @@
             $(".edurg02 img").zoom_img();
         </script>
     </body>
+    <script>
+        fetchDashboardData(0);  
+        addBtnAction();
+        // Set up periodic refresh every 5 minutes (300000 milliseconds)
+        setInterval(function() {
+            fetchDashboardData(0);
+        }, 300000);       
+    </script>
     <script src="../../static/amfui/js/pxTurnRem.js">
     </script>
-    <script>
-        $(".lang").click(function() {
-            var data = $(this).attr("data");
-            if (data == 1) {
-                $(".lang-bg").removeClass("d-none");
-                $(this).attr('data', 2);
-            } else {
-                $(".lang-bg").addClass("d-none");
-                $(this).attr('data', 1);
-            }
-        });
-    </script>
+
 </html>

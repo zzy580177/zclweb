@@ -11,8 +11,8 @@ from apps.amfui.apis.live_state_manage.schemas import *
 
 from itertools import chain
 from datetime import datetime, timedelta
-from django.db.models import Sum, Q, Count, CharField, F
-from django.db.models.functions import Cast
+from django.db.models import Sum, Q, Count, F, Max, Value, Case, CharField, ExpressionWrapper
+from django.db.models.functions import Cast, Concat, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute
 import copy
 
 router = Router(tags=['live_state_manage'])
@@ -39,32 +39,54 @@ defule_CellDic = {
 }
 @router.get("/live_state_manage/cell_typeList",  url_name='amfui/live_state_manage/cell_typeList')
 def cell_typeList(request):
+    rlist = {'cells':'',"msgs":''}
     metrics = {
          '离线中': Count('id', filter=Q(Alarmi_id='-2')), 
          '待机中': Count('id', filter=Q(Alarmi_id='-1')), 
          '作业中': Count('id', filter=Q(Alarmi_id='0')), 
          '故障中': Count('id', filter= ~(Q(Alarmi_id='-1')|Q(Alarmi_id='-2')|Q(Alarmi_id='0'))),}
     dictL = list(Cell.objects.values('Plant').annotate(**metrics))
-    rlist = [{'label':'离线中', 'value':dictL[0]['离线中']},
+    rlist['cells'] = [{'label':'离线中', 'value':dictL[0]['离线中']},
              {'label':'待机中', 'value':dictL[0]['待机中']},
              {'label':'作业中', 'value':dictL[0]['作业中']},
-             {'label':'故障中', 'value':dictL[0]['故障中']}]    
+             {'label':'故障中', 'value':dictL[0]['故障中']}]  
+
+    qs = Stato.objects.values('Cell_id').annotate(last_id=Max('id')).values('last_id')
+    qs = Stato.objects.filter(id__in=qs).annotate(
+        combined_string=Concat(
+            Cast(ExtractMonth('DataTime'), CharField()), Value('/'), Cast(ExtractDay('DataTime'), CharField()), Value(' '),
+            Cast(ExtractHour('DataTime'), CharField()), Value(':'), Cast(ExtractMinute('DataTime'), CharField()), Value('  '),
+            'Cell__Name', Value('-'), Cast('Cell__CellID', CharField()))
+    ).values('combined_string','Alarmi__AllarmString', 'Stato').order_by('-DataTime')
+    rlist['msgs'] = list(qs)
+
     return rlist
  
 @router.get("/live_state_manage/cellcnt",  url_name='amfui/live_state_manage/cellcnt')
 def get_cell_cnt(request):
     return Cell.objects.all().count()
 
+@router.get("/live_state_manage/cellstatus",  url_name='amfui/live_state_manage/cellstatus')
+def get_cellstatus(request):
+    qs = Stato.objects.values('Cell_id').annotate(last_id=Max('id')).values('last_id')
+    qs = Stato.objects.filter(id__in=qs).annotate(
+        combined_string=Concat(
+            Cast(ExtractMonth('DataTime'), CharField()), Value('-'), Cast(ExtractDay('DataTime'), CharField()), Value(' '),
+            Cast(ExtractHour('DataTime'), CharField()), Value(':'), Cast(ExtractMinute('DataTime'), CharField()), Value(' | '),
+            'Cell__Name', Value('-'), Cast('Cell__CellID', CharField()))
+    ).values('combined_string','Alarmi__AllarmString', 'Stato')
+    return list(qs)
+
 @router.get("/live_state_manage_join",  url_name='amfui/live_state_manage/join/list')
-def cur_date_data(request):
+def cur_date_data(request, offset=0, itemsPerPage=3):
 
     cur_date = datetime.now().date()
-    _start = cur_date - timedelta(days=1)
+    _start = cur_date - timedelta(days=0)
     _end = cur_date + timedelta(days=1)
     result = {}
     metrics = {'tot_online':  Sum('OnLine')}
     lsResults = list(LiveStateManage.objects.filter(Check1__gte=_start, Check1__lt=_end).values(
-        'Cell_id', 'Cell__Name', 'Cell__CellID', 'Cell__Plant','Cell__Alarmi_id', 'Cell__Alarmi__AllarmString').annotate(**metrics).order_by('Cell_id'))
+        'Cell_id', 'Cell__Name', 'Cell__CellID', 'Cell__Plant','Cell__Alarmi_id', 'Cell__Alarmi__AllarmString').annotate(**metrics).order_by('Cell__CellID'))
     metrics = {
         'tot_adjustTM': Sum('PowerOnSec',filter=Q(Mode='调校模式')),
         'tot_poweron':  Sum('PowerOnSec'),
@@ -73,10 +95,10 @@ def cur_date_data(request):
         'tot_parts':    Sum('FinishParts',filter=Q(Mode='普通模式'))}
     recResults = list(Record.objects.filter(StartTime__gte=_start, StartTime__lt=_end).values( 
         'Cell_id','Cell__Plant','Cell__Name','Cell__CellID',).annotate(
-            **metrics).order_by('Cell_id'))
+            **metrics).order_by('Cell__CellID'))
     wsResults = list(Record.objects.filter(StartTime__gte=_start, StartTime__lt=_end, Status = '加工中').values( 
         'Cell_id','WorkSheet_id','WorkSheet__FinishParts','WorkSheet__Status', 'EstimatedSec','StartTime__date').annotate(
-            TotReq = F('WorkSheet__AddReqParts')+F('WorkSheet__ReqParts')).order_by('Cell_id'))
+            TotReq = F('WorkSheet__AddReqParts')+F('WorkSheet__ReqParts')).order_by('Cell__CellID'))
     for item in wsResults:
         if item['EstimatedSec'] is not None:
             item['EstimatedSec'] = sec2TmStr(item['EstimatedSec'])
@@ -94,4 +116,7 @@ def cur_date_data(request):
         else:
             result[str(item['Cell_id'])].update(item)
     result = list(result.values())
-    return result
+    result[:] = result[offset:] + result[:offset]
+    if itemsPerPage == 0:
+        return result
+    return result[0:itemsPerPage]

@@ -9,8 +9,20 @@ def index(request):
     return render(request, 'amfui/index.html')
 
 def dashboard(request):
-    return render(request, 'dashboard.html')
+    offset = 4;
+    if request.method=="POST":
+        offset = request.POST.get("offset")
+    return render(request, 'dashboard.html', {'offset':offset})
 
 def extend_home(request):
-    return render(request, 'extend_home.html')
+    offset = 3;
+    if request.method=="POST":
+        offset = request.POST.get("offset")
+    return render(request, 'extend_home.html', {'offset':offset})
+
+def test(request):
+    offset = 3;
+    if request.method=="POST":
+        offset = request.POST.get("offset")
+    return render(request, 'test.html', {'offset':offset})
 
