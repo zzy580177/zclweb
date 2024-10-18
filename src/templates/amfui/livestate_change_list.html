@@ -9,11 +9,18 @@
 
 {% block result_list %}
     <!-- Our content goes here... -->
+    {# {% if action_form %}#}
     {% admin_actions %}
+    {# {% endif %}#}
     <div class="results">
         <table>     
             <thead>
                 <tr>
+                    <th scope="col" class="action-checkbox-column">                    
+                        <div class="text">
+                            <span><input type="checkbox" id="action-toggle" aria-label="选择此页面上的所有对象执行操作"></span></div>
+                        <div class="clear"></div>
+                    </th>
                     {% for header in headers %}
                         <th scope="col" class="sortable column-id"><div class="text"><a href="?o=0.-4">{{ header }}</a></div><div class="clear"></div></th>
                     {% endfor %}
@@ -23,6 +30,7 @@
             <tbody>
                     {% for item in summary %}
                         <tr class="{% cycle 'row1' 'row2' %}">
+                            <td class="action-checkbox"><input type="checkbox" name="_selected_action" value="2" class="action-select" aria-label="选择此对象执行操作 - {{ item.Check1__date }}"></td>
                             <td > {{ item.Check1__date }} </td>
                             <td > {{ item.Cell__Plant }} </td>
                             <td > {{ item.Cell__Name }} </td>
@@ -37,3 +45,14 @@
 {% endblock %}
 
 {% block pagination %}{% endblock %}
+<script type="text/javascript">
+    $(".object-tools").hide().find('li a').each(function () {
+        _action.exts.push({
+            name: $(this).text(),
+            url: $(this).attr('href')
+        })
+    })
+    if(parent.addEvent){
+        parent.addEvent('title','{% get_verbose_name_plural %}')
+    }
+</script>

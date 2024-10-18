@@ -2,16 +2,11 @@ from typing import List
 
 from django.shortcuts import get_object_or_404
 from ninja import Router
-from ninja.pagination import paginate
-
-from django_starter.http.response import responses
 
 from apps.amfui.models import *
 from apps.amfui.apis.live_state_manage.schemas import *
-
-from itertools import chain
 from datetime import datetime, timedelta
-from django.db.models import Sum, Q, Count, F, Max, Value, Case, CharField, ExpressionWrapper
+from django.db.models import Sum, Q, Count, F, Max, Value, CharField
 from django.db.models.functions import Cast, Concat, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute
 import copy
 
@@ -52,14 +47,20 @@ def cell_typeList(request):
              {'label':'故障中', 'value':dictL[0]['故障中']}]  
 
     qs = Stato.objects.values('Cell_id').annotate(last_id=Max('id')).values('last_id')
-    qs = Stato.objects.filter(id__in=qs).annotate(
-        combined_string=Concat(
-            Cast(ExtractMonth('DataTime'), CharField()), Value('/'), Cast(ExtractDay('DataTime'), CharField()), Value(' '),
-            Cast(ExtractHour('DataTime'), CharField()), Value(':'), Cast(ExtractMinute('DataTime'), CharField()), Value('  '),
-            'Cell__Name', Value('-'), Cast('Cell__CellID', CharField()))
-    ).values('combined_string','Alarmi__AllarmString', 'Stato').order_by('-DataTime')
-    rlist['msgs'] = list(qs)
-
+    qs = Stato.objects.filter(id__in=qs).annotate(combined_string=Concat(
+        Cast(ExtractMonth('DataTime'), CharField()), Value('/'), Cast(ExtractDay('DataTime'), CharField()), Value(' '),
+        Cast(ExtractHour('DataTime'), CharField()), Value(':'), Cast(ExtractMinute('DataTime'), CharField()))
+    ).values('combined_string','Alarmi__AllarmString', 'Stato', 'Cell__Alarmi','Cell__Name','Cell__CellID', 'DataTime').order_by('-DataTime')
+    rlist['msgs'] =  [Stato for Stato in qs]
+    lsQs = LiveState.objects.values('Cell_id').annotate(last_id=Max('id')).values('last_id')
+    cellQs = Cell.objects.filter(Alarmi_id='-2').values('CellID')
+    qs = LiveState.objects.filter(Q(Cell__CellID__in=cellQs)&Q(id__in=lsQs)).annotate(Alarmi__AllarmString = Value('离线'), 
+        Stato = Value(False), DataTime = F('Check1'), combined_string=Concat(
+        Cast(ExtractMonth('Check1'), CharField()), Value('/'), Cast(ExtractDay('Check1'), CharField()), Value(' '),
+        Cast(ExtractHour('Check1'), CharField()), Value(':'), Cast(ExtractMinute('Check1'), CharField()))
+    ).values('combined_string','Alarmi__AllarmString', 'Stato', 'Cell__Alarmi','Cell__Name','Cell__CellID', 'DataTime')
+    rlist['msgs'].extend([offlines for offlines in qs])
+    rlist['msgs'] = sorted(rlist['msgs'], key=lambda x: x['DataTime'], reverse=True)
     return rlist
  
 @router.get("/live_state_manage/cellcnt",  url_name='amfui/live_state_manage/cellcnt')

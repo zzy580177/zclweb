@@ -159,7 +159,6 @@
         let chartElem = document.getElementById('myChart2')
         let msgsElem = document.getElementById('msg_list')
         chartElem.innerHTML = '';
-        msgsElem.innerHTML = '';
         let labels = []
         let values = []
         let backgroundColors = []
@@ -194,16 +193,15 @@
                 }
             }
         }
-
-        let currentChart = new Chart(chartElem, config)
-        currentChart.resize(null, 500)
-
+        msgsElem.innerHTML = '';
         addAmsgHref('最新异常记录', msgsElem);
         exampleData.msgs.forEach(item => {
-            if (item.Alarmi__AllarmString !== '无异常') {
-                addAmsgHref(item.combined_string + ' ' + item.Alarmi__AllarmString, msgsElem);
+            if (item.Alarmi__AllarmString !== '无异常' && !item.Stato) {
+                addAmsgHref( item.combined_string + ' ' + item.Cell__Name + '-' + item.Cell__CellID + ' ' + item.Alarmi__AllarmString, msgsElem);
             }        
         })
+        let currentChart = new Chart(chartElem, config)
+        currentChart.resize(null, 500)
     }
 
     fetchApiData()

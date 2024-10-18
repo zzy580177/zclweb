@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Extend Home</title>
+</head>
+<body>
+    <!-- 使用 Django 模板语言显示 offset -->
+    <p>Offset: {{ offset }}</p>
+    <div class="card-body" id="myChart"></div>
+    <div class="card-body" id="dashboard-content"></div>
+    
+
+</body>
+
+<script type="text/javascript" src="../../static/amfui/js/dashbord_builds.js"></script>
+<script>
+    fetchDashboardData({{ offset }});            
+</script>
+</html>
