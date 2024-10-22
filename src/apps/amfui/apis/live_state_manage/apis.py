@@ -23,23 +23,23 @@ defule_CellDic = {
     "tot_workTM": "",
     "tot_idleTM": "",
     "tot_parts": "",
-    "Cell__Alarmi_id": "",
+    "Cell__Stato": "",
     "WorkSheet_id": "",
     "WorkSheet__FinishParts": 0,
     "WorkSheet__Status": "",
     "EstimatedSec": "",
     "TotReq": 0,
-    "Cell__Alarmi__AllarmString" : "",
-    "Cell_get_Alarmi_display" : "",
+    "Alarmi__AlarmString" : "",
+    "Cell_get_Stato_display" : "",
 }
 @router.get("/live_state_manage/cell_typeList",  url_name='amfui/live_state_manage/cell_typeList')
 def cell_typeList(request):
     rlist = {'cells':'',"msgs":''}
     metrics = {
-         '离线中': Count('id', filter=Q(Alarmi_id='-2')), 
-         '待机中': Count('id', filter=Q(Alarmi_id='-1')), 
-         '作业中': Count('id', filter=Q(Alarmi_id='0')), 
-         '故障中': Count('id', filter= ~(Q(Alarmi_id='-1')|Q(Alarmi_id='-2')|Q(Alarmi_id='0'))),}
+         '离线中': Count('id', filter=Q(Stato =3)), 
+         '待机中': Count('id', filter=Q(Stato =1)), 
+         '作业中': Count('id', filter=Q(Stato =0)), 
+         '故障中': Count('id', filter=Q(Stato =2)),}
     dictL = list(Cell.objects.values('Plant').annotate(**metrics))
     rlist['cells'] = [{'label':'离线中', 'value':dictL[0]['离线中']},
              {'label':'待机中', 'value':dictL[0]['待机中']},
@@ -50,15 +50,15 @@ def cell_typeList(request):
     qs = Stato.objects.filter(id__in=qs).annotate(combined_string=Concat(
         Cast(ExtractMonth('DataTime'), CharField()), Value('/'), Cast(ExtractDay('DataTime'), CharField()), Value(' '),
         Cast(ExtractHour('DataTime'), CharField()), Value(':'), Cast(ExtractMinute('DataTime'), CharField()))
-    ).values('combined_string','Alarmi__AllarmString', 'Stato', 'Cell__Alarmi','Cell__Name','Cell__CellID', 'DataTime').order_by('-DataTime')
+    ).values('combined_string','Alarmi__AlarmString', 'Stato', 'Cell__Name','Cell__CellID', 'DataTime').order_by('-DataTime')
     rlist['msgs'] =  [Stato for Stato in qs]
     lsQs = LiveState.objects.values('Cell_id').annotate(last_id=Max('id')).values('last_id')
-    cellQs = Cell.objects.filter(Alarmi_id='-2').values('CellID')
-    qs = LiveState.objects.filter(Q(Cell__CellID__in=cellQs)&Q(id__in=lsQs)).annotate(Alarmi__AllarmString = Value('离线'), 
-        Stato = Value(False), DataTime = F('Check1'), combined_string=Concat(
+    cellQs = Cell.objects.filter(Cell__Stato=3).values('CellID')
+    qs = LiveState.objects.filter(Q(Cell__CellID__in=cellQs)&Q(id__in=lsQs)).annotate(Alarmi__AlarmString = Value('离线'), 
+        Stato = F('Cell__Stato'), DataTime = F('Check1'), combined_string=Concat(
         Cast(ExtractMonth('Check1'), CharField()), Value('/'), Cast(ExtractDay('Check1'), CharField()), Value(' '),
         Cast(ExtractHour('Check1'), CharField()), Value(':'), Cast(ExtractMinute('Check1'), CharField()))
-    ).values('combined_string','Alarmi__AllarmString', 'Stato', 'Cell__Alarmi','Cell__Name','Cell__CellID', 'DataTime')
+    ).values('combined_string','Alarmi__AlarmString', 'Stato', 'Cell__Name','Cell__CellID', 'DataTime')
     rlist['msgs'].extend([offlines for offlines in qs])
     rlist['msgs'] = sorted(rlist['msgs'], key=lambda x: x['DataTime'], reverse=True)
     return rlist
@@ -75,7 +75,7 @@ def get_cellstatus(request):
             Cast(ExtractMonth('DataTime'), CharField()), Value('-'), Cast(ExtractDay('DataTime'), CharField()), Value(' '),
             Cast(ExtractHour('DataTime'), CharField()), Value(':'), Cast(ExtractMinute('DataTime'), CharField()), Value(' | '),
             'Cell__Name', Value('-'), Cast('Cell__CellID', CharField()))
-    ).values('combined_string','Alarmi__AllarmString', 'Stato')
+    ).values('combined_string','Alarmi__AlarmString', 'Stato')
     return list(qs)
 
 @router.get("/live_state_manage_join",  url_name='amfui/live_state_manage/join/list')
@@ -86,31 +86,34 @@ def cur_date_data(request, offset=0, itemsPerPage=3):
     _end = cur_date + timedelta(days=1)
     result = {}
     metrics = {'tot_online':  Sum('OnLine')}
-    lsResults = list(LiveStateManage.objects.filter(Check1__gte=_start, Check1__lt=_end).values(
-        'Cell_id', 'Cell__Name', 'Cell__CellID', 'Cell__Plant','Cell__Alarmi_id', 'Cell__Alarmi__AllarmString').annotate(**metrics).order_by('Cell__CellID'))
+    live_Results = list(LiveStateManage.objects.filter(Check1__gte=_start, Check1__lt=_end).values(
+        'Cell_id', 'Cell__Name', 'Cell__CellID', 'Cell__Plant','Cell__Stato').annotate(**metrics).order_by('Cell__CellID'))
     metrics = {
         'tot_adjustTM': Sum('PowerOnSec',filter=Q(Mode='调校模式')),
         'tot_poweron':  Sum('PowerOnSec'),
         'tot_workTM':   Sum('WorkingSec',filter=Q(Mode='普通模式')),
         'tot_idleTM':   Sum('IdleTMSec',filter=Q(Mode='普通模式')),
         'tot_parts':    Sum('FinishParts',filter=Q(Mode='普通模式'))}
-    recResults = list(Record.objects.filter(StartTime__gte=_start, StartTime__lt=_end).values( 
-        'Cell_id','Cell__Plant','Cell__Name','Cell__CellID',).annotate(
-            **metrics).order_by('Cell__CellID'))
-    wsResults = list(Record.objects.filter(StartTime__gte=_start, StartTime__lt=_end, Status = '加工中').values( 
+    daily_Results = list(Record.objects.filter(StartTime__gte=_start, StartTime__lt=_end).values( 
+        'Cell_id','Cell__Plant','Cell__Name','Cell__CellID',).annotate(**metrics).order_by('Cell__CellID'))
+    work_Results = list(Record.objects.filter(StartTime__gte=_start, StartTime__lt=_end, Status = '加工中').values( 
         'Cell_id','WorkSheet_id','WorkSheet__FinishParts','WorkSheet__Status', 'EstimatedSec','StartTime__date').annotate(
             TotReq = F('WorkSheet__AddReqParts')+F('WorkSheet__ReqParts')).order_by('Cell__CellID'))
-    for item in wsResults:
+
+    stato_Results = Stato.objects.filter(Check1__gte=_start, Check1__lt=_end).values('Cell_id').annotate(last_id=Max('id')).values('last_id')
+    stato_Results = list(Stato.objects.filter(id__in=stato_Results).values('Cell_id','Alarmi__AlarmString'))
+
+    for item in work_Results:
         if item['EstimatedSec'] is not None:
             item['EstimatedSec'] = sec2TmStr(item['EstimatedSec'])
-    for item in recResults:
+    for item in daily_Results:
         for key in ['tot_poweron','tot_workTM','tot_idleTM','tot_adjustTM',]:
             if item[key] is not None:
                 item[key] = sec2TmStr(item[key])
-    for item in lsResults:
+    for item in live_Results:
         if item['tot_online'] is not None:
             item['tot_online'] = sec2TmStr(item['tot_online'])
-    for item in lsResults + recResults + wsResults:
+    for item in live_Results + daily_Results + work_Results + stato_Results:
         if str(item['Cell_id']) not in result:
             result[str(item['Cell_id'])] = copy.deepcopy(defule_CellDic)
             result[str(item['Cell_id'])].update(item)

@@ -64,8 +64,8 @@ function perpareCellInfo(cellQ) {
         "id": cellQ.Cell__CellID,
         "index": cellQ.Cell__CellID + "-" + cellQ.Cell__Name,
         "plant": cellQ.Cell__Plant,
-        "alarm": cellQ.Cell__Alarmi__AllarmString,
-        "status": "",
+        "alarm": cellQ.Alarmi__AlarmString,
+        "status": cellQ.Cell_get_Stato_display,
         "daily_online": cellQ.tot_online,
         "daily_adjust": cellQ.tot_adjustTM,
         "daily_poweron": cellQ.tot_poweron,
@@ -80,23 +80,6 @@ function perpareCellInfo(cellQ) {
         "ws_estimate": cellQ.EstimatedSec,
         "ws_finish_rate": rate,
     };
-    if (cellQ.Cell__Alarmi_id == "0")
-    {
-        result.status_clore = "sra2";
-        result.status = "作业";
-    }else if (cellQ.Cell__Alarmi_id == "-1")
-    {
-        result.status_clore = "sra1";
-        result.status = "待机";
-    }else if (cellQ.Cell__Alarmi_id == "-2")
-    {
-        result.status_clore = "sra4";
-        result.status = "离线";
-    }
-    else{
-        result.status_clore = "sra3";
-        result.status = "异常";
-    }
     return result;
 }
 

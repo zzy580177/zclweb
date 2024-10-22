@@ -24,12 +24,13 @@ def sec2TmStr(sec):
 
 class Alarmi(models.Model):
 	""""告警索引表"""
-	Id = models.CharField('告警ID',max_length =20, primary_key=True)
-	AllarmString = models.CharField('告警信息',max_length=50)
+	Name = models.CharField('设备类型',max_length =40)
+	AlarmID = models.CharField('告警ID',max_length =10)
+	AlarmString = models.CharField('告警信息',max_length=50)
 	TypeID = models.IntegerField('类别',null=True, blank=True)
 	Description_Id = models.IntegerField('备注索引',null=True, blank=True)
 	def __str__(self):
-		return str(self.Id) + " " + self.AllarmString
+		return str(self.Id) + " " + self.AlarmString
 	class Meta:
 		db_table = "[%s].[Alarmi]"% schema
 		app_label = app_name
@@ -106,11 +107,8 @@ class Stato(models.Model):
 	Cell = models.ForeignKey('Cell', on_delete=models.CASCADE, null=True,blank=True)
 	WorkSheet = models.ForeignKey('WorkSheet', on_delete=models.CASCADE, null=True,blank=True)
 	DataTime = models.DateTimeField("时间"); 
-	stato_choics =(
-		(True, "运行"),
-		(False, "停止")
-	)
-	Stato = models.BooleanField("状态切换", choices= stato_choics);
+	stato_choics =((0, "运行"),(1, "停止"),(2, "异常"),(3, "离线"))
+	Stato = models.IntegerField("状态切换", choices= stato_choics);
 	Alarmi = models.ForeignKey('Alarmi', on_delete=models.CASCADE, null=True,blank=True);
 	TimeSpan = models.FloatField("时长-s", null=True, blank=True);
 	def __str__(self):
@@ -138,20 +136,20 @@ class Stato(models.Model):
 		
 class Cell(models.Model):
 	id = models.IntegerField(primary_key=True );	
-	status_choics = ( ('0', '作业'), ('-1', '待机'), ('-2', '离线'), ('*' , '异常'))
+	stato_choics =((0, "运行"),(1, "停止"),(2, "异常"),(3, "离线"))
 	type_choics = ((1, "新代系统"), (2, "PLC"))
 	CellID = models.IntegerField("机台编号");
 	Plant = models.CharField("车间", max_length=40);
 	Name = models.CharField("机台", max_length=40);
 	Type = models.IntegerField(verbose_name="系统", choices= type_choics)
-	Alarmi = models.ForeignKey('Alarmi', on_delete=models.DO_NOTHING, verbose_name="当前状态", choices= status_choics) 
+	Stato = models.IntegerField(verbose_name="当前状态", choices= stato_choics) 
 	IP = models.CharField("设备IP", max_length=20, blank=True);
 	Create = models.DateTimeField("创建日期");
 	OnLine = models.FloatField("在线时长");
 	WorkTM = models.FloatField("作业时长");
 
 	def status(self):
-		return self.get_Alarmi_display()
+		return self.get_Stato_display()
 
 	def OnLineStr(self):
 		return sec2TmStr(self.OnLine)
@@ -194,7 +192,6 @@ class Record(models.Model):
 	def WorkSheet_id(self):
 		return self.WorkSheet.Id
 	WorkSheet_id.short_description  = '工单号'
-
 
 class RecordManage(Record):
 	class Meta:

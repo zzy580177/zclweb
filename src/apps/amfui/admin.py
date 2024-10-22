@@ -116,7 +116,7 @@ class CellAdmin(admin.ModelAdmin):
         i = 0
         for obj in queryset:
             i = i + 1
-            ws.append([i, obj.Plant, obj.Name, obj.CellID, obj.Type, obj.Create, sec2TmStr(obj.OnLine), sec2TmStr(obj.WorkTM), obj.get_Alarmi_display()])
+            ws.append([i, obj.Plant, obj.Name, obj.CellID, obj.Type, obj.Create, sec2TmStr(obj.OnLine), sec2TmStr(obj.WorkTM), obj.get_Stato_display()])
     actions = [export_as_xml]
 
 @admin.register(Record)
@@ -192,7 +192,7 @@ class RecordManageAdmin(admin.ModelAdmin):
 
 #@admin.register(Alarmi)
 class AlarmiAdmin(admin.ModelAdmin):
-    list_display = ['Id','AllarmString','TypeID','Description_Id',]
+    list_display = ['Id','AlarmString','TypeID','Description_Id',]
     ordering = ['Id']
 
 #@admin.register(LiveStateManage)

@@ -196,8 +196,8 @@
         msgsElem.innerHTML = '';
         addAmsgHref('最新异常记录', msgsElem);
         exampleData.msgs.forEach(item => {
-            if (item.Alarmi__AllarmString !== '无异常' && !item.Stato) {
-                addAmsgHref( item.combined_string + ' ' + item.Cell__Name + '-' + item.Cell__CellID + ' ' + item.Alarmi__AllarmString, msgsElem);
+            if (item.Alarmi__AlarmString !== '无异常' && !item.Stato) {
+                addAmsgHref( item.combined_string + ' ' + item.Cell__Name + '-' + item.Cell__CellID + ' ' + item.Alarmi__AlarmString, msgsElem);
             }        
         })
         let currentChart = new Chart(chartElem, config)
