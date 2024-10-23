@@ -107,7 +107,7 @@ class Stato(models.Model):
 	Cell = models.ForeignKey('Cell', on_delete=models.CASCADE, null=True,blank=True)
 	WorkSheet = models.ForeignKey('WorkSheet', on_delete=models.CASCADE, null=True,blank=True)
 	DataTime = models.DateTimeField("时间"); 
-	stato_choics =((0, "运行"),(1, "停止"),(2, "异常"),(3, "离线"))
+	stato_choics =((0, "作业中"),(1, "待机"),(2, "故障"),(3, "离线"))
 	Stato = models.IntegerField("状态切换", choices= stato_choics);
 	Alarmi = models.ForeignKey('Alarmi', on_delete=models.CASCADE, null=True,blank=True);
 	TimeSpan = models.FloatField("时长-s", null=True, blank=True);
@@ -136,7 +136,7 @@ class Stato(models.Model):
 		
 class Cell(models.Model):
 	id = models.IntegerField(primary_key=True );	
-	stato_choics =((0, "运行"),(1, "停止"),(2, "异常"),(3, "离线"))
+	stato_choics =((0, "作业中"),(1, "待机"),(2, "故障"),(3, "离线"))
 	type_choics = ((1, "新代系统"), (2, "PLC"))
 	CellID = models.IntegerField("机台编号");
 	Plant = models.CharField("车间", max_length=40);

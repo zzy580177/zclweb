@@ -6,7 +6,7 @@ const imglink = {
     "精雕切比一体机":"/static/amfui/img/5.png",
     "全自动开料机":"/static/amfui/img/6.png", 
     "全自动刨比开料机": "/static/amfui/img/7.png",
-    "全智能打比机":"/static/amfui/img/8.png",
+    "智能打比机":"/static/amfui/img/8.png",
     "比后工序自动机":"/static/amfui/img/9.png"
 }
 curr_offset=0
@@ -65,7 +65,7 @@ function perpareCellInfo(cellQ) {
         "index": cellQ.Cell__CellID + "-" + cellQ.Cell__Name,
         "plant": cellQ.Cell__Plant,
         "alarm": cellQ.Alarmi__AlarmString,
-        "status": cellQ.Cell_get_Stato_display,
+        "status": cellQ.CellStatus,
         "daily_online": cellQ.tot_online,
         "daily_adjust": cellQ.tot_adjustTM,
         "daily_poweron": cellQ.tot_poweron,
@@ -80,6 +80,21 @@ function perpareCellInfo(cellQ) {
         "ws_estimate": cellQ.EstimatedSec,
         "ws_finish_rate": rate,
     };
+    if (cellQ.Alarmi__AlarmString == null || cellQ.Alarmi__AlarmString =='')
+    {   result.alarm = '无异常';     }
+    if (cellQ.CellStatus == '作业中')
+    {
+        result.status_clore = "sra2";
+    }else if (cellQ.CellStatus == '待机')
+    {
+        result.status_clore = "sra1";
+    }else if (cellQ.CellStatus == '离线')
+    {
+        result.status_clore = "sra4";
+    }
+    else{
+        result.status_clore = "sra3";
+    }
     return result;
 }
 
@@ -115,7 +130,7 @@ function createImgsDiv(cellQ) {
     imgsDiv.appendChild(img1);
     const img2 = document.createElement('img');
     img2.src =  "/static/amfui/img/aaac.png";
-    if (cellQ.status == "作业")
+    if (cellQ.status == "作业中")
     {
         img2.src =  "/static/amfui/img/aasd.gif";
     }

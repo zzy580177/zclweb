@@ -6,7 +6,7 @@ from ninja import Router
 from apps.amfui.models import *
 from apps.amfui.apis.live_state_manage.schemas import *
 from datetime import datetime, timedelta
-from django.db.models import Sum, Q, Count, F, Max, Value, CharField
+from django.db.models import Sum, Q, Count, F, Max, Value, CharField,Case, When
 from django.db.models.functions import Cast, Concat, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute
 import copy
 
@@ -30,7 +30,7 @@ defule_CellDic = {
     "EstimatedSec": "",
     "TotReq": 0,
     "Alarmi__AlarmString" : "",
-    "Cell_get_Stato_display" : "",
+    "CellStatus" : "",
 }
 @router.get("/live_state_manage/cell_typeList",  url_name='amfui/live_state_manage/cell_typeList')
 def cell_typeList(request):
@@ -47,14 +47,14 @@ def cell_typeList(request):
              {'label':'故障中', 'value':dictL[0]['故障中']}]  
 
     qs = Stato.objects.values('Cell_id').annotate(last_id=Max('id')).values('last_id')
-    qs = Stato.objects.filter(id__in=qs).annotate(combined_string=Concat(
+    qs = Stato.objects.filter(Q(id__in=qs)&Q(Stato=2) ).annotate(combined_string=Concat(
         Cast(ExtractMonth('DataTime'), CharField()), Value('/'), Cast(ExtractDay('DataTime'), CharField()), Value(' '),
         Cast(ExtractHour('DataTime'), CharField()), Value(':'), Cast(ExtractMinute('DataTime'), CharField()))
     ).values('combined_string','Alarmi__AlarmString', 'Stato', 'Cell__Name','Cell__CellID', 'DataTime').order_by('-DataTime')
     rlist['msgs'] =  [Stato for Stato in qs]
     lsQs = LiveState.objects.values('Cell_id').annotate(last_id=Max('id')).values('last_id')
-    cellQs = Cell.objects.filter(Cell__Stato=3).values('CellID')
-    qs = LiveState.objects.filter(Q(Cell__CellID__in=cellQs)&Q(id__in=lsQs)).annotate(Alarmi__AlarmString = Value('离线'), 
+    cellQs = Cell.objects.filter(Stato=3).values('CellID')
+    qs = LiveState.objects.filter(Q(Cell__CellID__in=cellQs)&Q(id__in=lsQs)&Q(Cell__Stato=3)).annotate(Alarmi__AlarmString = Value('离线'), 
         Stato = F('Cell__Stato'), DataTime = F('Check1'), combined_string=Concat(
         Cast(ExtractMonth('Check1'), CharField()), Value('/'), Cast(ExtractDay('Check1'), CharField()), Value(' '),
         Cast(ExtractHour('Check1'), CharField()), Value(':'), Cast(ExtractMinute('Check1'), CharField()))
@@ -87,20 +87,21 @@ def cur_date_data(request, offset=0, itemsPerPage=3):
     result = {}
     metrics = {'tot_online':  Sum('OnLine')}
     live_Results = list(LiveStateManage.objects.filter(Check1__gte=_start, Check1__lt=_end).values(
-        'Cell_id', 'Cell__Name', 'Cell__CellID', 'Cell__Plant','Cell__Stato').annotate(**metrics).order_by('Cell__CellID'))
+        'Cell_id', 'Cell__Name', 'Cell__CellID', 'Cell__Plant').annotate(**metrics).order_by('Cell__CellID'))
     metrics = {
         'tot_adjustTM': Sum('PowerOnSec',filter=Q(Mode='调校模式')),
         'tot_poweron':  Sum('PowerOnSec'),
         'tot_workTM':   Sum('WorkingSec',filter=Q(Mode='普通模式')),
         'tot_idleTM':   Sum('IdleTMSec',filter=Q(Mode='普通模式')),
-        'tot_parts':    Sum('FinishParts',filter=Q(Mode='普通模式'))}
+        'tot_parts':    Sum('FinishParts',filter=Q(Mode='普通模式')),
+        'CellStatus':   Case(When(Cell__Stato=0, then=Value('作业中')),When(Cell__Stato=1, then=Value('待机')),When(Cell__Stato=2, then=Value('故障')),default=Value('离线'),output_field=CharField())}
     daily_Results = list(Record.objects.filter(StartTime__gte=_start, StartTime__lt=_end).values( 
         'Cell_id','Cell__Plant','Cell__Name','Cell__CellID',).annotate(**metrics).order_by('Cell__CellID'))
     work_Results = list(Record.objects.filter(StartTime__gte=_start, StartTime__lt=_end, Status = '加工中').values( 
         'Cell_id','WorkSheet_id','WorkSheet__FinishParts','WorkSheet__Status', 'EstimatedSec','StartTime__date').annotate(
             TotReq = F('WorkSheet__AddReqParts')+F('WorkSheet__ReqParts')).order_by('Cell__CellID'))
 
-    stato_Results = Stato.objects.filter(Check1__gte=_start, Check1__lt=_end).values('Cell_id').annotate(last_id=Max('id')).values('last_id')
+    stato_Results = Stato.objects.filter(DataTime__gte=_start, DataTime__lt=_end).values('Cell_id').annotate(last_id=Max('id')).values('last_id')
     stato_Results = list(Stato.objects.filter(id__in=stato_Results).values('Cell_id','Alarmi__AlarmString'))
 
     for item in work_Results:
