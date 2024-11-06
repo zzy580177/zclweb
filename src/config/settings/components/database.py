@@ -46,6 +46,17 @@ DATABASES = {
         'OPTIONS':{
             'DRIVER':'SQL server Native Client 11.0',
         }
+    },
+    'sanhe': {
+        'ENGINE':'mssql',
+        'HOST':'47.121.177.127',
+        'NAME':'sanhe',
+        'PORT':'1433',
+        'USER':'zclamf',
+        'PASSWORD':'Zclamfdb123',
+        'OPTIONS':{
+            'DRIVER':'SQL server Native Client 11.0',
+        }
     }
 }
 DATABASE_ROUTERS =['apps.amfui.middleware.database_router.DatabaseRouter']
@@ -53,6 +64,7 @@ DATABASE_APPS_MAPPING = {
     'default':'default',
     'yadi':'yadi',
     'jinya':'jinya',
+    'sanhe':'sanhe'
 }
 
 # Default primary key field type

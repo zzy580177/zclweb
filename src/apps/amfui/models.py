@@ -19,9 +19,6 @@ def sec2TmStr(sec):
 			return "%02d Hour %02d Min" % (h, m)
 	return " %2d Min" % m
 	
-
-
-
 class Alarmi(models.Model):
 	""""告警索引表"""
 	Name = models.CharField('设备类型',max_length =40)

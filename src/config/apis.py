@@ -8,6 +8,7 @@ from ninja.renderers import JSONRenderer, BaseRenderer
 from django_starter.apis import router
 from apps.account.apis import router as account_router
 from apps.amfui.apis import router as amfui_router
+from apps.techProc.apis import router as techProc_router
 
 
 class ORJSONRenderer(JSONRenderer):
@@ -38,3 +39,4 @@ api = NinjaAPI(
 api.add_router('django-starter', router)
 api.add_router('account', account_router)
 api.add_router('amfui', amfui_router)
+api.add_router('techProc', techProc_router)
