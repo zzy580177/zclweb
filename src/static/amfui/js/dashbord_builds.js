@@ -11,31 +11,32 @@ const imglink = {
 }
 curr_offset=0
 maxLen = 0
-function fetchDashboardData(offset) {
+
+function fetchDashboardData(offset, viewsize) {
     try {
       fetch(`/api/amfui/live_state_manage/live_state_manage_join?offset=${offset}&itemsPerPage=0`).then(response => response.json()).then(data => {
-        generateDashboard(data.data, 'dashboard-content');
+        generateDashboard(data.data, 'dashboard-content', viewsize);
       });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     }
 }
 
-function shiftRight() {
+function shiftRight(viewsize) {
     curr_offset = (curr_offset + 3) > maxLen ? curr_offset : curr_offset + 3;
-    fetchDashboardData(curr_offset)
+    fetchDashboardData(curr_offset, viewsize)
 }
 
-function shiftLeft() {
+function shiftLeft(viewsize) {
     curr_offset = (curr_offset - 3) < 0 ? curr_offset : curr_offset - 3;
-    fetchDashboardData(curr_offset)
+    fetchDashboardData(curr_offset, viewsize)
 }
 
-function generateDashboard(objList, element) {
+function generateDashboard(objList, element, viewsize) {
     const boxContent = document.getElementById(element);
     boxContent.innerHTML = ''; 
     maxLen = objList.length;
-    objList.slice(0, 3).forEach(obj => {
+    objList.slice(0, 1).forEach(obj => {
         const cellQ = perpareCellInfo(obj);
         const box = document.createElement('div');
         box.className = 'box-a pd-3 flex-column postion-relative';
@@ -46,11 +47,11 @@ function generateDashboard(objList, element) {
     });
 }
 
-function addBtnAction() {
+function addBtnAction(viewsize) {
     const leftBtn = document.getElementById('edu_leftbtn');
     const rgBtn = document.getElementById('edu_btn');
-    rgBtn.addEventListener('click', function() { shiftRight();});
-    leftBtn.addEventListener('click', function() { shiftLeft();});
+    rgBtn.addEventListener('click', function() { shiftRight(viewsize);});
+    leftBtn.addEventListener('click', function() { shiftLeft(viewsize);});
 }
 
 function perpareCellInfo(cellQ) {
