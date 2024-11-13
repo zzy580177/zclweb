@@ -8,7 +8,7 @@ def check_screen_type(request):
         'Android', 'iPhone', 'iPad', 'iPod', 'BlackBerry', 'Windows Phone'
     ])
     if is_mobile:
-        return 3
+        return 1
     else:
         return 3
 
@@ -25,7 +25,7 @@ def dashboard(request):
     if (viewsize == 3):
         return render(request, 'dashboard.html', {'offset':offset,'viewsize':viewsize})
     else:
-        return render(request, 'dashboard_phone.html', {'offset':offset,'viewsize':viewsize})
+        return render(request, 'dashboard_min.html', {'offset':viewsize,'viewsize':viewsize})
 
 def extend_home(request):
     offset = 3;

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>
+            车间看板
+        </title>
+        <link rel="stylesheet" href="../../static/amfui/css/public_min.css">
+        <link rel="stylesheet" href="../../static/amfui/css/page_min.css">
+        <script src="../../static/amfui/js/jquery-3.3.1.min.js">
+        </script>
+        <script type="text/javascript" src="../../static/amfui/js/jquery.event.drag.js">
+        </script>
+        <script type="text/javascript" src="../../static/amfui/js/jquery.touchSlider.js">
+        </script>
+		<script type="text/javascript" src="../../static/amfui/js/dashbord_builds_min.js"></script>
+
+    </head>
+    
+    <body class="page" style="overflow-x:hidden">
+        <header class="flex-row justify-between align-center postion-relative">
+            <div class="postion-absolute left-0 top-0 color-white texe-al">
+                ZCL智能生产展示看板
+            </div>
+            <img src="../../static/amfui/img/adz.png" alt="" style="width: 100%;">
+        </header>
+        <!-- 代码部分begin -->
+        <div class="about_edu">
+            <div class="about_edulist web">	
+                <ul class="clearfix">
+					<li class="clearfix">
+						<div class=" flex-column align-center">
+							<div style="width: 18rem;">
+								<div id='dashboard-content' class="pt-6 flex-row flex-wrap justify-between ">
+								</div>
+							</div>
+						</div>
+					</li>
+                </ul>
+            </div>
+            <div class="edu_btn" id="edu_btn" >
+                <span class="edu_leftbtn" id="edu_leftbtn" ></span>
+                <span class="edu_rgbtn" id="edu_rgbtn"  ></span>
+            </div>
+        </div>
+    </body>
+    <script>
+        fetchDashboardData(0,{{viewsize}});  
+        addBtnAction({{viewsize}});
+        // Set up periodic refresh every 5 minutes (300000 milliseconds)
+        setInterval(function() {
+            fetchDashboardData(0,{{viewsize}});
+        }, 600000);       
+    </script>
+    <script src="../../static/amfui/js/pxTurnRem.js">
+    </script>
+
+</html>

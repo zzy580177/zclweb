@@ -1,0 +1,187 @@
+/* 页面 */
+.page {
+	background-color: #030410;
+	min-height: 100vh;
+	box-sizing: border-box;
+	color: #fff;
+	font-size: 0;
+}
+
+.das-bg {
+	background-image: url('../img/das_bg.png');
+	background-size: 100%;
+	background-repeat: no-repeat;
+}
+
+.box-a {
+	width: 18.0rem;
+	min-height: 24.6rem;
+	background-image: url('../img/bg2.png');
+	background-size: 100%;
+	background-repeat: no-repeat;
+}
+
+.box-b {
+	width: 18.0rem;
+	min-height: 28rem;
+	background-image: url('../img/bg2.png');
+	background-size: 100%;
+	background-repeat: no-repeat;
+}
+
+.box-c {
+	width: 18.0rem;
+	min-height: 24.6rem;
+	background-image: url('../img/bg2.png');
+	background-size: 100%;
+	background-repeat: no-repeat;
+}
+
+.box-d {
+	width: 11.37rem;
+	min-height: 12rem;
+	background-image: url('../img/bg2.png');
+	background-size: 100%;
+	background-repeat: no-repeat;
+}
+
+.web-box {
+	width: 4.45rem;
+	height: 4.38rem;
+	background-color: #FFFFFF;
+	border-radius: 0.6rem;
+}
+
+.das-box {
+	width: 6.9rem;
+	height: 6.84rem;
+	margin-right: 1.38rem;
+	margin-bottom: 1.2rem;
+	background-color: #FFFFFF;
+	border-radius: 0.6rem;
+}
+
+.dumbo-bg {
+	width: 18.39rem;
+	height: 1.44rem;
+	background-color: #3968DA;
+	border-radius: 1.05rem;
+}
+
+.hz-bg {
+	width: 36rem;
+	height: 8.61rem;
+	background-image: url('../img/hz-bg.png');
+	background-size: 100%;
+	background-repeat: no-repeat;
+}
+
+
+.bg-btn {
+	background-color: #FF7D43;
+}
+
+.bb {
+	border-bottom-width: 3px;
+	border-bottom-style: solid;
+	border-bottom-color: #CCC;
+}
+
+.br {
+	border-right-width: 3px;
+	border-right-style: solid;
+	border-right-color: #f5f5f5;
+}
+
+.bl {
+	border-left-width: 3px;
+	border-left-style: solid;
+	border-left-color: #f5f5f5;
+}
+
+.bt {
+	border-top-width: 3px;
+	border-top-style: solid;
+	border-top-color: #f5f5f5;
+}
+
+/* 文案 */
+.text-title-b {
+	font-size: 1.08rem;
+	color: #1A1A1A;
+}
+
+.text-title {
+	font-size: 0.9rem;
+	color: #1A1A1A;
+}
+
+.text-title-z {
+	font-size: 0.84rem;
+	color: #1A1A1A;
+}
+
+.text-title-m {
+	font-size: 0.78rem;
+	color: #1A1A1A;
+}
+
+.text-txt-b {
+	font-size: 1.36rem;
+	color: #FFFFFF;
+}
+
+.text-txt {
+	font-size: 0.9rem;
+	color: #999999;
+}
+
+.text-txt-z {
+	font-size: 0.84rem;
+	color: #999999;
+}
+
+.text-txt-m {
+	font-size: 0.72rem;
+	color: #999999;
+}
+
+.text-btn-b {
+	font-size: 1.08rem;
+	color: #FF7D43;
+}
+
+.text-btn {
+	font-size: 0.9rem;
+	color: #FF7D43;
+}
+
+.text-btn-z {
+	font-size: 0.84rem;
+	color: #FF7D43;
+}
+
+.text-btn-m {
+	font-size: 0.72rem;
+	color: #FF7D43;
+}
+
+.text-tip-b {
+	font-size: 1.08rem;
+	color: #ff2130;
+}
+
+.text-tip {
+	font-size: 0.9rem;
+	color: #ff2130;
+}
+
+.text-tip-z {
+	font-size: 0.84rem;
+	color: #ff2130;
+}
+
+.text-tip-m {
+	font-size: 0.72rem;
+	color: #ff2130;
+}
