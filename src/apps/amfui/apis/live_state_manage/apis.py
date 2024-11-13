@@ -6,7 +6,7 @@ from ninja import Router
 from apps.amfui.models import *
 from apps.amfui.apis.live_state_manage.schemas import *
 from datetime import datetime, timedelta
-from django.db.models import Sum, Q, Count, F, Max, Value, CharField,Case, When
+from django.db.models import Sum, Q, Count, F, Max, Value, CharField,Case, When,Avg, IntegerField
 from django.db.models.functions import Cast, Concat, ExtractMonth, ExtractDay, ExtractHour, ExtractMinute
 import copy
 
@@ -25,8 +25,11 @@ defule_CellDic = {
     "tot_parts": "",
     "Cell__Stato": "",
     "WorkSheet_id": "",
+    "WorkSheet__Order_id": "",
+    "WorkSheet__Order__Product_id": "",
     "WorkSheet__FinishParts": 0,
     "WorkSheet__Status": "",
+    "AvaPieceTime":'',
     "EstimatedSec": "",
     "TotReq": 0,
     "Alarmi__AlarmString" : "",
@@ -102,15 +105,21 @@ def cur_date_data(request, offset=0, itemsPerPage=3):
     daily_Results = list(Record.objects.filter(StartTime__gte=_start, StartTime__lt=_end).values( 
         'Cell_id','Cell__Plant','Cell__Name','Cell__CellID',).annotate(**metrics).order_by('Cell__CellID'))
     work_Results = list(Record.objects.filter(StartTime__gte=_start, StartTime__lt=_end, Status = '加工中').values( 
-        'Cell_id','WorkSheet_id','WorkSheet__FinishParts','WorkSheet__Status', 'EstimatedSec','StartTime__date').annotate(
+        'Cell_id','WorkSheet_id','WorkSheet__Order_id','WorkSheet__Order__Product_id','WorkSheet__FinishParts','WorkSheet__Status', 'EstimatedSec','StartTime__date').annotate(
             TotReq = F('WorkSheet__AddReqParts')+F('WorkSheet__ReqParts')).order_by('Cell__CellID'))
 
     stato_Results = Stato.objects.filter(DataTime__gte=_start, DataTime__lt=_end).values('Cell_id').annotate(last_id=Max('id')).values('last_id')
     stato_Results = list(Stato.objects.filter(id__in=stato_Results).values('Cell_id','Alarmi__AlarmString'))
+    metrics = {'AvaPieceTime': Cast(Avg('PieceTime'), output_field=IntegerField()) / 1000}
+    Pezzi_Results = list(Pezzi.objects.filter(DataTime__gte=_start, DataTime__lt=_end).values('Cell_id', 'WorkSheet_id').annotate(**metrics).values('Cell_id', 'WorkSheet_id', 'AvaPieceTime'))
 
     for item in work_Results:
         if item['EstimatedSec'] is not None:
             item['EstimatedSec'] = sec2TmStr(item['EstimatedSec'])
+    for item in Pezzi_Results:
+        if item['AvaPieceTime'] is not None:
+            item['AvaPieceTime'] = sec2TmStr(item['AvaPieceTime'])
+
     for item in daily_Results:
         for key in ['tot_poweron','tot_workTM','tot_idleTM','tot_adjustTM',]:
             if item[key] is not None:
@@ -118,7 +127,7 @@ def cur_date_data(request, offset=0, itemsPerPage=3):
     for item in live_Results:
         if item['tot_online'] is not None:
             item['tot_online'] = sec2TmStr(item['tot_online'])
-    for item in live_Results + daily_Results + work_Results + stato_Results:
+    for item in live_Results + daily_Results + work_Results + stato_Results + Pezzi_Results:
         if str(item['Cell_id']) not in result:
             result[str(item['Cell_id'])] = copy.deepcopy(defule_CellDic)
             result[str(item['Cell_id'])].update(item)

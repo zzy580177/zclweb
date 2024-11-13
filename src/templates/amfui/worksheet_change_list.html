@@ -29,13 +29,15 @@
                 {% for item in summary %}
                     <tr class="{% cycle 'row1' 'row2' %}">
                         <td class="action-checkbox"><input type="checkbox" name="_selected_action" value="2" class="action-select" aria-label="选择此对象执行操作 - {{ item.WorkSheet_id }}"></td>
-                        <td > {{ item.WorkSheet_id }} </td>
+                        <td > {{ item.WorkSheet__Order_id }} </td>
+                        <td > {{ item.WorkSheet__Order__Product_id }} </td>
                         <td > {{ item.Cell__Plant }} </td>
                         <td > {{ item.Cell__Name }} </td>
                         <td > {{ item.Cell__CellID }} </td>
                         <td > {{ item.tot_poweron }} </td>
                         <td > {{ item.tot_workTM }} </td>
                         <td > {{ item.tot_idleTM }} </td>
+                        <td > {{ item.tot_adjustTM }} </td>
                         <td > {{ item.tot_parts }} </td>
                         <td > {{ item.min_estiTM }} </td>
                         <td > {{ item.WorkSheet__Status }} </td>

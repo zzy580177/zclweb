@@ -8,7 +8,7 @@ def check_screen_type(request):
         'Android', 'iPhone', 'iPad', 'iPod', 'BlackBerry', 'Windows Phone'
     ])
     if is_mobile:
-        return 1
+        return 3
     else:
         return 3
 

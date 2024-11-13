@@ -73,6 +73,8 @@ function perpareCellInfo(cellQ) {
         "daily_idle": cellQ.tot_idleTM,
         "daily_work": cellQ.tot_workTM,
         "daily_finish": cellQ.tot_parts,
+        "order_id": cellQ.WorkSheet__Order_id,
+        "product_id": cellQ.WorkSheet__Order__Product_id, 
         "ws_id": cellQ.WorkSheet_id,
         "ws_req": cellQ.TotReq,        
         "ws_remain": cellQ.TotReq - cellQ.WorkSheet__FinishParts,
@@ -80,6 +82,7 @@ function perpareCellInfo(cellQ) {
         "ws_status": cellQ.WorkSheet__Status,
         "ws_estimate": cellQ.EstimatedSec,
         "ws_finish_rate": rate,
+        "ws_pcsTime": cellQ.AvaPieceTime,
     };
     if (cellQ.Alarmi__AlarmString == null || cellQ.Alarmi__AlarmString =='')
     {   result.alarm = '无异常';     }
@@ -161,7 +164,7 @@ function createPezzReport(cellQ, type)
     infoContainer.className = 'dingdanshu flex-row justify-between flex-1 pt-2';
     if(type == 'plan')
     {
-        infoContainer.appendChild(createInfoElement('工单号', cellQ.ws_id));
+        infoContainer.appendChild(createInfoElement('订单号', cellQ.order_id));
         infoContainer.appendChild(createInfoElement('订单总数量', cellQ.ws_req));
     }else{
         infoContainer.appendChild(createInfoElement('已生产', cellQ.ws_finish));
@@ -209,6 +212,11 @@ function createStatoReport(cellQ) {
 
     const recordDetails = document.createElement('div');
     recordDetails.className = 'pt-2';
+
+    const PcsTime = document.createElement('div');
+    PcsTime.className = 'sez font-weight-normal';
+    PcsTime.textContent = '单件加工 : ' + cellQ.ws_pcsTime;
+    recordDetails.appendChild(PcsTime)
 
     const onlineTime = document.createElement('div');
     onlineTime.className = 'sez font-weight-normal';
