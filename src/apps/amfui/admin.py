@@ -125,13 +125,13 @@ class RecordAdmin(admin.ModelAdmin):
     actions = [export_as_xml]
     change_list_template = 'amfui/record_change_list.html'
     
-    list_displayHead = ['日期','车间','机台','机台编号','工单编号','开机时长','作业时长','待机时长','完成工件','预估剩余']
+    list_displayHead = ['日期','车间','机台','机台编号','订单编号','款号','开机时长','作业时长','待机时长','完成工件','预估剩余']
     def appendXmlWs(self, ws, queryset):
         i = 0
         for obj in queryset:
             i = i + 1
             ws.append( [i,obj['StartTime__date'], obj['Cell__Plant'], obj['Cell__Name'], obj['Cell__CellID'], 
-                       obj['WorkSheet_id'], obj['tot_poweron'], obj['tot_workTM'], obj['tot_idleTM'], obj['tot_parts'], obj['min_estiTM']])
+                       obj['WorkSheet__Order_id'],obj['WorkSheet__Order__Product_id'], obj['tot_poweron'], obj['tot_workTM'], obj['tot_idleTM'], obj['tot_parts'], obj['min_estiTM']])
 
     def get_select_queryset(self, request, queryset):
         metrics = {
@@ -142,9 +142,9 @@ class RecordAdmin(admin.ModelAdmin):
             'min_estiTM':   Min('EstimatedSec',filter=Q(Mode='普通模式')),
             'tot_parts':    Sum('FinishParts',filter=Q(Mode='普通模式')),
             }
-        filters = ['StartTime__date','Cell__Plant','Cell__Name','Cell__CellID','WorkSheet_id']
+        filters = ['StartTime__date','Cell__Plant','Cell__Name','Cell__CellID','WorkSheet_id','WorkSheet__Order_id','WorkSheet__Order__Product_id']
         orders = ['-StartTime__date','Cell__Plant','Cell__Name','Cell__CellID','WorkSheet_id']
-        qs = queryset.values(*filters).annotate(**metrics).order_by(*orders)
+        qs = queryset.exclude(Q(WorkSheet_id='未绑定工单')).values(*filters).annotate(**metrics).order_by(*orders)
         for item in qs:
             for key in ['tot_poweron','tot_workTM','tot_idleTM','tot_adjustTM','min_estiTM']:
                 if item[key] is not None:
@@ -179,7 +179,7 @@ class RecordManageAdmin(admin.ModelAdmin):
             }
         filters = ['Cell__Plant','Cell__Name','Cell__CellID','WorkSheet_id', 'WorkSheet__Status']
         orders = ['WorkSheet__Status', 'Cell__Plant','Cell__Name','Cell__CellID','WorkSheet_id']
-        qs = queryset.values(*filters).annotate(**metrics).order_by(*orders)
+        qs = queryset.exclude(Q(WorkSheet_id='未绑定工单')).values(*filters).annotate(**metrics).order_by(*orders)
         qs = list(qs)
         for item in qs:
             for key in ['tot_poweron','tot_workTM','tot_idleTM','tot_adjustTM','min_estiTM']:

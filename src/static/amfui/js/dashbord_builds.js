@@ -36,7 +36,7 @@ function generateDashboard(objList, element, viewsize) {
     const boxContent = document.getElementById(element);
     boxContent.innerHTML = ''; 
     maxLen = objList.length;
-    objList.slice(0, 1).forEach(obj => {
+    objList.slice(0, viewsize).forEach(obj => {
         const cellQ = perpareCellInfo(obj);
         const box = document.createElement('div');
         box.className = 'box-a pd-3 flex-column postion-relative';
@@ -75,7 +75,7 @@ function perpareCellInfo(cellQ) {
         "daily_finish": cellQ.tot_parts,
         "ws_id": cellQ.WorkSheet_id,
         "ws_req": cellQ.TotReq,        
-        "ws_remain": cellQ.TotReq- cellQ.WorkSheet__FinishParts,
+        "ws_remain": cellQ.TotReq - cellQ.WorkSheet__FinishParts,
         "ws_finish": cellQ.WorkSheet__FinishParts,
         "ws_status": cellQ.WorkSheet__Status,
         "ws_estimate": cellQ.EstimatedSec,
@@ -84,18 +84,12 @@ function perpareCellInfo(cellQ) {
     if (cellQ.Alarmi__AlarmString == null || cellQ.Alarmi__AlarmString =='')
     {   result.alarm = '无异常';     }
     if (cellQ.CellStatus == '作业中')
-    {
-        result.status_clore = "sra2";
-    }else if (cellQ.CellStatus == '待机')
-    {
-        result.status_clore = "sra1";
-    }else if (cellQ.CellStatus == '离线')
-    {
-        result.status_clore = "sra4";
-    }
-    else{
-        result.status_clore = "sra3";
-    }
+    {   result.status_clore = "sra2"; }
+    else if (cellQ.CellStatus == '待机')
+    {   result.status_clore = "sra1"; }
+    else if (cellQ.CellStatus == '离线')
+    {   result.status_clore = "sra4";   }
+    else{   result.status_clore = "sra3";   }
     return result;
 }
 

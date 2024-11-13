@@ -85,16 +85,20 @@ def cur_date_data(request, offset=0, itemsPerPage=3):
     _start = cur_date - timedelta(days=0)
     _end = cur_date + timedelta(days=1)
     result = {}
-    metrics = {'tot_online':  Sum('OnLine')}
+    metrics = {'tot_online':  Sum('OnLine'), 
+               'CellStatus':   Case(
+                    When(Cell__Stato=0, then=Value('作业中')),
+                    When(Cell__Stato=1, then=Value('待机')),
+                    When(Cell__Stato=2, then=Value('故障')),
+                    When(Cell__Stato=3, then=Value('离线')),default=Value('离线'),output_field=CharField())}
     live_Results = list(LiveStateManage.objects.filter(Check1__gte=_start, Check1__lt=_end).values(
-        'Cell_id', 'Cell__Name', 'Cell__CellID', 'Cell__Plant').annotate(**metrics).order_by('Cell__CellID'))
+        'Cell_id', 'Cell__Name', 'Cell__CellID', 'Cell__Plant', 'Cell__Stato').annotate(**metrics).order_by('Cell__CellID'))
     metrics = {
         'tot_adjustTM': Sum('PowerOnSec',filter=Q(Mode='调校模式')),
         'tot_poweron':  Sum('PowerOnSec'),
         'tot_workTM':   Sum('WorkingSec',filter=Q(Mode='普通模式')),
-        'tot_idleTM':   Sum('IdleTMSec',filter=Q(Mode='普通模式')),
-        'tot_parts':    Sum('FinishParts',filter=Q(Mode='普通模式')),
-        'CellStatus':   Case(When(Cell__Stato=0, then=Value('作业中')),When(Cell__Stato=1, then=Value('待机')),When(Cell__Stato=2, then=Value('故障')),default=Value('离线'),output_field=CharField())}
+        'tot_idleTM':   Sum('IdleTMSec',filter=Q(Mode='普通模式'))}
+        #'tot_parts':    Sum('FinishParts',filter=Q(Mode='普通模式'))}
     daily_Results = list(Record.objects.filter(StartTime__gte=_start, StartTime__lt=_end).values( 
         'Cell_id','Cell__Plant','Cell__Name','Cell__CellID',).annotate(**metrics).order_by('Cell__CellID'))
     work_Results = list(Record.objects.filter(StartTime__gte=_start, StartTime__lt=_end, Status = '加工中').values( 
@@ -118,6 +122,7 @@ def cur_date_data(request, offset=0, itemsPerPage=3):
         if str(item['Cell_id']) not in result:
             result[str(item['Cell_id'])] = copy.deepcopy(defule_CellDic)
             result[str(item['Cell_id'])].update(item)
+            result[str(item['Cell_id'])]['tot_parts'] = Pezzi.objects.filter(DataTime__gte=_start, DataTime__lt=_end, Cell_id= item['Cell_id']).count()
         else:
             result[str(item['Cell_id'])].update(item)
     result = list(result.values())

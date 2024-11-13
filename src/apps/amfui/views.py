@@ -22,7 +22,10 @@ def dashboard(request):
     offset = 4;
     if request.method=="POST":
         offset = request.POST.get("offset")
-    return render(request, 'dashboard.html', {'offset':offset,'viewsize':viewsize})
+    if (viewsize == 3):
+        return render(request, 'dashboard.html', {'offset':offset,'viewsize':viewsize})
+    else:
+        return render(request, 'dashboard_phone.html', {'offset':offset,'viewsize':viewsize})
 
 def extend_home(request):
     offset = 3;
