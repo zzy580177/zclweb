@@ -216,9 +216,35 @@ class StatoAdmin(admin.ModelAdmin):
 class WorkSheetAdmin(admin.ModelAdmin):
     list_display = ['Id','Cell__CellID','Order_id','Product_id','Status','ProcessID','FinishParts','ReqParts','AddReqParts',]
 
+
 @admin.register(Order)
-class OrderAdmin(admin.ModelAdmin):
-    list_display = ['Id','Colour','Product_id','ReqParts','Status',]
+class OrderAdmin(admin.ModelAdmin):    
+    list_display = ['Id', 'Colour', 'Product_id', 'ReqParts', 'Status']
+    list_editable = ['Colour', 'Product_id']
+    
+    def save_model(self, request, obj, form, change):
+        if change:
+            # Update existing record
+            Order.objects.filter(Id=obj.Id).update(
+                Colour=form.cleaned_data['Colour'],
+                Product_id=form.cleaned_data['Product_id'])
+        else:
+            obj.save()
+            
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        orderId = 0
+        if request.method == "POST":
+            for key, value in request.POST.items():
+                if key.startswith('form-') and '-' in key:
+                    row_id = key.split('-')[1]
+                    if row_id.isdigit():
+                        field = key.split('-')[2]
+                        if field in ['id']:
+                            orderId = value
+                        if field in ['Colour', 'Product_id']:
+                            Order.objects.filter(id=orderId).update(**{field: value})
+        return super().changelist_view(request, extra_context)
 
     
 

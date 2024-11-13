@@ -235,7 +235,7 @@ class Order(models.Model):
 	"""订单表"""
 	Id = models.CharField("订单号",max_length =50 ); 
 	Status = models.CharField("订单状态",null=True, max_length =20, editable=False); 
-	Colour = models.CharField("追加订单号",null=True, max_length =50);
+	Colour = models.CharField("叠加订单",null=True, max_length =50);
 	Product_id = models.CharField("产品款号",null=True, max_length =50); 
 	ReqParts = models.IntegerField("需求工件数",null=True, blank=True, editable=False); 	
 	def __str__(self):

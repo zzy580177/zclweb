@@ -91,7 +91,7 @@ function perpareCellInfo(cellQ) {
     else if (cellQ.CellStatus == '待机')
     {   result.status_clore = "sra1"; }
     else if (cellQ.CellStatus == '离线')
-    {   result.status_clore = "sra4";   }
+    {   result.status_clore = "sra4"; }
     else{   result.status_clore = "sra3";   }
     return result;
 }
