@@ -25,6 +25,17 @@ DATABASES = {
             'DRIVER':'SQL server Native Client 11.0',
         }
     },
+    'ouhai': {
+        'ENGINE':'mssql',
+        'HOST':'47.121.177.127',
+        'NAME':'ouhai',
+        'PORT':'1433',
+        'USER':'zclamf',
+        'PASSWORD':'Zclamfdb123',
+        'OPTIONS':{
+            'DRIVER':'SQL server Native Client 11.0',
+        }
+    },
     'yadi': {
         'ENGINE':'mssql',
         'HOST':'47.121.177.127',
@@ -53,6 +64,7 @@ DATABASE_APPS_MAPPING = {
     'default':'default',
     'yadi':'yadi',
     'jinya':'jinya',
+    'ouhai':'ouhai',
 }
 
 # Default primary key field type

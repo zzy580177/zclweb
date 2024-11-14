@@ -10,7 +10,7 @@ def check_screen_type(request):
     if is_mobile:
         return 1
     else:
-        return 1
+        return 3
 
 
 # Create your views here.

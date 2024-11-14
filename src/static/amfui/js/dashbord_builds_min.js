@@ -12,10 +12,10 @@ const imglink = {
 curr_offset=0
 maxLen = 0
 
-function fetchDashboardData(offset, viewsize) {
+function fetchDashboardData(offset) {
     try {
-      fetch(`/api/amfui/live_state_manage/live_state_manage_join?offset=${offset}&itemsPerPage=1`).then(response => response.json()).then(data => {
-        generateDashboard(data.data, 'dashboard-content', viewsize);
+      fetch(`/api/amfui/live_state_manage/live_state_manage_join?offset=${offset}&itemsPerPage=0`).then(response => response.json()).then(data => {
+        generateDashboard(data.data, 'dashboard-content');
       });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -23,20 +23,20 @@ function fetchDashboardData(offset, viewsize) {
 }
 
 function shiftRight() {
-    curr_offset = (curr_offset + 3) > maxLen ? curr_offset : curr_offset + 3;
-    fetchDashboardData(curr_offset, 1)
+    curr_offset = (curr_offset + 1) > maxLen ? curr_offset : curr_offset + 1;
+    fetchDashboardData(curr_offset)
 }
 
 function shiftLeft() {
-    curr_offset = (curr_offset - 3) < 0 ? curr_offset : curr_offset - 3;
-    fetchDashboardData(curr_offset, 1)
+    curr_offset = (curr_offset - 1) < 0 ? curr_offset : curr_offset - 1;
+    fetchDashboardData(curr_offset)
 }
 
-function generateDashboard(objList, element, viewsize) {
+function generateDashboard(objList, element) {
     const boxContent = document.getElementById(element);
     boxContent.innerHTML = ''; 
     maxLen = objList.length;
-    objList.slice(0, viewsize).forEach(obj => {
+    objList.slice(0, 1).forEach(obj => {
         const cellQ = perpareCellInfo(obj);
         const box = document.createElement('div');
         box.className = 'box-b pd-3 flex-column postion-relative';
@@ -47,16 +47,31 @@ function generateDashboard(objList, element, viewsize) {
     });
 }
 
-function addBtnAction(direction) {
-    //const leftBtn = document.getElementById('edu_leftbtn');
-    //const rgBtn = document.getElementById('edu_btn');
-    //rgBtn.addEventListener('click', function() { shiftRight(viewsize);});
-    //leftBtn.addEventListener('click', function() { shiftLeft(viewsize);});
-    if (direction === 'left') {
+function addBtnAction() {
+    const leftBtn = document.getElementById('edu_leftbtn');
+    const rgBtn = document.getElementById('edu_btn');
+    rgBtn.addEventListener('click', function() { shiftRight();});
+    leftBtn.addEventListener('click', function() { shiftLeft();});
+}
+
+function addBtnActionForTuch() {
+    const touchArea = document.getElementById('touchArea');
+    let startX, endX;
+   
+    touchArea.addEventListener('touchstart', function(e) {
+      startX = e.touches[0].clientX;
+    });   
+    touchArea.addEventListener('touchmove', function(e) {
+      e.preventDefault(); // 防止页面滚动
+    });   
+    touchArea.addEventListener('touchend', function(e) {
+      endX = e.changedTouches[0].clientX;
+      if (endX - startX > 0) {
         shiftRight();
-    } else {
+      } else {
         shiftLeft();
-    }
+      }
+    });
 }
 
 function perpareCellInfo(cellQ) {

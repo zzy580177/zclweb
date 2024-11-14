@@ -25,8 +25,8 @@
             <img src="../../static/amfui/img/adz.png" alt="" style="width: 100%;">
         </header>
         <!-- 代码部分begin -->
-        <div class="about_edu">
-            <div class="about_edulist " id = "swipeArea">	
+        <div class="about_edu" id = "touchArea" >
+            <div class="about_edulist " >	
                 <ul class="clearfix">
 					<li class="clearfix">
 						<div class=" flex-column align-center">
@@ -45,8 +45,8 @@
         </div>
     </body>
     <script>
-        fetchDashboardData(0,{{viewsize}});  
-        addBtnAction({{viewsize}});
+        fetchDashboardData(0);  
+        addBtnActionForTuch();
         // Set up periodic refresh every 5 minutes (300000 milliseconds)   
     </script>
     <script>
@@ -64,9 +64,9 @@
             
                 if (Math.abs(diffX) > 50) { // 滑动距离大于50px才触发
                     if (diffX > 0) {
-                        addBtnAction('right');
+                        addBtnActionForTuch('right');
                     } else {
-                        addBtnAction('left');
+                        addBtnActionForTuch('left');
                     }
                 }
             });
