@@ -10,7 +10,7 @@ def check_screen_type(request):
     if is_mobile:
         return 1
     else:
-        return 3
+        return 1
 
 
 # Create your views here.
@@ -19,13 +19,12 @@ def index(request):
 
 def dashboard(request):
     viewsize = check_screen_type(request)
-    offset = 4;
     if request.method=="POST":
         offset = request.POST.get("offset")
     if (viewsize == 3):
-        return render(request, 'dashboard.html', {'offset':offset,'viewsize':viewsize})
+        return render(request, 'dashboard.html', {'offset':0,'viewsize':viewsize})
     else:
-        return render(request, 'dashboard_min.html', {'offset':viewsize,'viewsize':viewsize})
+        return render(request, 'dashboard_min.html', {'offset':0,'viewsize':viewsize})
 
 def extend_home(request):
     offset = 3;

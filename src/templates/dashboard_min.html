@@ -26,7 +26,7 @@
         </header>
         <!-- 代码部分begin -->
         <div class="about_edu">
-            <div class="about_edulist web">	
+            <div class="about_edulist " id = "swipeArea">	
                 <ul class="clearfix">
 					<li class="clearfix">
 						<div class=" flex-column align-center">
@@ -47,10 +47,31 @@
     <script>
         fetchDashboardData(0,{{viewsize}});  
         addBtnAction({{viewsize}});
-        // Set up periodic refresh every 5 minutes (300000 milliseconds)
-        setInterval(function() {
-            fetchDashboardData(0,{{viewsize}});
-        }, 600000);       
+        // Set up periodic refresh every 5 minutes (300000 milliseconds)   
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let startX;
+            const swipeArea = document.getElementById('swipeArea');
+    
+            swipeArea.addEventListener('touchstart', function(e) {
+                startX = e.touches[0].clientX;
+            });
+    
+            swipeArea.addEventListener('touchend', function(e) {
+                const endX = e.changedTouches[0].clientX;
+                const diffX = endX - startX;
+            
+                if (Math.abs(diffX) > 50) { // 滑动距离大于50px才触发
+                    if (diffX > 0) {
+                        addBtnAction('right');
+                    } else {
+                        addBtnAction('left');
+                    }
+                }
+            });
+        });        
+        
     </script>
     <script src="../../static/amfui/js/pxTurnRem.js">
     </script>

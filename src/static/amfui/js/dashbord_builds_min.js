@@ -14,7 +14,7 @@ maxLen = 0
 
 function fetchDashboardData(offset, viewsize) {
     try {
-      fetch(`/api/amfui/live_state_manage/live_state_manage_join?offset=${offset}&itemsPerPage=0`).then(response => response.json()).then(data => {
+      fetch(`/api/amfui/live_state_manage/live_state_manage_join?offset=${offset}&itemsPerPage=1`).then(response => response.json()).then(data => {
         generateDashboard(data.data, 'dashboard-content', viewsize);
       });
     } catch (error) {
@@ -22,14 +22,14 @@ function fetchDashboardData(offset, viewsize) {
     }
 }
 
-function shiftRight(viewsize) {
+function shiftRight() {
     curr_offset = (curr_offset + 3) > maxLen ? curr_offset : curr_offset + 3;
-    fetchDashboardData(curr_offset, viewsize)
+    fetchDashboardData(curr_offset, 1)
 }
 
-function shiftLeft(viewsize) {
+function shiftLeft() {
     curr_offset = (curr_offset - 3) < 0 ? curr_offset : curr_offset - 3;
-    fetchDashboardData(curr_offset, viewsize)
+    fetchDashboardData(curr_offset, 1)
 }
 
 function generateDashboard(objList, element, viewsize) {
@@ -47,11 +47,16 @@ function generateDashboard(objList, element, viewsize) {
     });
 }
 
-function addBtnAction(viewsize) {
-    const leftBtn = document.getElementById('edu_leftbtn');
-    const rgBtn = document.getElementById('edu_btn');
-    rgBtn.addEventListener('click', function() { shiftRight(viewsize);});
-    leftBtn.addEventListener('click', function() { shiftLeft(viewsize);});
+function addBtnAction(direction) {
+    //const leftBtn = document.getElementById('edu_leftbtn');
+    //const rgBtn = document.getElementById('edu_btn');
+    //rgBtn.addEventListener('click', function() { shiftRight(viewsize);});
+    //leftBtn.addEventListener('click', function() { shiftLeft(viewsize);});
+    if (direction === 'left') {
+        shiftRight();
+    } else {
+        shiftLeft();
+    }
 }
 
 function perpareCellInfo(cellQ) {
