@@ -28,10 +28,10 @@ DATABASES = {
     'ouhai': {
         'ENGINE':'mssql',
         'HOST':'47.121.177.127',
-        'NAME':'ouhai',
+        'NAME':'ouhaidb',
         'PORT':'1433',
-        'USER':'zclamf',
-        'PASSWORD':'Zclamfdb123',
+        'USER':'ouhai',
+        'PASSWORD':'OH12345!',
         'OPTIONS':{
             'DRIVER':'SQL server Native Client 11.0',
         }
@@ -64,7 +64,7 @@ DATABASE_APPS_MAPPING = {
     'default':'default',
     'yadi':'yadi',
     'jinya':'jinya',
-    'ouhai':'ouhai',
+    'ouhai':'ouhaidb',
 }
 
 # Default primary key field type

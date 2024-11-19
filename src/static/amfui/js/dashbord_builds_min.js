@@ -13,6 +13,7 @@ curr_offset=0
 maxLen = 0
 
 function fetchDashboardData(offset) {
+    buildAboutEduList()
     try {
       fetch(`/api/amfui/live_state_manage/live_state_manage_join?offset=${offset}&itemsPerPage=0`).then(response => response.json()).then(data => {
         generateDashboard(data.data, 'dashboard-content');
@@ -23,7 +24,7 @@ function fetchDashboardData(offset) {
 }
 
 function shiftRight() {
-    curr_offset = (curr_offset + 1) > maxLen ? curr_offset : curr_offset + 1;
+    curr_offset = curr_offset >= maxLen - 1 ? curr_offset : curr_offset + 1;
     fetchDashboardData(curr_offset)
 }
 
@@ -32,9 +33,37 @@ function shiftLeft() {
     fetchDashboardData(curr_offset)
 }
 
+function buildAboutEduList() {
+    const container = document.querySelector('.about_edu');
+    const edulistDiv = document.createElement('div');
+    edulistDiv.className = 'about_edulist';
+
+    const ul = document.createElement('ul');
+    ul.className = 'clearfix';
+  
+    const li = document.createElement('li');
+    li.className = 'clearfix';
+  
+    const flexDiv = document.createElement('div');
+    flexDiv.className = 'flex-column align-center';
+  
+    const innerDiv = document.createElement('div');
+    innerDiv.style.width = '18rem';
+  
+    const dashboardContent = document.createElement('div');
+    dashboardContent.id = 'dashboard-content';
+    dashboardContent.className = 'pt-6 flex-row flex-wrap justify-between';
+  
+    innerDiv.appendChild(dashboardContent);
+    flexDiv.appendChild(innerDiv);
+    li.appendChild(flexDiv);
+    ul.appendChild(li);
+    edulistDiv.appendChild(ul);
+    container.appendChild(edulistDiv);
+  }
+
 function generateDashboard(objList, element) {
     const boxContent = document.getElementById(element);
-    boxContent.innerHTML = ''; 
     maxLen = objList.length;
     objList.slice(0, 1).forEach(obj => {
         const cellQ = perpareCellInfo(obj);

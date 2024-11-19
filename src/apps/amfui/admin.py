@@ -121,17 +121,17 @@ class CellAdmin(admin.ModelAdmin):
 
 @admin.register(Record)
 class RecordAdmin(admin.ModelAdmin):
-    list_filter = ['Cell_id', RecordFilter]
+    #list_filter = ['Cell_id', RecordFilter]
     actions = [export_as_xml]
     change_list_template = 'amfui/record_change_list.html'
     
-    list_displayHead = ['日期','车间','机台','机台编号','订单编号','款号','开机时长','作业时长','待机时长','调机时间','完成工件','预估剩余']
+    list_displayHead = ['日期','车间','机台','机台编号','订单编号','叠加订单号','款号','开机时长','作业时长','待机时长','调机时间','完成工件','预估剩余']
     def appendXmlWs(self, ws, queryset):
         i = 0
         for obj in queryset:
             i = i + 1
             ws.append( [i,obj['StartTime__date'], obj['Cell__Plant'], obj['Cell__Name'], obj['Cell__CellID'], 
-                       obj['WorkSheet__Order_id'],obj['WorkSheet__Order__Product_id'], obj['tot_poweron'], obj['tot_workTM'], 
+                       obj['WorkSheet__Order_id'],obj['WorkSheet__Order__Colour'], obj['WorkSheet__Order__Product_id'], obj['tot_poweron'], obj['tot_workTM'], 
                        obj['tot_idleTM'],obj['tot_adjustTM'], obj['tot_parts'], obj['min_estiTM']])
 
     def get_select_queryset(self, request, queryset):
@@ -143,7 +143,7 @@ class RecordAdmin(admin.ModelAdmin):
             'min_estiTM':   Min('EstimatedSec',filter=Q(Mode='普通模式')),
             'tot_parts':    Sum('FinishParts',filter=Q(Mode='普通模式')),
             }
-        filters = ['StartTime__date','Cell__Plant','Cell__Name','Cell__CellID','WorkSheet_id','WorkSheet__Order_id','WorkSheet__Order__Product_id']
+        filters = ['StartTime__date','Cell__Plant','Cell__Name','Cell__CellID','WorkSheet_id','WorkSheet__Order_id','WorkSheet__Order__Product_id', 'WorkSheet__Order__Colour']
         orders = ['-StartTime__date','Cell__Plant','Cell__Name','Cell__CellID','WorkSheet_id']
         qs = queryset.exclude(Q(WorkSheet_id='未绑定工单')).values(*filters).annotate(**metrics).order_by(*orders)
         for item in qs:
@@ -161,12 +161,12 @@ class RecordManageAdmin(admin.ModelAdmin):
     actions = [export_as_xml]
     change_list_template = 'amfui/worksheet_change_list.html'
 
-    list_displayHead = ['订单编号','款号', '车间','机台','机台编号','开机时长','作业时长','待机时长','调机时间','完成工件','预估剩余', '工单状态']
+    list_displayHead = ['订单编号','叠加订单号','款号', '车间','机台','机台编号','开机时长','作业时长','待机时长','调机时间','完成工件','预估剩余', '工单状态']
     def appendXmlWs(self, ws, queryset):
         i = 0
         for obj in queryset:
             i = i + 1
-            ws.append([i,obj['WorkSheet__Order_id'],obj['WorkSheet__Order__Product_id'], obj['Cell__Plant'], obj['Cell__Name'], obj['Cell__CellID'], 
+            ws.append([i,obj['WorkSheet__Order_id'],obj['WorkSheet__Order__Colour'],obj['WorkSheet__Order__Product_id'], obj['Cell__Plant'], obj['Cell__Name'], obj['Cell__CellID'], 
                 obj['tot_poweron'], obj['tot_workTM'], obj['tot_idleTM'], obj['tot_adjustTM'],  obj['tot_parts'], obj['min_estiTM'], 
                 obj['WorkSheet__Status']])
 
@@ -179,7 +179,7 @@ class RecordManageAdmin(admin.ModelAdmin):
             'min_estiTM':   Min('EstimatedSec',filter=Q(Mode='普通模式')),
             'tot_parts':    Sum('FinishParts',filter=Q(Mode='普通模式')),
             }
-        filters = ['Cell__Plant','Cell__Name','Cell__CellID','WorkSheet_id', 'WorkSheet__Status','WorkSheet__Order_id','WorkSheet__Order__Product_id']
+        filters = ['Cell__Plant','Cell__Name','Cell__CellID','WorkSheet_id', 'WorkSheet__Status','WorkSheet__Order_id','WorkSheet__Order__Product_id', 'WorkSheet__Order__Colour']
         orders = ['WorkSheet__Status', 'Cell__Plant','Cell__Name','Cell__CellID','WorkSheet_id']
         qs = queryset.exclude(Q(WorkSheet_id='未绑定工单')).values(*filters).annotate(**metrics).order_by(*orders)
         qs = list(qs)

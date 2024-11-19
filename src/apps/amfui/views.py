@@ -36,5 +36,5 @@ def test(request):
     offset = 3;
     if request.method=="POST":
         offset = request.POST.get("offset")
-    return render(request, 'test.html', {'offset':offset})
+    return render(request, 'test.html')
 

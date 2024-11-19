@@ -63,7 +63,15 @@ def cell_typeList(request):
         Cast(ExtractHour('Check1'), CharField()), Value(':'), Cast(ExtractMinute('Check1'), CharField()))
     ).values('combined_string','Alarmi__AlarmString', 'Stato', 'Cell__Name','Cell__CellID', 'DataTime')
     rlist['msgs'].extend([offlines for offlines in qs])
+
+    qs= LiveState.objects.values('Check1','Cell_id','Cell__Stato').annotate(combined_string=Concat(
+        Cast(ExtractMonth('Check1'), CharField()), Value('/'), Cast(ExtractDay('Check1'), CharField()), Value(' '),
+        Cast(ExtractHour('Check1'), CharField()), Value(':'), Cast(ExtractMinute('Check1'), CharField()))).last()
+
     rlist['msgs'] = sorted(rlist['msgs'], key=lambda x: x['DataTime'], reverse=True)
+    if((datetime.now() - qs['Check1']) > timedelta(minutes=5)):
+        tmp = {'Stato':3,'Alarmi__AlarmString':'已离线或故障中', 'Cell__Name':'ZCLAMF采集平台','Cell__CellID':'', 'DataTime': qs['Check1'],'combined_string':qs['combined_string'] }
+        rlist['msgs'].insert(0, tmp)
     return rlist
  
 @router.get("/live_state_manage/cellcnt",  url_name='amfui/live_state_manage/cellcnt')
