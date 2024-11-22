@@ -1,34 +1,14 @@
 from django.contrib import admin
-
+from django.utils.translation import gettext_lazy as _
 from .models import *
 from django.db.models import Min, Sum, Q,F,Value
+import calendar
 
+from datetime import datetime
 from django.http import HttpResponse
 from openpyxl import Workbook
 
 dayFilter = (('0', u'当天'),('1', u'本周'),('2', u'本月'), ('3', u'上个月'))
-class LiveStateFilter(admin.SimpleListFilter):
-    title = '日期过滤'
-    parameter_name = 'is_in_date'
-    def lookups(self, request, model_admin):
-        return dayFilter
-    def queryset(self, request, queryset):
-        # 当前日期格式
-        cur_date = datetime.now().date()
-        _start = cur_date
-        _end = cur_date + timedelta(days=1)
-        if self.value() == '1':
-            _start = cur_date - timedelta(days=cur_date.weekday())
-            _end = cur_date + timedelta(days=1)
-        elif self.value() == '2':
-            _start = cur_date.replace(day=1)
-            _end = cur_date + timedelta(days=1)
-        elif self.value() =='3':
-            last_month = cur_date.replace(day=1) - timedelta(days=1)
-            _start = last_month.replace(day=1)
-            _end = last_month.replace(day=last_month.day) + timedelta(days=1)
-        return queryset.filter(Check1__gte=_start, Check1__lt=_end)
-
 class MonthFilter(admin.SimpleListFilter):
     title = _('month') # type: ignore
     parameter_name = 'month'
@@ -38,43 +18,49 @@ class MonthFilter(admin.SimpleListFilter):
         year = self.value()
         if year is None:
             year = datetime.now().year
-        # 生成一年中所有月份的查询集
-        return [(f'{year}-{i:02d}', f'{year}年{i}月') for i in range(1, 13)]
+        current_month = datetime.now().month
+        date_field = 'StartTime'
+        if model_admin.__class__.__name__ == 'RecordAdmin':
+            date_field = 'StartTime'
+        elif model_admin.__class__.__name__ == 'LiveStateAdmin':
+            date_field = 'Check1'
+        earliest_date = model_admin.model.objects.aggregate(Min(date_field))[f'{date_field}__min']     
+        earliest_month = 1
+        if earliest_date:
+            year = earliest_date.year
+            earliest_month = earliest_date.month            
+        return [(f'{year}-{i:02d}', f'{year}年{i}月') for i in range(current_month, earliest_month-1, -1)]
  
     def queryset(self, request, queryset):
         # 获取选中的月份
         value = self.value()
+        if value is None:
+            value = datetime.now().strftime('%Y-%m')
         if value:
             # 构造查询条件，筛选出该月份的所有数据
             year, month = value.split('-')
+            end_date = f'{year}-{month}-{ calendar.monthrange(int(year), int(month))[1]}'
             start_date = f'{year}-{month}-01'
-            end_date = f'{year}-{month}-{datetime.days_in_month(int(year), int(month))}'
             return queryset.filter(
                 Q(StartTime__gte=start_date) & Q(StartTime__lt=end_date)
             )
         return queryset
 
-class RecordFilter(admin.SimpleListFilter):
-    title = '日期过滤'
-    parameter_name = 'is_in_date'
-    def lookups(self, request, model_admin):
-        return dayFilter
+class LFMonthFilter(MonthFilter):
     def queryset(self, request, queryset):
-        # 当前日期格式
-        cur_date = datetime.now().date()
-        _start = cur_date
-        _end = cur_date + timedelta(days=1)
-        if self.value() == '1':
-            _start = cur_date - timedelta(days=cur_date.weekday())
-            _end = cur_date + timedelta(days=1)
-        elif self.value() == '2':
-            _start = cur_date.replace(day=1)
-            _end = cur_date + timedelta(days=1)
-        elif self.value() =='3':
-            last_month = cur_date.replace(day=1) - timedelta(days=1)
-            _start = last_month.replace(day=1)
-            _end = last_month.replace(day=last_month.day) + timedelta(days=1)
-        return queryset.filter(StartTime__gte=_start, StartTime__lt=_end)
+        # 获取选中的月份
+        value = self.value()
+        if value is None:
+            value = datetime.now().strftime('%Y-%m')
+        if value:
+            # 构造查询条件，筛选出该月份的所有数据
+            year, month = value.split('-')
+            end_date = f'{year}-{month}-{ calendar.monthrange(int(year), int(month))[1]}'
+            start_date = f'{year}-{month}-01'
+            return queryset.filter(
+                Q(Check1__gte=start_date) & Q(Check1__lt=end_date)
+            )
+        return queryset
 
 def export_as_xml(modeladmin, request, queryset):
     response = HttpResponse(content_type='application/ms-excel')
@@ -107,7 +93,7 @@ def changelist_view(modeladmin, request, extra_context=None):
 
 @admin.register(LiveState)
 class LiveStateAdmin(admin.ModelAdmin):
-    list_filter = ['Cell_id', LiveStateFilter]
+    list_filter = ['Cell_id', LFMonthFilter]
     actions = [export_as_xml]
     change_list_template = 'amfui/livestate_change_list.html'
     list_displayHead = ['日期','车间','机台','机台编号','在线时长']
