@@ -29,6 +29,31 @@ class LiveStateFilter(admin.SimpleListFilter):
             _end = last_month.replace(day=last_month.day) + timedelta(days=1)
         return queryset.filter(Check1__gte=_start, Check1__lt=_end)
 
+class MonthFilter(admin.SimpleListFilter):
+    title = _('month') # type: ignore
+    parameter_name = 'month'
+ 
+    def lookups(self, request, model_admin):
+        # 获取当前年份
+        year = self.value()
+        if year is None:
+            year = datetime.now().year
+        # 生成一年中所有月份的查询集
+        return [(f'{year}-{i:02d}', f'{year}年{i}月') for i in range(1, 13)]
+ 
+    def queryset(self, request, queryset):
+        # 获取选中的月份
+        value = self.value()
+        if value:
+            # 构造查询条件，筛选出该月份的所有数据
+            year, month = value.split('-')
+            start_date = f'{year}-{month}-01'
+            end_date = f'{year}-{month}-{datetime.days_in_month(int(year), int(month))}'
+            return queryset.filter(
+                Q(StartTime__gte=start_date) & Q(StartTime__lt=end_date)
+            )
+        return queryset
+
 class RecordFilter(admin.SimpleListFilter):
     title = '日期过滤'
     parameter_name = 'is_in_date'
@@ -121,7 +146,7 @@ class CellAdmin(admin.ModelAdmin):
 
 @admin.register(Record)
 class RecordAdmin(admin.ModelAdmin):
-    #list_filter = ['Cell_id', RecordFilter]
+    list_filter = ['Cell_id', MonthFilter]
     actions = [export_as_xml]
     change_list_template = 'amfui/record_change_list.html'
     
@@ -225,7 +250,7 @@ class OrderAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if change:
             # Update existing record
-            Order.objects.filter(Id=obj.Id).update(
+            Order.objects.filter(Id=form.cleaned_data['id'].Id).update(
                 Colour=form.cleaned_data['Colour'],
                 Product_id=form.cleaned_data['Product_id'])
         else:
@@ -242,7 +267,7 @@ class OrderAdmin(admin.ModelAdmin):
                         field = key.split('-')[2]
                         if field in ['id']:
                             orderId = value
-                        if field in ['Colour', 'Product_id']:
+                        if field in ['Colour', 'Product_id' ,'Id']:
                             Order.objects.filter(id=orderId).update(**{field: value})
         return super().changelist_view(request, extra_context)
 

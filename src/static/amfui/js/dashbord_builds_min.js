@@ -194,8 +194,9 @@ function createOrderReport(cellQ) {
     const title = document.createElement('div');
     title.className = 'tel font-weight-bold';
     title.textContent = '订单信息';
-    orderReport.appendChild(title);			
-    orderReport.appendChild(createPezzReport(cellQ,'plan'));	
+    orderReport.appendChild(title);	
+
+    orderReport.appendChild(createPezzReport(cellQ,'plan'));
     const hengg1 = document.createElement('div');
     hengg1.className = 'hengg';
     orderReport.appendChild(hengg1);
@@ -213,9 +214,10 @@ function createPezzReport(cellQ, type)
     infoContainer.className = 'dingdanshu flex-row justify-between flex-3 pt-5';
     if(type == 'plan')
     {
+        infoContainer.appendChild(createInfoElement('产品款号', cellQ.product_id));
         infoContainer.appendChild(createInfoElement('订单号', cellQ.order_id));
-        infoContainer.appendChild(createInfoElement('订单总数量', cellQ.ws_req));
     }else{
+        infoContainer.appendChild(createInfoElement('总数量', cellQ.ws_req));
         infoContainer.appendChild(createInfoElement('已生产', cellQ.ws_finish));
         infoContainer.appendChild(createInfoElement('待生产', cellQ.ws_remain));	
     }

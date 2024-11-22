@@ -164,9 +164,10 @@ function createPezzReport(cellQ, type)
     infoContainer.className = 'dingdanshu flex-row justify-between flex-1 pt-2';
     if(type == 'plan')
     {
+        infoContainer.appendChild(createInfoElement('产品款号', cellQ.product_id));
         infoContainer.appendChild(createInfoElement('订单号', cellQ.order_id));
-        infoContainer.appendChild(createInfoElement('订单总数量', cellQ.ws_req));
     }else{
+        infoContainer.appendChild(createInfoElement('总数量', cellQ.ws_req));
         infoContainer.appendChild(createInfoElement('已生产', cellQ.ws_finish));
         infoContainer.appendChild(createInfoElement('待生产', cellQ.ws_remain));	
     }
