@@ -31,11 +31,16 @@
                     {% for item in summary %}
                         <tr class="{% cycle 'row1' 'row2' %}">
                             <td class="action-checkbox"><input type="checkbox" name="_selected_action" value="2" class="action-select" aria-label="选择此对象执行操作 - {{ item.Check1__date }}"></td>
-                            <td > {{ item.Check1__date }} </td>
+                            <td > {{ item.Day }} </td>
                             <td > {{ item.Cell__Plant }} </td>
                             <td > {{ item.Cell__Name }} </td>
                             <td > {{ item.Cell__CellID }} </td>
                             <td > {{ item.tot_online }} </td>
+                            <td > {{ item.tot_powerOn }} </td>
+                            <td > {{ item.offline_rate }} </td>                            
+                            <td > {{ item.tot_workTM }} </td>
+                            <td > {{ item.tot_idleTM }} </td>
+                            <td > {{ item.tot_adjustTM }} </td>
                         </tr>
                     {% endfor %}
             </tbody>

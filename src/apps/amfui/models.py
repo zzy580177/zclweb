@@ -19,7 +19,10 @@ def sec2TmStr(sec):
 			return "%02d Hour %02d Min" % (h, m)
 	return " %2d Min %2d Sec" % (m, s)
 	
-
+def getDailyWorkTime(user):
+	if user.username == 'yadi':
+		return 22
+	return 24
 
 
 class Alarmi(models.Model):

@@ -65,6 +65,7 @@ DATABASE_APPS_MAPPING = {
     'yadi':'yadi',
     'jinya':'jinya',
     'ouhai':'ouhaidb',
+    'zcltest':'zcl',
 }
 
 # Default primary key field type

@@ -83,6 +83,7 @@ function perpareCellInfo(cellQ) {
         "ws_estimate": cellQ.EstimatedSec,
         "ws_finish_rate": rate,
         "ws_pcsTime": cellQ.AvaPieceTime,
+        "DailyTm" : cellQ.DailyTm
     };
     if (cellQ.Alarmi__AlarmString == null || cellQ.Alarmi__AlarmString =='')
     {   result.alarm = '无异常';     }
@@ -264,6 +265,11 @@ function createProgressReport(cellQ) {
     estimatedTime.className = 'fep-12b font-weight-normal';
     estimatedTime.textContent = '预计剩余时长 ' + cellQ.ws_estimate;
     progress.appendChild(estimatedTime);
+
+    const estimatedinfo = document.createElement('div');
+    estimatedinfo.className = 'fep-12b font-weight-normal';
+    estimatedinfo.textContent = '( ' + cellQ.DailyTm + ' H/Day )';
+    progress.appendChild(estimatedinfo);
     return progress;
 }
 

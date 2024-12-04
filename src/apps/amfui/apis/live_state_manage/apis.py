@@ -34,6 +34,7 @@ defule_CellDic = {
     "TotReq": 0,
     "Alarmi__AlarmString" : "",
     "CellStatus" : "",
+    "DailyTm": 24
 }
 @router.get("/live_state_manage/cell_typeList",  url_name='amfui/live_state_manage/cell_typeList')
 def cell_typeList(request):
@@ -42,7 +43,8 @@ def cell_typeList(request):
          '离线中': Count('id', filter=Q(Stato =3)), 
          '待机中': Count('id', filter=Q(Stato =1)), 
          '作业中': Count('id', filter=Q(Stato =0)), 
-         '故障中': Count('id', filter=Q(Stato =2)),}
+         '故障中': Count('id', filter=Q(Stato =2)),
+         'Tot': Count('id'),}
     dictL = list(Cell.objects.values('Plant').annotate(**metrics))
     rlist['cells'] = [{'label':'离线中', 'value':dictL[0]['离线中']},
              {'label':'待机中', 'value':dictL[0]['待机中']},
@@ -55,6 +57,7 @@ def cell_typeList(request):
         Cast(ExtractHour('DataTime'), CharField()), Value(':'), Cast(ExtractMinute('DataTime'), CharField()))
     ).values('combined_string','Alarmi__AlarmString', 'Stato', 'Cell__Name','Cell__CellID', 'DataTime').order_by('-DataTime')
     rlist['msgs'] =  [Stato for Stato in qs]
+    qs = None
     lsQs = LiveState.objects.values('Cell_id').annotate(last_id=Max('id')).values('last_id')
     cellQs = Cell.objects.filter(Stato=3).values('CellID')
     qs = LiveState.objects.filter(Q(Cell__CellID__in=cellQs)&Q(id__in=lsQs)&Q(Cell__Stato=3)).annotate(Alarmi__AlarmString = Value('离线'), 
@@ -63,7 +66,8 @@ def cell_typeList(request):
         Cast(ExtractHour('Check1'), CharField()), Value(':'), Cast(ExtractMinute('Check1'), CharField()))
     ).values('combined_string','Alarmi__AlarmString', 'Stato', 'Cell__Name','Cell__CellID', 'DataTime')
     rlist['msgs'].extend([offlines for offlines in qs])
-
+    qs = None
+    lsQs = None
     qs= LiveState.objects.values('Check1','Cell_id','Cell__Stato').annotate(combined_string=Concat(
         Cast(ExtractMonth('Check1'), CharField()), Value('/'), Cast(ExtractDay('Check1'), CharField()), Value(' '),
         Cast(ExtractHour('Check1'), CharField()), Value(':'), Cast(ExtractMinute('Check1'), CharField()))).last()
@@ -72,6 +76,11 @@ def cell_typeList(request):
     if((datetime.now() - qs['Check1']) > timedelta(minutes=5)):
         tmp = {'Stato':3,'Alarmi__AlarmString':'已离线或故障中', 'Cell__Name':'ZCLAMF采集平台','Cell__CellID':'', 'DataTime': qs['Check1'],'combined_string':qs['combined_string'] }
         rlist['msgs'].insert(0, tmp)
+        rlist['cells'] = [{'label':'离线中', 'value':dictL[0]['Tot']},
+             {'label':'待机中', 'value':0},
+             {'label':'作业中', 'value':0},
+             {'label':'故障中', 'value':0}] 
+    qs = None 
     return rlist
  
 @router.get("/live_state_manage/cellcnt",  url_name='amfui/live_state_manage/cellcnt')
@@ -87,7 +96,9 @@ def get_cellstatus(request):
             Cast(ExtractHour('DataTime'), CharField()), Value(':'), Cast(ExtractMinute('DataTime'), CharField()), Value(' | '),
             'Cell__Name', Value('-'), Cast('Cell__CellID', CharField()))
     ).values('combined_string','Alarmi__AlarmString', 'Stato')
-    return list(qs)
+    result = list(qs)
+    qs=None
+    return result
 
 @router.get("/live_state_manage_join",  url_name='amfui/live_state_manage/join/list')
 def cur_date_data(request, offset=0, itemsPerPage=3):
@@ -120,10 +131,10 @@ def cur_date_data(request, offset=0, itemsPerPage=3):
     stato_Results = list(Stato.objects.filter(id__in=stato_Results).values('Cell_id','Alarmi__AlarmString'))
     metrics = {'AvaPieceTime': Cast(Avg('PieceTime'), output_field=IntegerField()) / 1000}
     Pezzi_Results = list(Pezzi.objects.filter(DataTime__gte=_start, DataTime__lt=_end).values('Cell_id', 'WorkSheet_id').annotate(**metrics).values('Cell_id', 'WorkSheet_id', 'AvaPieceTime'))
-
+    dailyTm = getDailyWorkTime(request.user)
     for item in work_Results:
         if item['EstimatedSec'] is not None:
-            item['EstimatedSec'] = sec2TmStr(item['EstimatedSec'])
+            item['EstimatedSec'] = sec2TmStr(item['EstimatedSec']*24/getDailyWorkTime(request.user))
     for item in Pezzi_Results:
         if item['AvaPieceTime'] is not None:
             item['AvaPieceTime'] = sec2TmStr(item['AvaPieceTime'])
@@ -139,6 +150,7 @@ def cur_date_data(request, offset=0, itemsPerPage=3):
         if str(item['Cell_id']) not in result:
             result[str(item['Cell_id'])] = copy.deepcopy(defule_CellDic)
             result[str(item['Cell_id'])].update(item)
+            result[str(item['Cell_id'])]['DailyTm']= dailyTm
             result[str(item['Cell_id'])]['tot_parts'] = Pezzi.objects.filter(DataTime__gte=_start, DataTime__lt=_end, Cell_id= item['Cell_id']).count()
         else:
             result[str(item['Cell_id'])].update(item)
