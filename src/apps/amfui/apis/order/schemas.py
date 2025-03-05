@@ -7,10 +7,10 @@ class OrderIn(ModelSchema):
 
     class Meta:
         model = Order
-        fields = ['Id', 'Status', 'Colour', 'Product_id', 'ReqParts', ]
+        fields = ['OrderId', 'Status', 'Colour', 'Product_id', 'ReqParts', ]
 
 
 class OrderOut(ModelSchema):
     class Meta:
         model = Order
-        fields = ['id', 'Id', 'Status', 'Colour', 'Product_id', 'ReqParts', ]
+        fields = ['id', 'OrderId', 'Status', 'Colour', 'Product_id', 'ReqParts', ]
