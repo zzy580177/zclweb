@@ -6,7 +6,6 @@ class WorkSheetIn(ModelSchema):
     
     Cell_id: int
     
-    Order_id: int
     
 
     class Meta:

@@ -207,7 +207,7 @@ class WorkSheet(models.Model):
 	"""订单表"""
 	Id = models.CharField("工单号", max_length =50, primary_key=True );	
 	Cell = models.ForeignKey('Cell', on_delete=models.CASCADE, null=True,blank=True)
-	Order = models.ForeignKey('Order', on_delete=models.CASCADE, null=True,blank=True, verbose_name = '订单号')
+	Order = models.ForeignKey('Order', on_delete=models.CASCADE, null=True,blank=True, verbose_name = '订单号', to_field='OrderId')
 	Product_id = models.CharField("款号", max_length =50); 
 	Status = models.CharField("工单状态",null=True, max_length =20, editable=False); 
 	ProcessID = models.CharField("工序备注",null=True, max_length =50); 
@@ -228,7 +228,7 @@ class WorkSheet(models.Model):
 	def Cell__CellID(self):
 		return self.Cell.CellID
 	def Order_id(self):
-		return self.Order.Id
+		return self.Order.Order_id
 	Order_id.short_description  = '订单号'
 	Cell__Plant.short_description  = '车间'
 	Cell__Name.short_description  = '机台'
@@ -236,7 +236,7 @@ class WorkSheet(models.Model):
 
 class Order(models.Model):
 	"""订单表"""
-	OrderId = models.CharField("订单号",max_length =50); 
+	OrderId = models.CharField("订单号",max_length =50, primary_key=True); 
 	Status = models.CharField("订单状态",null=True, max_length =20, editable=False); 
 	Colour = models.CharField("叠加订单",null=True, max_length =50);
 	Product_id = models.CharField("产品款号",null=True, max_length =50); 

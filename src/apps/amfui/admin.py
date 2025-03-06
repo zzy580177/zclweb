@@ -144,7 +144,7 @@ class RecordAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         from django.utils import timezone
-        queryset = super().get_queryset(request)
+        queryset = super().get_queryset(request).select_related('WorkSheet__Order')
         check1_start = request.GET.get('StartTime__gte')
         check1_end = request.GET.get('StartTime__lte')
 
@@ -271,5 +271,5 @@ class ChildModel2Inline(admin.TabularInline):
     extra = 1  # 可以根据需要设置额外的行数
 
 
-    
+
 
