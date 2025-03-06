@@ -242,7 +242,7 @@ class Order(models.Model):
 	Product_id = models.CharField("产品款号",null=True, max_length =50); 
 	ReqParts = models.IntegerField("需求工件数",null=True, blank=True, editable=False); 	
 	def __str__(self):
-		return self.Id
+		return self.OrderId
 	class Meta:
 		db_table = "[%s].[Order]"% schema
 		app_label = app_name
