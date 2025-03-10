@@ -14,8 +14,18 @@
     </div>
     <div class="actions" style="margin-top: 20px;">
         {% if add_new_order_url %}
-            <a class="button" style="font-weight: bold; color: black; background-color: rgb(195, 234, 178); margin-left: 60px;" href="{{ add_new_order_url }}">创建新订单</a>
+            <a class="button" style="font-weight: bold; color: black; background-color: rgb(255, 254, 254); border: 1px solid grey; margin-left: 60px;" 
+            href="{{ add_new_order_url }}">创建新订单</a>
         {% endif %}
     </div>
     {{ block.super }}
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <style>
+        .button:hover {
+            background-color: rgb(184, 188, 243);
+        }
+    </style>
 {% endblock %}
