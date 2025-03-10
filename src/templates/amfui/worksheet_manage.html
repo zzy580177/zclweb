@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WorkSheet Manage</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; /* 设置字体为当前主题字体 */
+            font-size: 14px; /* 设置字体大小 */
+            margin: 20px;
+            color: #333; /* 设置字体颜色为当前主题色 */
+        }
+        h1 {
+            color: #333; /* 设置标题颜色为当前主题色 */
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+            color: #333; /* 设置表头字体颜色为当前主题色 */
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .order-info-table {
+            width: 50%; /* 使订单信息表比工单信息表短 */
+            background-color: #e0f7fa; /* 设置订单信息表底色 */
+        }
+        .back-link, .new-worksheet-link {
+            margin-top: 20px;
+            display: inline-block;
+            padding: 10px 15px;
+            background-color: #f4f4f4;
+            color: #333;
+            text-decoration: none;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .back-link:hover, .new-worksheet-link:hover {
+            background-color: #e4e4e4;
+        }
+        .delete-button, .edit-button, .confirm-button {
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .delete-button:disabled, .edit-button:disabled, .confirm-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"], input[type="number"], select {
+            width: 8ch; /* 设置输入框和下拉框的宽度 */
+        }
+    </style>
+    <script>
+        function enableEdit() {
+            document.getElementById('product_id').disabled = false;
+            document.getElementById('req_parts').disabled = false;
+            document.getElementById('status').disabled = false;
+            document.getElementById('edit-button').disabled = true;
+            document.getElementById('confirm-button').disabled = false;
+        }
+        function disableEdit() {
+            document.getElementById('product_id').disabled = true;
+            document.getElementById('req_parts').disabled = true;
+            document.getElementById('status').disabled = true;
+            document.getElementById('edit-button').disabled = false;
+            document.getElementById('confirm-button').disabled = false; // 确保确认键在提交时启用
+        }
+    </script>
+</head>
+<body>
+    
+    <!-- 显示当前订单信息 -->
+    <form method="post" action="" >
+        {% csrf_token %}
+        <table class="order-info-table">
+            <thead>
+                <tr>
+                    <th>订单编号</th>
+                    <th>产品款号</th>
+                    <th>计划工件数</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ Order.0.OrderId }}</td>
+                    <td><input type="text" id="product_id" name="ProductID" value="{{ Order.0.Product_id }}" disabled></td>
+                    <td><input type="number" id="req_parts" name="ReqParts" value="{{ Order.0.ReqParts }}" min="0" disabled></td>
+                    <td>
+                        <select id="status" name="Status" disabled>
+                            <option value="未就绪" {% if Order.0.Status == '未就绪' %}selected{% endif %}>未就绪</option>
+                            <option value="就绪" {% if Order.0.Status == '就绪' %}selected{% endif %}>就绪</option>
+                            <option value="生产中" {% if Order.0.Status == '生产中' %}selected{% endif %}>生产中</option>
+                            <option value="已完成" {% if Order.0.Status == '已完成' %}selected{% endif %}>已完成</option>
+                            <option value="暂停" {% if Order.0.Status == '暂停' %}selected{% endif %}>暂停</option>
+                        </select>
+                    </td>
+                    <td class="button-group">
+                        <button type="button" id="edit-button" class="edit-button" onclick="enableEdit()">修改</button>
+                        <button type="submit" id="confirm-button" class="confirm-button" name="confirm_order" disabled>确认</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </form>
+    
+    <!-- 生成新工单表单 -->
+    <form method="post" action="">
+        {% csrf_token %}
+        <table>
+            <thead>
+                <tr>
+                    <th>当前订单号</th>
+                    <th>当前款号</th>
+                    <th>选择执行设备</th>
+                    <th>设定计划工件数</th>
+                    <th>工序信息</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        {{ Order.0.OrderId }}
+                        <input type="hidden" name="OrderID" value="{{ Order.0.OrderId }}">
+                    </td>
+                    <td>
+                        {{ Order.0.Product_id }}
+                        <input type="hidden" name="ProductID" value="{{ Order.0.Product_id }}">
+                    </td>
+                    <td>
+                        <select name="Cell_id">
+                            {% for cell in cells %}
+                            <option value="{{ cell.id }}">{{ cell.CellID }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td><input type="number" name="ReqParts" min="1" required></td> <!-- 设定计划工件数必须大于0 -->
+                    <td><input type="text" name="ProcessID"></td> <!-- 工序信息为非必填项 -->
+                    <td><button type="submit" class="new-worksheet-link" name="new_worksheet">生成新工单</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </form>    
+    <table>
+        <thead>
+            <tr>
+                <th>工单编号</th>
+                <th>设备</th>
+                <th>完成状态</th>
+                <th>工序信息</th>
+                <th>已完成工件数</th>
+                <th>计划工件数</th>
+                <th>新增计划工件数</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for worksheet in worksheets %}
+            <tr>
+                <td>{{ worksheet.Id }}</td>
+                <td>{{ worksheet.Cell__CellID }}</td>
+                <td>{{ worksheet.Status }}</td>
+                <td>{{ worksheet.ProcessID }}</td>
+                <td>{{ worksheet.FinishParts }}</td>
+                <td>{{ worksheet.ReqParts }}</td>
+                <td>{{ worksheet.AddReqParts }}</td>
+                <td>
+                    <form method="post" action="{% url 'amfui:delete_worksheet' worksheet.Id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="delete-button" name="delete_worksheet" {% if worksheet.Status != '未就绪' %}disabled{% endif %}>删除</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="/amf/amfui/order/" class="back-link">返回</a>
+    
+</body>
+</html>

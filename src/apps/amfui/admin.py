@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.html import format_html
 from django.db.models.query import QuerySet
 from django.utils.translation import gettext_lazy as _
 from .models import *
@@ -6,12 +7,13 @@ from django.db.models import Min, Sum, Q, F, Value, Avg
 import calendar
 
 from datetime import datetime
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from openpyxl import Workbook
 
 dayFilter = (('0', u'当天'), ('1', u'本周'), ('2', u'本月'), ('3', u'上个月'))
 
 def export_as_xml(modeladmin, request, queryset):
+    export_as_xml.skip_selection_check = True
     response = HttpResponse(content_type='application/ms-excel')
     response['Content-Disposition'] = 'attachment; filename=mymodel_export.xlsx'
     if modeladmin.__class__.__name__ != 'CellAdmin':
@@ -124,6 +126,11 @@ class CellAdmin(admin.ModelAdmin):
     list_displayHead = ['车间', '机台', '机台编号', '分类', '创建日期', '在线时长', '作业时长', '状态']
     metrics = filters = orders = ''
 
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        return super().changelist_view(request, extra_context)
+
     def appendXmlWs(self, ws, queryset):
         for i, obj in enumerate(queryset, start=1):
             ws.append([i, obj.Plant, obj.Name, obj.CellID, obj.Type, obj.Create, sec2TmStr(obj.OnLine), sec2TmStr(obj.WorkTM), obj.get_Stato_display()])
@@ -134,12 +141,12 @@ class RecordAdmin(admin.ModelAdmin):
     list_filter = ['Cell_id', ('StartTime', admin.DateFieldListFilter)]
     actions = [export_as_xml]
     change_list_template = 'amfui/record_change_list.html'
-    list_displayHead = ['日期', '车间', '机台', '机台编号', '订单编号', '叠加订单号', '款号', '开机时长', '作业时长', '待机时长', '调机时间', '完成工件', '预估剩余']
+    list_displayHead = ['日期', '车间', '机台', '机台编号', '订单编号', '款号', '开机时长', '作业时长', '待机时长', '调机时间', '完成工件', '预估剩余']
 
     def appendXmlWs(self, ws, queryset):
         for i, obj in enumerate(queryset, start=1):
             ws.append([i, obj['StartTime__date'], obj['Cell__Plant'], obj['Cell__Name'], obj['Cell__CellID'],
-                       obj['WorkSheet__Order_id'], obj['WorkSheet__Order__Colour'], obj['WorkSheet__Order__Product_id'], obj['tot_poweron'], obj['tot_workTM'],
+                       obj['WorkSheet__Order_id'], obj['WorkSheet__Order__Product_id'], obj['tot_poweron'], obj['tot_workTM'],
                        obj['tot_idleTM'], obj['tot_adjustTM'], obj['tot_parts'], obj['min_estiTM']])
 
     def get_queryset(self, request):
@@ -154,7 +161,7 @@ class RecordAdmin(admin.ModelAdmin):
         return queryset.filter(StartTime__range=(check1_start, check1_end))
 
     def get_select_queryset(self, request, queryset):
-        self.list_displayHead[12] = '预估剩余(%.1fH/Day)' % getDailyWorkTime(request.user)
+        self.list_displayHead[11] = '预估剩余(%.1fH/Day)' % getDailyWorkTime(request.user)
         metrics = {
             'tot_adjustTM': Sum('PowerOnSec', filter=Q(Mode='调校模式')),
             'tot_poweron': Sum('PowerOnSec'),
@@ -163,7 +170,7 @@ class RecordAdmin(admin.ModelAdmin):
             'min_estiTM': Min('EstimatedSec', filter=Q(Mode='普通模式')) * 24 / getDailyWorkTime(request.user),
             'tot_parts': Sum('FinishParts', filter=Q(Mode='普通模式')),
         }
-        filters = ['StartTime__date', 'Cell__Plant', 'Cell__Name', 'Cell__CellID', 'WorkSheet_id', 'WorkSheet__Order_id', 'WorkSheet__Order__Product_id', 'WorkSheet__Order__Colour']
+        filters = ['StartTime__date', 'Cell__Plant', 'Cell__Name', 'Cell__CellID', 'WorkSheet_id', 'WorkSheet__Order_id', 'WorkSheet__Order__Product_id']
         orders = ['-StartTime__date', 'Cell__Plant', 'Cell__Name', 'Cell__CellID', 'WorkSheet_id']
         qs = queryset.exclude(Q(WorkSheet_id='未绑定工单')).values(*filters).annotate(**metrics).order_by(*orders)
         for item in qs:
@@ -179,11 +186,11 @@ class RecordAdmin(admin.ModelAdmin):
 class RecordManageAdmin(admin.ModelAdmin):
     actions = [export_as_xml]
     change_list_template = 'amfui/worksheet_change_list.html'
-    list_displayHead = ['订单编号', '叠加订单号', '款号', '车间', '机台', '机台编号', '开机时长', '作业时长', '待机时长', '调机时间', '计划工件', '完成工件', '预估剩余', '工单状态']
+    list_displayHead = ['订单编号', '款号', '车间', '机台', '机台编号', '开机时长', '作业时长', '待机时长', '调机时间', '计划工件', '完成工件', '预估剩余', '工单状态']
 
     def appendXmlWs(self, ws, queryset):
         for i, obj in enumerate(queryset, start=1):
-            ws.append([i, obj['WorkSheet__Order_id'], obj['WorkSheet__Order__Colour'], obj['WorkSheet__Order__Product_id'], obj['Cell__Plant'], obj['Cell__Name'], obj['Cell__CellID'],
+            ws.append([i, obj['WorkSheet__Order_id'], obj['WorkSheet__Order__Product_id'], obj['Cell__Plant'], obj['Cell__Name'], obj['Cell__CellID'],
                        obj['tot_poweron'], obj['tot_workTM'], obj['tot_idleTM'], obj['tot_adjustTM'], obj['WorkSheet__ReqParts'] + obj['WorkSheet__AddReqParts'], obj['WorkSheet__FinishParts'], obj['min_estiTM'],
                        obj['WorkSheet__Status']])
 
@@ -198,7 +205,7 @@ class RecordManageAdmin(admin.ModelAdmin):
             'tot_parts': Sum('FinishParts', filter=Q(Mode='普通模式')),
         }
         filters = ['Cell__Plant', 'Cell__Name', 'Cell__CellID', 'WorkSheet_id', 'WorkSheet__Status', 'WorkSheet__Order_id',
-                   'WorkSheet__Order__Product_id', 'WorkSheet__Order__Colour', 'WorkSheet__ReqParts', 'WorkSheet__AddReqParts', 'WorkSheet__FinishParts']
+                   'WorkSheet__Order__Product_id', 'WorkSheet__ReqParts', 'WorkSheet__AddReqParts', 'WorkSheet__FinishParts']
         orders = ['WorkSheet__Status', 'Cell__Plant', 'Cell__Name', 'Cell__CellID', 'WorkSheet_id']
         qs = queryset.exclude(Q(WorkSheet_id='未绑定工单')).values(*filters).annotate(**metrics).order_by(*orders)
         for item in qs:
@@ -236,35 +243,48 @@ class StatoAdmin(admin.ModelAdmin):
 class WorkSheetAdmin(admin.ModelAdmin):
     list_display = ['Id', 'Cell__CellID', 'Order_id', 'Product_id', 'Status', 'ProcessID', 'FinishParts', 'ReqParts', 'AddReqParts']
 
+class WorkSheetInline(admin.TabularInline):
+    model = WorkSheet
+    extra = 1  # 可以根据需要设置额外的行数
+    fields = ['Order_id', 'Cell', 'Status', 'ProcessID', 'FinishParts', 'ReqParts', 'AddReqParts']
+    readonly_fields = [ 'Order_id','Cell', 'Status', 'ProcessID', 'FinishParts', 'ReqParts', 'AddReqParts']
+    show_change_link = True
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['OrderId', 'Colour', 'Product_id', 'ReqParts', 'Status']
-    list_editable = ['Colour', 'Product_id']
+    list_display = ['OrderId', 'Product_id', 'ReqParts', 'Status', 'subAction']
+    
+    change_list_template = "amfui/order_change_list.html"
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['add_new_order_url'] = f'/amfui/order/new_order'
+        return super().changelist_view(request, extra_context)
+
+    def subAction(self, obj):
+        result = format_html(
+            '<a class="button" style="font-weight: bold; color: black; background-color: pink;" href="{}">查看</a>&nbsp;'
+            '<a class="button" style="font-weight: bold; color: black; background-color: pink;" href="{}">管理</a>&nbsp;'
+            '<a class="button" style="font-weight: bold; color: black; background-color: pink;" href="{}" onclick="return confirm(\'确定要删除这个订单吗？\');">删除</a>',
+            f'/amfui/worksheet/?q={obj.OrderId}',
+            f'/amfui/worksheet/manage/?q={obj.OrderId}',
+            f'/amfui/order/delete/?q={obj.OrderId}'
+        )
+        return result
+    subAction.short_description = '操作'
 
     def save_model(self, request, obj, form, change):
         if change:
             Order.objects.filter(OrderId=form.cleaned_data['OrderId']).update(
-                Colour=form.cleaned_data['Colour'],
                 Product_id=form.cleaned_data['Product_id'])
         else:
             obj.save()
 
-    def changelist_view(self, request, extra_context=None):
-        extra_context = extra_context or {}
-        if request.method == "POST":
-            for key, value in request.POST.items():
-                if key.startswith('form-') and '-' in key:
-                    row_id = key.split('-')[1]
-                    if row_id.isdigit():
-                        field = key.split('-')[2]
-                        if field in ['OrderId']:
-                            orderId = value
-                        if field in ['Colour', 'Product_id', 'OrderId']:
-                            Order.objects.filter(OrderId=orderId).update(**{field: value})
-        return super().changelist_view(request, extra_context)
-
     def get_queryset(self, request: HttpRequest) -> QuerySet:
         return super().get_queryset(request)
+
+    def delete_model(self, request, obj):
+        obj.delete()
 
 class ChildModel2Inline(admin.TabularInline):
     model = Cell

@@ -1,0 +1,21 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools %}
+    {{ block.super }}
+{% endblock %}
+
+{% block content %}
+    <div id="execution-result" style="margin-top: 20px; color: red;">
+        {% if messages %}
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        {% endif %}
+    </div>
+    <div class="actions" style="margin-top: 20px;">
+        {% if add_new_order_url %}
+            <a class="button" style="font-weight: bold; color: black; background-color: rgb(195, 234, 178); margin-left: 60px;" href="{{ add_new_order_url }}">创建新订单</a>
+        {% endif %}
+    </div>
+    {{ block.super }}
+{% endblock %}
