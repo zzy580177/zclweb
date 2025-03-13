@@ -13,4 +13,5 @@ urlpatterns = [
     path('worksheet/delete/<str:worksheet_id>/', views.delete_worksheet, name='delete_worksheet'),
     path('order/delete/', views.delete_order, name='delete_order'),
     path('order/new_order', views.new_order, name='new_order'),
+    path('celltask/manage/', views.celltask_manage_view, name='celltask_manage_view'),
 ]

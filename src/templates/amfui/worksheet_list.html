@@ -58,6 +58,8 @@
                 <th>产品编号</th>
                 <th>计划工件数</th>
                 <th>状态</th>
+                <th>进度</th>
+                <th>截至日期</th>
             </tr>
         </thead>
         <tbody>
@@ -66,6 +68,8 @@
                 <td>{{ Order.0.Product_id }}</td>
                 <td>{{ Order.0.ReqParts }}</td>
                 <td>{{ Order.0.Status }}</td>
+                <td>{{ Order.0.Process }}</td>
+                <td>{{ Order.0.DeadLine }}</td>
             </tr>
         </tbody>
     </table>

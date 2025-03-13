@@ -241,6 +241,8 @@ class Order(models.Model):
 	Colour = models.CharField("叠加订单",null=True, max_length =50);
 	Product_id = models.CharField("产品款号",null=True, max_length =50); 
 	ReqParts = models.IntegerField("需求工件数",null=True, blank=True, editable=False); 	
+	DeadLine = models.DateTimeField("交货日期",null=True, blank=True);
+	Progress = models.IntegerField("当前进度",null=True, blank=True, editable=False);
 	def __str__(self):
 		return self.OrderId
 	class Meta:

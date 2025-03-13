@@ -1,8 +1,9 @@
 from django.shortcuts import render, redirect
 from .models import *
 from django.http import HttpResponse
-from datetime import datetime
+from datetime import datetime, timedelta, time
 from django.contrib import messages
+from django.db.models import Case, When, Value, IntegerField, Q,F, BooleanField, ExpressionWrapper, DateField
 
 
 def check_screen_type(request):
@@ -57,21 +58,26 @@ def worksheet_manage_view(request):
             order.Product_id = request.POST.get('ProductID')
             order.ReqParts = request.POST.get('ReqParts')
             order.Status = request.POST.get('Status')
+            deadline_date = request.POST.get('DeadLine')
+            order.DeadLine = datetime.strptime(deadline_date + ' 23:59', '%Y-%m-%d %H:%M')  # 在日期的基础上加上时分部分
+            if order.Status == '已完成':
+                order.Progress = 100
             order.save()
         elif 'new_worksheet' in request.POST:
-            cell_id = request.POST.get('Cell_id')
+            cell_value = request.POST.get('Cell_id')
+            cell_id, cell_db_id = cell_value.split('|')
             current_time = datetime.now().strftime('%y%m%d%H%M%S')
-            worksheet_id = f"{current_time}_{cell_id}"
+            worksheet_id = f"{current_time}-{cell_id}"
             new_worksheet = WorkSheet(
                 Id=worksheet_id,
                 Order_id=request.POST.get('OrderID'),
                 Product_id=request.POST.get('ProductID'),
                 Status='未就绪',
-                Cell_id=cell_id,
+                Cell_id=cell_db_id,
                 ReqParts=request.POST.get('ReqParts'),
                 ProcessID=request.POST.get('ProcessID'),
-                FinishParts = 0,
-                AddReqParts = 0
+                FinishParts=0,
+                AddReqParts=0
             )
             new_worksheet.save()
         return redirect(f'/amfui/worksheet/manage/?q={order_id}')
@@ -109,11 +115,16 @@ def new_order(request):
         product_id = request.POST.get('Product_id')
         req_parts = request.POST.get('ReqParts')
         status = request.POST.get('Status')
+        deadLine = request.POST.get('DeadLine')
         try:
+
+            deadline_date = request.POST.get('DeadLine')
             new_order = Order(
                 OrderId=order_id,
                 Product_id=product_id,
                 ReqParts=req_parts,
+                DeadLine=datetime.strptime(deadline_date + ' 23:59', '%Y-%m-%d %H:%M'),
+                Progress=0,
                 Status='未就绪'
             )
             new_order.save()
@@ -124,3 +135,66 @@ def new_order(request):
             return redirect('/amf/amfui/order/')
     return render(request, 'amfui/order_add.html')
 
+def celltask_manage_view(request):
+    from .models import Cell, WorkSheet, Order  # 延迟导入 CellTask 模型
+    cell_CellID = request.GET.get('q')
+    cell = Cell.objects.get(CellID=cell_CellID)
+    now_plus_7_days = datetime.now() + timedelta(days=7)
+    today = datetime.combine(datetime.now().date(), time(23, 59, 59))  # 设置为当天的23:59:59
+
+    is_due_soon = Case(
+        When(Q(Order__DeadLine__lte=now_plus_7_days) & ~Q(Status='已完成'), then=Value(True)),
+        default=Value(False),
+        output_field=BooleanField()
+    )
+
+    is_due_today = Case(
+        When(Q(Order__DeadLine__lte=today) & ~Q(Status='已完成'), then=Value(True)),
+        default=Value(False),
+        output_field=BooleanField()
+    )
+
+    worksheets_unready = WorkSheet.objects.filter(Cell_id=cell.id, Status='未就绪').annotate(
+        is_due_soon=is_due_soon,
+        is_due_today=is_due_today).order_by('Order__DeadLine')
+    worksheets = WorkSheet.objects.filter(Cell_id=cell.id).exclude(Status='未就绪').annotate(
+        status_order=Case(
+            When(Status='就绪', then=Value(2)),
+            When(Status='加工中', then=Value(3)),
+            When(Status='暂停', then=Value(4)),
+            When(Status='已完成', then=Value(5)),
+            default=Value(6),
+            output_field=IntegerField(),
+        ),
+        is_due_soon=is_due_soon,
+        is_due_today=is_due_today
+    ).order_by('status_order', 'Order__DeadLine')
+    orders_unready = Order.objects.filter(Status='未就绪').annotate(
+        is_due_soon = Case(When(Q(DeadLine__lte=now_plus_7_days), then=Value(True)),
+                           default=Value(False),output_field=BooleanField()),
+        is_due_today = Case(When(Q(DeadLine__lte=today), then=Value(True)), 
+                            default=Value(False),output_field=BooleanField())).order_by('DeadLine')
+ 
+    if request.method == "POST":
+        order_id = request.POST.get('OrderID')
+        order = Order.objects.get(OrderId=order_id)
+        if 'new_worksheet' in request.POST:
+            current_time = datetime.now().strftime('%y%m%d%H%M%S')
+            worksheet_id = f"{current_time}-{cell_CellID}"
+            new_worksheet = WorkSheet(
+                Id=worksheet_id,
+                Order_id=order_id,
+                Product_id=order.Product_id,
+                Status='未就绪',
+                Cell_id= cell.id,
+                ReqParts=request.POST.get('ReqParts'),
+                ProcessID=request.POST.get('ProcessID'),
+                FinishParts=0,
+                AddReqParts=0
+            )
+            new_worksheet.save()
+            return redirect(f'/amfui/celltask/manage/?q={cell_CellID}')
+
+        return redirect(f'/amfui/celltask/manage/?q={cell_CellID}')
+    
+    return render(request, 'amfui/celltask_manage.html', {'cell': cell, 'worksheets': worksheets, 'worksheets_unready': worksheets_unready, 'orders_unready': orders_unready, 'now_plus_7_days': now_plus_7_days})

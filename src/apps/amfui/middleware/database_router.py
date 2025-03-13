@@ -8,7 +8,7 @@ class DatabaseRouter:
         if model._meta.app_label == app_name:
             user = getattr(settings, 'LOGGED_IN_USER', None)  # 获取当前登录用户
             if user:
-                db_name = f'{user.username}'  # 根据用户名生成数据库名
+                db_name = f'{DATABASES_MAPPING[user.username]}'  # 根据用户名生成数据库名
                 return db_name if db_name in settings.DATABASES else None
         return None
  
@@ -16,7 +16,7 @@ class DatabaseRouter:
         if model._meta.app_label == app_name:
             user = getattr(settings, 'LOGGED_IN_USER', None)  # 获取当前登录用户
             if user:
-                db_name = f'{user.username}'  # 根据用户名生成数据库名
+                db_name = f'{DATABASES_MAPPING[user.username]}'    # 根据用户名生成数据库名
                 return db_name if db_name in settings.DATABASES else None
         return None
  

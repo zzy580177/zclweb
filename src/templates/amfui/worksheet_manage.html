@@ -71,6 +71,7 @@
             document.getElementById('product_id').disabled = false;
             document.getElementById('req_parts').disabled = false;
             document.getElementById('status').disabled = false;
+            document.getElementById('deadline').disabled = false;
             document.getElementById('edit-button').disabled = true;
             document.getElementById('confirm-button').disabled = false;
         }
@@ -78,6 +79,7 @@
             document.getElementById('product_id').disabled = true;
             document.getElementById('req_parts').disabled = true;
             document.getElementById('status').disabled = true;
+            document.getElementById('deadline').disabled = true;
             document.getElementById('edit-button').disabled = false;
             document.getElementById('confirm-button').disabled = false; // 确保确认键在提交时启用
         }
@@ -95,7 +97,9 @@
                     <th>产品款号</th>
                     <th>计划工件数</th>
                     <th>状态</th>
-                    <th>操作</th>
+                    <th>计划截至时间</th>                    
+                    <th>进度</th>
+                    <th>操       作</th>
                 </tr>
             </thead>
             <tbody>
@@ -112,6 +116,8 @@
                             <option value="暂停" {% if Order.0.Status == '暂停' %}selected{% endif %}>暂停</option>
                         </select>
                     </td>
+                    <td><input type="date" id="deadline" name="DeadLine" value="{{ Order.0.DeadLine|date:'Y-m-d' }}" disabled></td>
+                    <td>{{ Order.0.Process }}</td>
                     <td class="button-group">
                         <button type="button" id="edit-button" class="edit-button" onclick="enableEdit()">修改</button>
                         <button type="submit" id="confirm-button" class="confirm-button" name="confirm_order" disabled>确认</button>
@@ -148,7 +154,7 @@
                     <td>
                         <select name="Cell_id">
                             {% for cell in cells %}
-                            <option value="{{ cell.id }}">{{ cell.CellID }}</option>
+                            <option value="{{ cell.CellID }}|{{ cell.id }}">{{ cell.CellID }}</option>
                             {% endfor %}
                         </select>
                     </td>

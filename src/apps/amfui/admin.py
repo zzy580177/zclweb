@@ -121,11 +121,17 @@ class LiveStateAdmin(admin.ModelAdmin):
 
 @admin.register(Cell)
 class CellAdmin(admin.ModelAdmin):
-    list_display = ['Plant', 'Name', 'CellID', 'Type', 'Create', 'OnLineStr', 'WorkTMStr', 'status']
+    list_display = ['Plant', 'Name', 'CellID', 'Type', 'Create', 'OnLineStr', 'WorkTMStr', 'status', 'task_management']
     ordering = ['Plant', 'Name', 'CellID']
-    list_displayHead = ['车间', '机台', '机台编号', '分类', '创建日期', '在线时长', '作业时长', '状态']
+    list_displayHead = ['车间', '机台', '机台编号', '分类', '创建日期', '在线时长', '作业时长', '状态', '任务管理']
     metrics = filters = orders = ''
 
+    def task_management(self, obj):
+        return format_html(
+            '<a class="button" style="font-weight: bold; color: black; background-color: lightblue;" href="{}">展开</a>',
+            f'/amfui/celltask/manage/?q={obj.CellID}'
+        )
+    task_management.short_description = '任务管理'
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
@@ -252,7 +258,7 @@ class WorkSheetInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['OrderId', 'Product_id', 'ReqParts', 'Status', 'subAction']
+    list_display = ['OrderId', 'Product_id', 'ReqParts', 'Status', 'DeadLine', 'Progress', 'subAction']
     
     change_list_template = "amfui/order_change_list.html"
 
