@@ -52,6 +52,7 @@ INSTALLED_APPS: Tuple[str, ...] = (
     # 我们自己的应用
     'apps.account',
     'apps.amfui',
+    'apps.fpmui',
 )
 
 MIDDLEWARE: Tuple[str, ...] = (
@@ -63,7 +64,7 @@ MIDDLEWARE: Tuple[str, ...] = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'apps.amfui.middleware.middleware.CustomMiddleware',
+    'django_starter.middleware.middleware.CustomMiddleware',
 )
 
 ROOT_URLCONF = 'config.urls_root'
@@ -142,7 +143,7 @@ CSRF_COOKIE_HTTPONLY = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True
 
-X_FRAME_OPTIONS = 'DENY'
+X_FRAME_OPTIONS = 'SAMEORIGIN'  #X_FRAME_OPTIONS = 'DENY'
 
 # https://github.com/DmytroLitvinov/django-http-referrer-policy
 # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy

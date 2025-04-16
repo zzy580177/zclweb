@@ -4,8 +4,12 @@ from django.db import models
 from .urls import app_name
 from datetime import datetime, timedelta, date, time
 import math
+from django.conf import settings
+from django_starter.db.models import Step, ProcessStep, ProcessRoute
 
-schema = "CNC700Cutting"
+# 动态获取 schema
+schema = settings.DATABASES["default"].get("SCHEMA", "default_schema")
+
 def getDailyQset(queryset, day):
 	return queryset.filter( Day = day)
 def sec2TmStr(sec):
@@ -35,7 +39,7 @@ class Alarmi(models.Model):
 	def __str__(self):
 		return str(self.Id) + " " + self.AlarmString
 	class Meta:
-		db_table = "[%s].[Alarmi]"% schema
+		db_table = f"[{schema}].[Alarmi]"
 		app_label = app_name
 		verbose_name = '告警索引表'
 		verbose_name_plural = verbose_name
@@ -51,7 +55,7 @@ class LiveState(models.Model):
 	def __str__(self):
 		return self.Cell_Name + str(self.Cell_id)  + " " + self.Check1.strftime("%Y-%m-%d") 
 	class Meta:
-		db_table = "[%s].[LiveState]"% schema
+		db_table = f"[{schema}].[LiveState]"
 		app_label = app_name
 		verbose_name = '设备在线日志'
 		verbose_name_plural = verbose_name
@@ -85,7 +89,7 @@ class Pezzi(models.Model):
 	def __str__(self):
 		return "pezz:" + self.DataTime.strftime("%Y-%m-%d") + "-" + str(self.Cell_id)
 	class Meta:
-		db_table = "[%s].[Pezzi]"% schema
+		db_table = f"[{schema}].[Pezzi]"
 		app_label = app_name
 		verbose_name = '生产信息日志'
 		verbose_name_plural = verbose_name
@@ -117,7 +121,7 @@ class Stato(models.Model):
 	def __str__(self):
 		return "stato:" + self.DataTime.strftime("%Y-%m-%d") + "-" + str(self.Cell_id)
 	class Meta:
-		db_table = "[%s].[Stato]"% schema
+		db_table = f"[{schema}].[Stato]"
 		app_label = app_name
 		verbose_name = '设备状态切换表'
 		verbose_name_plural = verbose_name
@@ -165,7 +169,7 @@ class Cell(models.Model):
 	def __str__(self):
 		return self.Name + str(self.CellID) 
 	class Meta:
-		db_table = "[%s].[Cell]"% schema
+		db_table = f"[{schema}].[Cell]"
 		app_label = app_name
 		verbose_name = '设备管理表'
 		verbose_name_plural = verbose_name
@@ -188,7 +192,7 @@ class Record(models.Model):
 	def __str__(self):
 		return "Record:" + self.StartTime__date + "-" + self.WorkSheet_id
 	class Meta:
-		db_table = "[%s].[Record]"% schema
+		db_table = f"[{schema}].[Record]"
 		app_label = app_name
 		verbose_name = '工单加工日志'
 		verbose_name_plural = verbose_name		
@@ -217,7 +221,7 @@ class WorkSheet(models.Model):
 	def __str__(self):
 		return self.Id
 	class Meta:
-		db_table = "[%s].[WorkSheet]"% schema
+		db_table = f"[{schema}].[WorkSheet]"
 		app_label = app_name
 		verbose_name = '工单管理表'
 		verbose_name_plural = verbose_name
@@ -246,8 +250,44 @@ class Order(models.Model):
 	def __str__(self):
 		return self.OrderId
 	class Meta:
-		db_table = "[%s].[Order]"% schema
+		db_table = f"[{schema}].[Order]"
 		app_label = app_name
 		verbose_name = '订单管理表'
 		verbose_name_plural = verbose_name
-    
+
+class Step(Step):
+	""""工序索引表"""
+	class Meta:
+		app_label = app_name
+		
+class ProcessStep(ProcessStep):
+	""""工序配方表"""
+	class Meta:
+		app_label = app_name
+
+class ProcessRoute(ProcessRoute):
+	""""工艺流程管理表"""
+	class Meta:
+		app_label = app_name
+
+class VirtualProcessRoute(ProcessRoute):
+	steps_list = None
+	class Meta:
+		proxy = True
+		app_label = app_name
+		verbose_name = '工艺流程'
+		verbose_name_plural = verbose_name
+
+	def get_steps_list(self):
+		"""动态获取关联步骤列表"""
+		return list(self.steps.all().order_by('SeqNum'))
+	
+	@property
+	def formatted_steps(self):
+		"""返回结构化步骤数据"""
+		return [{
+			'SeqNum': step.SeqNum,
+			'StepName': step.Step__Name,
+			'EqpType': step.Step__EqpType,
+			'params': step.Parameters
+		} for step in self.steps.all()]

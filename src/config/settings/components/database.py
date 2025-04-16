@@ -6,34 +6,15 @@ DATABASES = {
     'default': {
         'ENGINE':'mssql',
         'HOST':'47.121.177.127',
-        'NAME':'zcl',
-        'PORT':'1433',
-        'USER':'zclamf',
-        'PASSWORD':'Zclamfdb123',
-        'OPTIONS':{
-            'DRIVER':'SQL server Native Client 11.0',
-        }
-    },
-    'zcl': {
-        'ENGINE':'mssql',
-        'HOST':'47.121.177.127',
-        'NAME':'zcl',
-        'PORT':'1433',
-        'USER':'zclamf',
-        'PASSWORD':'Zclamfdb123',
-        'OPTIONS':{
-            'DRIVER':'SQL server Native Client 11.0',
-        }
-    },
-    'ouhai': {
-        'ENGINE':'mssql',
-        'HOST':'47.121.177.127',
         'NAME':'ouhaidb',
         'PORT':'1433',
         'USER':'ouhai',
         'PASSWORD':'OH12345!',
+        "SCHEMA": "CNC700Cutting",
         'OPTIONS':{
-            'DRIVER':'SQL server Native Client 11.0',
+            'driver': 'ODBC Driver 18 for SQL Server',  # 'DRIVER':'SQL server Native Client 11.0',
+            'encrypt': 'yes',
+            'extra_params': 'TrustServerCertificate=yes'
         }
     },
     'yadi': {
@@ -43,29 +24,52 @@ DATABASES = {
         'PORT':'1433',
         'USER':'zclamf',
         'PASSWORD':'Zclamfdb123',
+        "SCHEMA": "CNC700Cutting",
         'OPTIONS':{
-            'DRIVER':'SQL server Native Client 11.0',
+            'driver': 'ODBC Driver 18 for SQL Server',  # 指定新版本驱动
+            'encrypt': 'yes',
+            'extra_params': 'TrustServerCertificate=yes'
         }
     },
-    'jinya': {
+    'zcl': {
         'ENGINE':'mssql',
         'HOST':'47.121.177.127',
-        'NAME':'jinya',
+        'NAME':'zcl',
         'PORT':'1433',
         'USER':'zclamf',
         'PASSWORD':'Zclamfdb123',
+        "SCHEMA": "CNC700Cutting",
         'OPTIONS':{
-            'DRIVER':'SQL server Native Client 11.0',
+            'driver': 'ODBC Driver 18 for SQL Server',  # 指定新版本驱动
+            'encrypt': 'yes',
+            'extra_params': 'TrustServerCertificate=yes'
         }
-    }
+    },
+    'okia': {
+        'ENGINE':'mssql',
+        'HOST':'47.121.177.127',
+        'NAME':'okia',
+        'PORT':'1433',
+        'USER':'okia',
+        'PASSWORD':'Okia2541!',
+        "SCHEMA": "CNC700Cutting",
+        'OPTIONS':{
+            'driver': 'ODBC Driver 18 for SQL Server',  # 指定新版本驱动
+            'encrypt': 'yes',
+            'extra_params': 'TrustServerCertificate=yes'
+        }
+    },
 }
-DATABASE_ROUTERS =['apps.amfui.middleware.database_router.DatabaseRouter']
+DATABASE_ROUTERS =['django_starter.middleware.database_router.DatabaseRouter']
 DATABASE_APPS_MAPPING = {
     'default':'default',
     'yadi':'yadi',
-    'jinya':'jinya',
-    'ouhai':'ouhaidb',
     'zcltest':'zcl',
+    'OKIAVN':'okia',
+}
+SCHEMA_MAPPING = {
+    'default_schema': 'CNC700Cutting',
+    'OKIAVN': 'CNC700Cutting',
 }
 
 # Default primary key field type

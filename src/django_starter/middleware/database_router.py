@@ -1,11 +1,11 @@
 from django.conf import settings
 from django.db import connections
-from ..urls import app_name
 DATABASES_MAPPING = settings.DATABASE_APPS_MAPPING
+apps=['amfui', 'fpmui']
 
 class DatabaseRouter:
     def db_for_read(self, model, **hints):
-        if model._meta.app_label == app_name:
+        if model._meta.app_label in apps:
             user = getattr(settings, 'LOGGED_IN_USER', None)  # 获取当前登录用户
             if user:
                 db_name = f'{DATABASES_MAPPING[user.username]}'  # 根据用户名生成数据库名
@@ -13,7 +13,7 @@ class DatabaseRouter:
         return None
  
     def db_for_write(self, model, **hints):
-        if model._meta.app_label == app_name:
+        if model._meta.app_label in apps:
             user = getattr(settings, 'LOGGED_IN_USER', None)  # 获取当前登录用户
             if user:
                 db_name = f'{DATABASES_MAPPING[user.username]}'    # 根据用户名生成数据库名

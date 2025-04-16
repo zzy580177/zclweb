@@ -1,7 +1,7 @@
 from django.apps import AppConfig
 
 
-class AmfuiConfig(AppConfig):
+class FpmuiConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.amfui'
-    verbose_name = '加工数据查看'
+    name = 'apps.fpmui'
+    verbose_name = '生产技术管理'
