@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import connections
 DATABASES_MAPPING = settings.DATABASE_APPS_MAPPING
-apps=['amfui', 'fpmui']
+apps=['amfui', 'fpmui', 'bmui','pmcui']
 
 class DatabaseRouter:
     def db_for_read(self, model, **hints):
