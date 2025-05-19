@@ -1,0 +1,137 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static admin_list simpletags %}
+
+{% block content_title %}
+{% endblock %}
+{% block content %}
+<div style="margin: 20px;">
+    <h1>任务管理 / {{ cell.Plant }} / {{ cell.Name }} - {{ cell.CellID }}</h1>
+    
+    <!-- 调整返回按钮格式 -->
+    <button onclick="window.location.href='/amf/amfui/cell/'" class="button">返回</button>
+
+    <h2>查看未就绪订单</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>订单号</th>
+                <th>产品号</th>
+                <th>需求数量</th>
+                <th>状态</th>
+                <th>截止日期</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders_unready %}
+            <tr style="{% if order.is_due_soon %}background-color: yellow;{% endif %}{% if order.is_due_today %}color: red; font-weight: bold;{% endif %}">
+                    <td>{{ order.OrderId }}</td>
+                    <td>{{ order.Product_id }}</td>
+                    <td>{{ order.ReqParts }}</td>
+                    <td>{{ order.Status }}</td>
+                    <td>{{ order.DeadLine|date:"Y-m-d" }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>生成新工单表单</h2>
+    <!-- 生成新工单表单 -->
+    <form method="post" action="">
+        {% csrf_token %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>当前设备编号</th>
+                    <th>选择未就绪订单</th>
+                    <th>设定计划工件数</th>
+                    <th>工序信息</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>                    
+                    <td>
+                        {{ cell.CellID }}
+                        <input type="hidden" name="Cell_id" value="{{ cell.CellID }}|{{ cell.id }}">
+                    </td>
+                    <td>
+                        <select name="OrderID" class="form-control">
+                            {% for order in orders_unready %}
+                            <option value="{{ order.OrderId }}">{{ order.OrderId }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td><input type="number" name="ReqParts" min="1" required class="form-control"></td> <!-- 设定计划工件数必须大于0 -->
+                    <td><input type="text" name="ProcessID" class="form-control"></td> <!-- 工序信息为非必填项 -->
+                    <td><button type="submit" class="btn btn-primary" name="new_worksheet">生成新工单</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </form>   
+    
+    <h2>已加载任务工单列表</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>工单编号</th>
+                <th>订单编号</th>
+                <th>产品编号</th>
+                <th>状态</th>
+                <th>工艺编号</th>
+                <th>完成数量</th>
+                <th>需求数量</th>
+                <th>追加数量</th>
+                <th>计划截至日期</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for worksheet in worksheets %}
+            <tr style="{% if worksheet.is_due_soon %}background-color: yellow;{% endif %}{% if worksheet.is_due_today %}color: red; font-weight: bold;{% endif %}">
+                <td>{{ worksheet.Id }}</td>
+                <td>{{ worksheet.Order_id }}</td>
+                <td>{{ worksheet.Product_id }}</td>
+                <td>{{ worksheet.Status }}</td>
+                <td>{{ worksheet.ProcessID }}</td>
+                <td>{{ worksheet.FinishParts }}</td>
+                <td>{{ worksheet.ReqParts }}</td>
+                <td>{{ worksheet.AddReqParts }}</td>
+                <td>{{ worksheet.Order.DeadLine|date:"Y-m-d" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>待加载任务工单列表</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>工单编号</th>
+                <th>订单编号</th>
+                <th>产品编号</th>
+                <th>状态</th>
+                <th>工艺编号</th>
+                <th>完成数量</th>
+                <th>需求数量</th>
+                <th>追加数量</th>
+                <th>计划截至日期</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for worksheet in worksheets_unready %}
+            <tr>
+                <td>{{ worksheet.Id }}</td>
+                <td>{{ worksheet.Order_id }}</td>
+                <td>{{ worksheet.Product_id }}</td>
+                <td>{{ worksheet.Status }}</td>
+                <td>{{ worksheet.ProcessID }}</td>
+                <td>{{ worksheet.FinishParts }}</td>
+                <td>{{ worksheet.ReqParts }}</td>
+                <td>{{ worksheet.AddReqParts }}</td>
+                <td>{{ worksheet.Order.DeadLine|date:"Y-m-d" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+{% endblock %}

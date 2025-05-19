@@ -201,7 +201,7 @@ class RecordManageAdmin(admin.ModelAdmin):
                        obj['WorkSheet__Status']])
 
     def get_select_queryset(self, request, queryset):
-        self.list_displayHead[12] = '预估剩余(%.1fH/Day)' % getDailyWorkTime(request.user)
+        self.list_displayHead[11] = '预估剩余(%.1fH/Day)' % getDailyWorkTime(request.user)
         metrics = {
             'tot_adjustTM': Sum('PowerOnSec', filter=Q(Mode='调校模式')),
             'tot_poweron': Sum('PowerOnSec'),
