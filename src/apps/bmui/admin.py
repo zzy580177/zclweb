@@ -5,6 +5,52 @@ from django.urls import path
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from .models import *
+import json
+from django.db import transaction
+from django.db.models import F
+
+from django.contrib.admin import SimpleListFilter
+
+from django.utils.translation import gettext_lazy as _
+
+class GroupFilter(admin.SimpleListFilter):
+    title = _('子分类')
+    parameter_name = 'GroupCode'
+
+    def lookups(self, request, model_admin):
+        # 根据主分类动态返回子分类选项
+        primary = request.GET.get('FGroup__FClass__exact')
+        if primary :
+            group_codes = MaterialGroup.objects.filter(
+                FClass=primary,FGroupCode=''
+            ).values_list('FNumber', 'FName').distinct()
+            return [(code, code + "-" + name) for code, name in group_codes if code and name]
+        return []
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(FGroup__FNumber__startswith=self.value())
+        return queryset
+
+class SubGroupFilter(admin.SimpleListFilter):
+    title = _('子组代码')
+    parameter_name = 'SubGroupCode'
+
+    def lookups(self, request, model_admin):
+        primary = request.GET.get('GroupCode')
+        if primary:
+            sub_group_codes = MaterialGroup.objects.filter(
+                FGroupCode=primary, FSubGroupCode='' 
+            ).values_list('FNumber', 'FName').distinct()
+
+            return [(code, f"{code} - {name}") for code, name in sub_group_codes if code and name]
+        return []
+
+    def queryset(self, request, queryset):
+        # 根据选定的 GroupCode 过滤数据
+        if self.value():
+            return queryset.filter(FGroup__FNumber__startswith=self.value())
+        return queryset
 
 @admin.register(Attribute)
 class AttributeAdmin(admin.ModelAdmin):
@@ -14,7 +60,7 @@ class AttributeAdmin(admin.ModelAdmin):
 
     def changelist_view(self, request, extra_context=None):
         # 定义 Description 的选项
-        description_options = ["物料分类", "物料属性", "获取方式"]
+        description_options = ["单位", "获取方式"]
 
         # 传递到模板的上下文
         extra_context = extra_context or {}
@@ -62,41 +108,27 @@ class AttributeAdmin(admin.ModelAdmin):
 
     delete_selected_attributes.short_description = "删除选中项"
 
-@admin.register(BaseMaterial)
-class BaseMaterialAdmin(admin.ModelAdmin):
-    list_display = ['Id','Name','Model','CreateTime','UpdateTime','IsDelete','IsActive',]
+@admin.register(MaterialGroup)
+class MaterialGroupAdmin(admin.ModelAdmin):
+    list_display = ['FId','FName','FParent','FNumber','FLevel', 'get_FClass', 'get_FGroupCode', 'FSubGroupCode']
+    list_filter = ['FClass']
+    change_list_template = "bmui/materialgroup_change_list.html"
+    actions = ['delete_selected_materialgroup']  # 添加自定义动作
 
-@admin.register(Material)
-class MaterialAdmin(admin.ModelAdmin):
-    list_display = ['Id','MaterialVersion','Type','Source','Attribute','Figure','Description','CreateTime','UpdateTime','IsDelete','IsActive',]
+    def get_FClass(self, obj):
+        """显示分类的可读值"""
+        return dict(MaterialGroup.FClass_choics).get(obj.FClass, "无")
+    get_FClass.short_description = "分类"
 
-@admin.register(BOM)
-class BOMAdmin(admin.ModelAdmin):
-    list_display = ['id', 'ParentMaterial', 'ChildMaterial', 'Quantity', 'Version', 'Description','CreateTime', 'UpdateTime', 'IsDelete', 'IsActive', ]
-    change_list_template = "bmui/bom_change_list.html"
-    editTableHead = ['物料编号', '物料名称', '物料型号', '助记码','图号', '数量', '物料组别','2级组别', '获取方式', '物料属性', '物料版本', '备注']
-    
-    def get_urls(self):
-        """
-        添加自定义 URL 路由
-        """
-        urls = super().get_urls()
-        custom_urls = [
-            path('get-parent-materials/', self.admin_site.admin_view(self.get_parent_materials_view), name='bmui_get_parent_materials'),
-        ]
-        return custom_urls + urls
-    
+    def get_FGroupCode(self, obj):
+        """显示组代码的可读值"""
+        return dict(MaterialGroup.FGroupCode_choics).get(obj.FGroupCode, "无")
+    get_FGroupCode.short_description = "组别"
+
+    tableHead = ['组序号', '组名称', '父组', '组编号', '层级', '分类', '组代码', '子组代码']
     def changelist_view(self, request, extra_context=None):
-        # 获取父物料、子物料、物料版本和属性数据
-        child_materials = Material.objects.filter(IsActive=True, IsDelete=False)
-        groups = MaterialGroup.objects.values("Name").distinct()
-
-        # 传递到模板的上下文
         extra_context = extra_context or {}
-        extra_context['child_materials'] = child_materials
-        extra_context['groups'] = [group["Name"] for group in groups]
-
-        extra_context['editTableHead'] = self.editTableHead
+        extra_context['tableHead'] = self.tableHead
 
         if request.method == "POST":
             return super().changelist_view(request, extra_context=extra_context)
@@ -104,107 +136,210 @@ class BOMAdmin(admin.ModelAdmin):
             return super().changelist_view(request, extra_context=extra_context)
 
         return super().changelist_view(request, extra_context=extra_context)
-
-    def get_parent_materials_view(self, request):
+    def get_urls(self):
         """
-        根据 MaterialGroup 的 Name 和 SubName 过滤 parent_material 列表，并返回过滤后的 changelist_view
+        添加自定义 URL 路由
         """
-        data = []
-
-        if request.method == "GET":
-            group_name = request.GET.get("group_name")
-            sub_name = request.GET.get("sub_name")
-            material = request.GET.get("material")
-
-
-            if not group_name or group_name in ["None", "null"]:
-                self.message_user(request, "缺少 group_name 参数", level="error")
-
-            elif sub_name in ["None"]:
-                # 获取子组名称列表
-                sub_names = MaterialGroup.objects.filter(Name=group_name).values("SubName")
-                data = [{"value": m["SubName"], "text": m["SubName"] or "无子组"} for m in sub_names]
-            elif not material or material in ["None", "null"]:
-                # 根据 group_name 和 sub_name 过滤 BaseMaterial
-                materials = BaseMaterial.objects.filter(
-                    Group__Name=group_name,
-                    Group__SubName=sub_name
-                ).values("Id", "Name")
-                data = [{"value": m["Id"], "text": m["Name"]} for m in materials]
-            else:
-                # 获取指定 material 的版本列表
-                try:
-                    material_instance = BaseMaterial.objects.get(Id=material)
-                    versions = MaterialVersion.objects.filter(BaseMaterial=material_instance).values("Version")
-                    data = [{"value": m["Version"], "text": m["Version"]} for m in versions]
-                except BaseMaterial.DoesNotExist:
-                    self.message_user(request, "指定的 material 不存在", level="error")
-        if data.__len__ == 0:
-            return JsonResponse({"success": False, "message": "无效的请求方法"}, status=405)
-        else:
-            return JsonResponse({"success": True, "selectV": data})
-
+        urls = super().get_urls()
+        custom_urls = [
+            path('addlist/', self.admin_site.admin_view(self.addlist_view), name='bmui_materialgroup_addlist'),
+        ]
+        return custom_urls + urls
     def add_view(self, request, form_url='', extra_context=None):
         if request.method == "POST":
-            parent_material_id = request.POST.get("parent_material")
-            child_material_ids = request.POST.getlist("child_material[]")
-            quantities = request.POST.getlist("quantity[]")
-            version = request.POST.get("version")
-            description = request.POST.get("description")
+            try:
+                # 获取表单数据
+                FIds = request.POST.getlist("FId[]")
+                FNames = request.POST.getlist("FName[]")
+                FNumbers = request.POST.getlist("FNumber[]")
 
-            parent_material = Material.objects.get(pk=parent_material_id)
+                # 检查表单数据是否完整
+                if not FIds or not FNames or not FNumbers:
+                    self.message_user(request, "提交的数据不完整，请检查后重试！", level="error")
+                    return self.changelist_view(request)
 
-            for child_material_id, quantity in zip(child_material_ids, quantities):
-                child_material = Material.objects.get(pk=child_material_id)
-                BOM.objects.create(
-                    ParentMaterial=parent_material,
-                    ChildMaterial=child_material,
-                    Quantity=quantity,
-                    Version=version,
-                    Description=description,
-                )
+                # 遍历提交的名称列表，逐一检查并保存到数据库
+                for FId, FName, FNumber in zip(FIds, FNames, FNumbers):
+                    if FId.strip():  # 确保名称不为空
+                        # 检查是否已存在相同的 Name 和 Description
+                        if not MaterialGroup.objects.filter(FId=FId, FNumber=FNumber).exists():
+                            FLevel=FNumber.count('.')
+                            FPNumber = FClass= FGroupCode= FSubGroupCode =None
+                            if FLevel > 0:
+                                FClass=FNumber.split('.')[0]
+                                FPNumber=FClass
+                            if FLevel > 1:
+                                FGroupCode=FNumber.split('.')[0] + '.' +FNumber.split('.')[1]
+                                FPNumber=FGroupCode
+                            if FLevel > 2:
+                                FSubGroupCode=FGroupCode  + '.' + FNumber.split('.')[2]
+                                FPNumber=FSubGroupCode
+                            if FLevel > 3:
+                                FPNumber=FPNumber  + '.' + FNumber.split('.')[3]    
+                            FPId=MaterialGroup.objects.get(FId=FPNumber).id if FLevel>0 else None
+                            MaterialGroup.objects.create(FId=FId, FNumber=FNumber, FName=FName, FLevel=FLevel, FParent_id=FPId, 
+                                                         FClass=FClass, FGroupCode=FGroupCode, FSubGroupCode=FSubGroupCode)
+                # 显示成功消息
+                self.message_user(request, "Attribute 填报成功！", level="success")
 
-            self.message_user(request, "BOM 填报成功！")
+            except Exception as e:
+                # 捕获异常并显示错误消息
+                self.message_user(request, f"发生错误：{str(e)}", level="error")
+
+            # 返回到列表页面
             return self.changelist_view(request)
 
         return super().add_view(request, form_url, extra_context)
 
-    def add_parent(self, request):
+    def addlist_view(self, request, form_url='', extra_context=None):
         if request.method == "POST":
-            parent_material_id = request.POST.get("parent_material")
-            if not parent_material_id or parent_material_id == "None":
-                self.message_user(request, "请选择主产品！", level="error")
-                return redirect('admin:bmui_bom_changelist')
+            try:
+                payload = json.loads(request.body)
+                materialgroups = payload.get("materialgroups", [])
 
-            # 处理主产品逻辑
-            parent_material = Material.objects.get(pk=parent_material_id)
-            self.message_user(request, f"主产品 {parent_material.Name} 已保存！", level="success")
-            return redirect('admin:bmui_bom_changelist')
+                if not materialgroups:
+                    return JsonResponse({"success": False, "message": "materialgroup 数据为空"}, status=400)
 
-        return JsonResponse({"error": "Invalid request method"}, status=400)
+                with transaction.atomic():
+                    FIds, FNames, FPIds, FNumbers, FLevels,  FClasses, FGroups, FSubGroups = zip(*materialgroups)
+                    if not FIds or not FNames or not FNumbers:
+                        self.message_user(request, "提交的数据不完整，请检查后重试！", level="error")
+                        return self.changelist_view(request)
 
-    def add_details(self, request):
+                    for FId, FName, FPId, FNumber, FLevel, FClass, FGroup, FSubGroup in zip(FIds, FNames, FPIds, FNumbers, FLevels,  FClasses, FGroups, FSubGroups):
+                        if FId.strip():
+                            MaterialGroup.objects.update_or_create(FId=FId, FNumber=FNumber, FName=FName, FLevel=FLevel, FParent_id=FPId, 
+                                FClass=FClass, FGroupCode=FGroup, FSubGroupCode=FSubGroup)
+                return JsonResponse({"success": True, "message": "BOM 数据保存成功"})
+
+            except Exception as e:
+                return JsonResponse({"success": False, "message": str(e)}, status=500)
+
+
+    def delete_selected_materialgroup(self, request, queryset):
+        """自定义动作：删除选中的 Attribute 项"""
+        count = queryset.count()
+        queryset.delete()
+        self.message_user(request, f"成功删除了 {count} 条 MaterialGroup 项！", level="success")
+        return None  # 返回 None 表示操作完成
+
+    delete_selected_materialgroup.short_description = "删除选中项"
+
+@admin.register(Material)
+class MaterialAdmin(admin.ModelAdmin):
+    list_display = ['FId','FName','FGroup','FNumber','FHelpCode', 'FModel', 'FUnit', 'FSource','FDescription']
+    list_filter = ['FGroup__FClass', GroupFilter, SubGroupFilter]
+
+    class Media:
+        js = ('js/filter_chain.js',)
+    
+    change_list_template = "bmui/material_change_list.html"
+    actions = ['delete_selected_material']  # 添加自定义动作
+
+    tableHead = ['物料序号','物料名称','物料组','物料编号','助记码', '型号', '单位', '来源','备注']
+    tabletype = [
+            {'type':'number','name':'FId[]','required': 'required'},{'type':'text','name':'FName[]','required': 'required'},
+            {'type':'select','name':'FGroup[]','required': 'required'},     
+            {'type':'text','name':'FNumber[]','required': 'required'},
+            {'type':'text','name':'FHelpCode[]','required': ''}, {'type':'text','name':'FModel[]','required': ''}, 
+            {'type':'select', 'name':'FUnit[]', 'required': 'required'},           
+            {'type':'text','name':'FSource[]','required': ''}, {'type':'text','name':'FDescription[]','required': ''}]
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['tableHead'] = self.tableHead        
+        extra_context['tabletype'] = self.tabletype
+        extra_context['tabletype'][2]['options'] = list(MaterialGroup.objects.values(Id=F('FId'), Name=F('FName')))
+        extra_context['tabletype'][6]['options'] = list(Attribute.objects.filter(Description='单位').values('Id', 'Name'))
         if request.method == "POST":
-            child_materials = request.POST.getlist("child_material[]")
-            quantities = request.POST.getlist("quantity[]")
+            return super().changelist_view(request, extra_context=extra_context)
+        elif request.method == "GET":
+            return super().changelist_view(request, extra_context=extra_context)
 
-            if not child_materials or not quantities:
-                self.message_user(request, "请填写零件组件明细！", level="error")
-                return redirect('admin:bmui_bom_changelist')
+        return super().changelist_view(request, extra_context=extra_context)
+    def get_urls(self):
+        """
+        添加自定义 URL 路由
+        """
+        urls = super().get_urls()
+        custom_urls = [
+            path('getgroup/', self.admin_site.admin_view(self.getgroup_view), name='bmui_material_getgroup'),
+            path('addlist/', self.admin_site.admin_view(self.addlist_view), name='bmui_material_addlist'),
+        ]
+        return custom_urls + urls
+    def add_view(self, request, form_url='', extra_context=None):
+        if request.method == "POST":
+            result = {}
+            try:
+                for each in self.tabletype:
+                    key = each['name'] 
+                    result[key] = request.POST.getlist(each['name'])  
+                if not result['FId[]'] or not result['FName[]'] or not result['FNumber[]']:
+                    self.message_user(request, "提交的数据不完整，请检查后重试！", level="error")
+                    return self.changelist_view(request)
 
-            # 保存零件组件明细逻辑
-            for child_material_id, quantity in zip(child_materials, quantities):
-                if child_material_id != "None" and quantity:
-                    BOM.objects.create(
-                        ChildMaterial_id=child_material_id,
-                        Quantity=quantity,
-                        # 添加其他需要的字段
-                    )
-            self.message_user(request, "零件组件明细已保存！", level="success")
-            return redirect('admin:bmui_bom_changelist')
+                for FId, FName, FGroup, FNumber, FHelpCode,  FModel, FUnit, FSource, FDescription in zip(
+                    result['FId[]'], result['FName[]'], result['FGroup[]'], result['FNumber[]'], result['FHelpCode[]'],
+                    result['FModel[]'], result['FUnit[]'], result['FSource[]'], result['FDescription[]']):
+                    if FId.strip():
+                        Material.objects.update_or_create(FId=FId, FNumber=FNumber, defaults={
+                            'FName': FName,'FHelpCode': FHelpCode,'FModel': FModel, 'FUnit_id': FUnit,
+                            'FSource': FSource, 'FDescription': FDescription, 'FGroup_id': FGroup})
+                # 显示成功消息
+                self.message_user(request, "Attribute 填报成功！", level="success")
 
-        return JsonResponse({"error": "Invalid request method"}, status=400)
+            except Exception as e:
+                # 捕获异常并显示错误消息
+                self.message_user(request, f"发生错误：{str(e)}", level="error")
 
+            # 返回到列表页面
+            return self.changelist_view(request)
+
+        return super().add_view(request, form_url, extra_context)
+
+    def addlist_view(self, request, form_url='', extra_context=None):
+        if request.method == "POST":
+            try:
+                payload = json.loads(request.body)
+                materials = payload.get("materials", [])
+
+                if not materials:
+                    return JsonResponse({"success": False, "message": "material 数据为空"}, status=400)
+
+                with transaction.atomic():
+                    FIds, FNames, FGroupIds, FNumbers, FHelpcodes,  FModels, FUnits, FSources, FDescriptions = zip(*materials)
+                    if not FIds or not FNames or not FNumbers:
+                        self.message_user(request, "提交的数据不完整，请检查后重试！", level="error")
+                        return self.changelist_view(request)
+
+                    for FId, FName, FGroup, FNumber, FHelpCode, FModel, FUnit, FSource, FDescription in zip(FIds, FNames, FGroupIds, FNumbers, FHelpcodes,  FModels, FUnits, FSources, FDescriptions):
+                        if FId.strip() and FUnit.strip():
+                            unit_attribute, created = Attribute.objects.get_or_create(
+                                Name=FUnit, Description='单位', defaults={'Description': '单位'} )
+                            Material.objects.update_or_create(FId=FId, FNumber=FNumber, defaults={
+                                'FName': FName, 'FHelpCode': FHelpCode, 'FModel': FModel, 'FGroup_id': FGroup,
+                                'FUnit_id': unit_attribute.Id, 'FSource': FSource, 'FDescription': FDescription })
+                    return JsonResponse({"success": True, "message": "BOM 数据保存成功"})
+
+            except Exception as e:
+                return JsonResponse({"success": False, "message": str(e)}, status=500)
+
+    def getgroup_view(self, request):
+        fclass = request.GET.get('FClass')
+        if not fclass:
+            return JsonResponse([], safe=False)
+
+        group_codes = MaterialGroup.objects.filter(
+            FGroupCode=fclass, FSubGroupCode='' 
+        ).values_list('FNumber', 'FName').distinct()
+        return JsonResponse(list(group_codes), safe=False)    
+    def delete_selected_material(self, request, queryset):
+        """自定义动作：删除选中的 Attribute 项"""
+        count = queryset.count()
+        queryset.delete()
+        self.message_user(request, f"成功删除了 {count} 条 Material 项！", level="success")
+        return None  # 返回 None 表示操作完成
+
+    delete_selected_material.short_description = "删除选中项"
 
 
 

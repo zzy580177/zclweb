@@ -1,8 +1,45 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
-from .models import Attribute, MaterialGroup, BaseMaterial, MaterialVersion, Material, BOM
+from .models import *
 import json
+
+@csrf_exempt
+def quick_fill(request):
+    if request.method == "POST":
+        try:
+            # 获取提交的数据
+            rows = request.POST.getlist("rows")
+            for row in rows:
+                FId = row.get("FId")
+                FName = row.get("FName")
+                FParent = row.get("FParent")
+                FNumber = row.get("FNumber")
+                FLevel = row.get("FLevel")
+                FClass = row.get("FClass")
+
+                # 创建或更新 MaterialGroup
+                MaterialGroup.objects.update_or_create(
+                    FId=FId,
+                    defaults={
+                        "FName": FName,
+                        "FParent_id": FParent,
+                        "FNumber": FNumber,
+                        "FLevel": FLevel,
+                        "FClass": FClass,
+                    }
+                )
+            return JsonResponse({"success": True})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)})
+    return JsonResponse({"success": False, "message": "无效的请求方法"})
+
+def get_fgroupcode_options(request):
+    fclass = request.GET.get('fclass')
+    if fclass:
+        options = MaterialGroup.objects.filter(FClass=fclass).values_list('FGroupCode', flat=True).distinct()
+        return JsonResponse([{'value': code, 'label': code} for code in options], safe=False)
+    return JsonResponse([], safe=False)
 
 def upsert_model(model, defaults=None, **lookup):
     """

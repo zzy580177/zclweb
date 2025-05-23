@@ -54,6 +54,7 @@ INSTALLED_APPS: Tuple[str, ...] = (
     'apps.amfui',
     'apps.fpmui',
     'apps.bmui',
+    'apps.pmcui'
 )
 
 MIDDLEWARE: Tuple[str, ...] = (

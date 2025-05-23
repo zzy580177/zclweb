@@ -19,99 +19,205 @@ class ModelExt(models.Model):
 from django.conf import settings
 
 schema = settings.DATABASES["default"].get("SCHEMA", "default_schema")
+schema1 = 'bmui'
 # Create your models here.
 class Step(models.Model):
-	""""工序索引表"""
-	Id = models.SmallIntegerField("工序编号", primary_key=True); 
-	Name = models.CharField('工序名称',max_length =40)
-	EqpType = models.IntegerField('类别',null=True, blank=True)
-	Description = models.IntegerField('备注索引',null=True, blank=True)
-	def __str__(self):
-		return str(self.Id) + " " + self.Name 
-	class Meta:
-		abstract = True
-		db_table = "[%s].[Step]"% schema
-		verbose_name = '工序索引表'
-		verbose_name_plural = verbose_name
-		
+    """"工序索引表"""
+    Id = models.SmallIntegerField("工序编号", primary_key=True); 
+    Name = models.CharField('工序名称',max_length =40)
+    EqpType = models.IntegerField('类别',null=True, blank=True)
+    Description = models.IntegerField('备注索引',null=True, blank=True)
+    def __str__(self):
+        return str(self.Id) + " " + self.Name 
+    class Meta:
+        abstract = True
+        db_table = "[%s].[Step]"% schema
+        verbose_name = '工序索引表'
+        verbose_name_plural = verbose_name
+        
 class ProcessStep(models.Model):
-	""""工序配方表"""
-	StepId = models.SmallIntegerField("工艺配方编号", primary_key=True); 
-	Step = models.ForeignKey('Step', on_delete=models.CASCADE, null=True,blank=True, verbose_name = '工序')
-	Route = models.ForeignKey('ProcessRoute', on_delete=models.CASCADE, null=True,blank=True, verbose_name = '工艺流程')
-	Parameters = models.JSONField ('参数', null = True, blank= True)
-	SeqNum = models.IntegerField('工序序列号',null=True, blank=True)
-	Description = models.IntegerField('备注索引',null=True, blank=True)
-	def __str__(self):
-		return str(self.Id) + " " + self.StepId + " " + self.Step_Name
-	class Meta:
-		abstract = True
-		db_table = "[%s].[ProcessStep]"% schema
-		verbose_name = '工艺配方表'
-		verbose_name_plural = verbose_name
+    """"工序配方表"""
+    StepId = models.SmallIntegerField("工艺配方编号", primary_key=True); 
+    Step = models.ForeignKey('Step', on_delete=models.CASCADE, null=True,blank=True, verbose_name = '工序')
+    Route = models.ForeignKey('ProcessRoute', on_delete=models.CASCADE, null=True,blank=True, verbose_name = '工艺流程')
+    Parameters = models.JSONField ('参数', null = True, blank= True)
+    SeqNum = models.IntegerField('工序序列号',null=True, blank=True)
+    Description = models.IntegerField('备注索引',null=True, blank=True)
+    def __str__(self):
+        return str(self.Id) + " " + self.StepId + " " + self.Step_Name
+    class Meta:
+        abstract = True
+        db_table = "[%s].[ProcessStep]"% schema
+        verbose_name = '工艺配方表'
+        verbose_name_plural = verbose_name
 
 class ProcessRoute(models.Model):
-	""""工艺流程管理表"""
-	Id = models.SmallIntegerField("工艺流程编号", primary_key=True);
-	Product_id = models.CharField("款号", max_length =50); 
-	ApprovalStatus = models.CharField ('状态', max_length =40);	
-	Version = models.SmallIntegerField ('版本', null = True, blank= True);
-	StartDay = models.DateField ('创建日期', null = True, blank= True);
-	Description = models.IntegerField('备注索引',null=True, blank=True)
-	def __str__(self):
-		return str(self.Id) + " " + self.Product_id + "工艺流程" 
-	class Meta:
-		abstract = True
-		db_table = "[%s].[ProcessRoute]"% schema
-		verbose_name = '工艺流程管理表'
-		verbose_name_plural = verbose_name
+    """"工艺流程管理表"""
+    Id = models.SmallIntegerField("工艺流程编号", primary_key=True);
+    Product_id = models.CharField("款号", max_length =50); 
+    ApprovalStatus = models.CharField ('状态', max_length =40);    
+    Version = models.SmallIntegerField ('版本', null = True, blank= True);
+    StartDay = models.DateField ('创建日期', null = True, blank= True);
+    Description = models.IntegerField('备注索引',null=True, blank=True)
+    def __str__(self):
+        return str(self.Id) + " " + self.Product_id + "工艺流程" 
+    class Meta:
+        abstract = True
+        db_table = "[%s].[ProcessRoute]"% schema
+        verbose_name = '工艺流程管理表'
+        verbose_name_plural = verbose_name
 
-class Material(models.Model):
-    """物料表"""
-    Id = models.AutoField("物料编号", primary_key=True)
-    Name = models.CharField("物料名称", max_length=100)   
-    Type = models.CharField("物料型号", max_length=100)     
-    Source = models.CharField("获取来源", max_length=100)
-    Description = models.TextField("物料描述", null=True, blank=True)
+class AbstractBaseModel(models.Model):
+    """抽象基类，包含通用字段和方法"""
+    CreateTime = models.DateTimeField("创建时间", auto_now_add=True)
+    UpdateTime = models.DateTimeField("更新时间", auto_now=True)
+    IsDelete = models.BooleanField("是否删除", default=False)
+    IsActive = models.BooleanField("是否启用", default=True)
+
+    def soft_delete(self):
+        """逻辑删除"""
+        self.IsDelete = True
+        self.save(update_fields=["IsDelete", "UpdateTime"])
+
+    def restore(self):
+        """恢复逻辑删除"""
+        self.IsDelete = False
+        self.save(update_fields=["IsDelete", "UpdateTime"])
+
+    class Meta:
+        abstract = True
+
+
+class Attribute(models.Model):
+    """属性表"""
+    Id = models.AutoField("属性序号", primary_key=True)
+    Name = models.CharField("属性名称", max_length=255, unique=True)
+    Description = models.TextField("描述", null=True, blank=True)
 
     def __str__(self):
         return self.Name
 
     class Meta:
         abstract = True
-        db_table = "[%s].[Material]" % schema
-        verbose_name = '物料'
+        db_table = "[%s].[ProcessRoute]"% schema1
+        verbose_name = '属性表'
         verbose_name_plural = verbose_name
 
-
-class BOM(models.Model):
-    """物料清单表"""
-    Id = models.AutoField("BOM编号", primary_key=True)
-    Material = models.ForeignKey(Material, on_delete=models.CASCADE, verbose_name="物料")
-    Quantity = models.IntegerField("数量")
-    ParentBOM = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='child_boms', verbose_name="父级BOM")
+class MaterialGroup(models.Model):
+    """物料组表"""
+    FId = models.IntegerField("组序号", primary_key=True)
+    FName = models.CharField("组名称", max_length=255)  
+    FParent = models.ForeignKey(
+        'self',  # 自关联
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="children",
+        verbose_name="父组")
+    FNumber = models.CharField("组编号", max_length=50, null=True, blank=True)  
+    FLevel = models.IntegerField("层级", null=True, blank=True) 
+    FClass_choics =(("01", "成品机"),("02", "半成品件"),("03", "外购件")) 
+    FClass = models.CharField("分类", max_length=50, null=True, blank=True, choices=FClass_choics)  
+    FGroupCode_choics = (
+        ("01.01", "成品整机"),
+        ("01.02", "成品夹具"),
+        ("01.03", "客制模具"),
+        ("01.04", "成品机部件"),
+        ("02.01", "整机钣金件"),
+        ("02.02", "夹具钣金件"),
+        ("02.03", "整机机加件"),
+        ("02.04", "夹具机加件"),
+        ("02.05", "ZCL标准机加件"),
+        ("02.06", "临时机加件"),
+        ("02.07", "返工类机加件"),
+        ("02.KZ", "客制模具"),
+        ("03.01", "电器类"),
+        ("03.02", "气动类"),
+        ("03.03", "五金类"),
+        ("03.04", "刀具类"),
+        ("03.05", "其它类"),
+    )
+    FGroupCode = models.CharField("组代码", max_length=50, null=True, blank=True, choices=FGroupCode_choics)  
+    FSubGroupCode = models.CharField("子组代码", max_length=50, null=True, blank=True)  
 
     def __str__(self):
-        return f"BOM {self.Id} - {self.Material.Name}"
+        return f"{self.FName} ({self.FNumber})"
+
+    def get_parent(self):
+        """获取父组"""
+        return self.Parent
+
+    def get_children(self):
+        """获取所有子组"""
+        return self.children.all()
+    
+    def save(self, *args, **kwargs):
+        """覆盖 save 方法，自动分配未使用的 FId"""
+        if not self.FId:  # 如果未指定 FId
+            existing_ids = set(MaterialGroup.objects.values_list('FId', flat=True))
+            self.FId = next(i for i in range(1, max(existing_ids, default=0) + 2) if i not in existing_ids)
+        super().save(*args, **kwargs)
 
     class Meta:
         abstract = True
-        db_table = "[%s].[BOM]" % schema
-        verbose_name = '物料清单'
+        db_table = f"[{schema1}].[MaterialGroup]"
+        verbose_name = '物料组管理'
         verbose_name_plural = verbose_name
 
 
-class BOMLevel(models.Model):
-    """BOM层级表"""
-    Id = models.AutoField("层级编号", primary_key=True)
-    BOM = models.ForeignKey(BOM, on_delete=models.CASCADE, verbose_name="物料清单")
-    Level = models.IntegerField("层级", default=1)
+class Material(AbstractBaseModel):
+    """物料表"""
+    FId = models.IntegerField("物料序号", primary_key=True);
+    FGroup = models.ForeignKey(
+        MaterialGroup,
+        on_delete=models.CASCADE,
+        verbose_name="物料组",
+        related_name="materials"
+    );
+    FNumber = models.CharField("物料编号", max_length=50, null=True, blank=True);  
+    FName = models.CharField("物料名称", max_length=255);
+    FHelpCode = models.CharField("助记码", max_length=255, null=True, blank=True);  
+    FModel = models.CharField("型号", max_length=255, null=True, blank=True);  
+    FUnit = models.ForeignKey(
+        Attribute,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="单位",
+        limit_choices_to={'Description': '单位'} 
+    );
+    FSource = models.CharField("来源", max_length=255, null=True, blank=True);  
+    FDescription = models.TextField("描述", null=True, blank=True);  
 
     def __str__(self):
-        return f"层级 {self.Level} - BOM {self.BOM.Id}"
+        return f"{self.FName} ({self.FNumber})"
+    
+    def save(self, *args, **kwargs):
+        """覆盖 save 方法，自动分配未使用的 FId"""
+        if not self.FId:  # 如果未指定 FId
+            existing_ids = set(MaterialGroup.objects.values_list('FId', flat=True))
+            self.FId = next(i for i in range(1, max(existing_ids, default=0) + 2) if i not in existing_ids)
+        super().save(*args, **kwargs)
 
     class Meta:
         abstract = True
-        db_table = "[%s].[BOMLevel]" % schema
-        verbose_name = 'BOM层级'
+        db_table = f"[{schema1}].[Material]"
+        verbose_name = '物料管理'
+        verbose_name_plural = verbose_name
+
+
+class BOM(AbstractBaseModel):
+    """BOM 表"""
+    Material = models.ForeignKey(Material, on_delete=models.CASCADE, related_name="child_boms", verbose_name="子物料")
+    Quantity = models.DecimalField("数量", max_digits=10, decimal_places=2)
+    Version = models.CharField("BOM版本号", max_length=50, null=True, blank=True)  # BOM 的版本号
+    Description = models.TextField("备注", null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.ParentMaterial} -> {self.ChildMaterial} ({self.Quantity})"
+
+    class Meta:
+        abstract = True
+        db_table = "[%s].[BOM]" % schema1
+        verbose_name = '物料表管理'
         verbose_name_plural = verbose_name

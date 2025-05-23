@@ -4,61 +4,24 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/bmui.css' %}">
 
-<style>
-    #material-details {
-        width: 100%; /* 设置表格宽度为容器的 100% */
-        border-collapse: collapse; /* 合并边框 */
-    }
-
-    #material-details th, #material-details td {
-        padding: 8px; /* 设置单元格内边距 */
-        text-align: left; /* 左对齐内容 */
-        border: 1px solid #ddd; /* 添加边框 */
-        word-wrap: break-word; /* 自动换行 */
-    }
-
-    #material-details th {
-        background-color: #f4f4f4; /* 设置表头背景色 */
-    }
-
-    #material-details tbody tr:hover {
-        background-color: #f9f9f9; /* 鼠标悬停时高亮行 */
-    }
-
-    #material-details input {
-        width: 100%; /* 输入框宽度占满单元格 */
-        box-sizing: border-box; /* 包括内边距和边框在宽度内 */
-    }
-</style>
-
 <div class="container">
-    <form method="post" action="{% url 'admin:bmui_material_add' %}">
+    <form method="post" action="{% url 'admin:bmui_materialgroup_add' %}">
         {% csrf_token %}
         <div>
-            <h3>新增物料</h3>
-            <table id="material-details">
+            <h3>新增物料组别</h3>
+            <table id="materialGroup-details">
                 <thead>
                     <tr>
-                        {% for column in tableHead %}
-                            <th>{{ column }}</th>
-                        {% endfor %}
+                        <th>组序号 (FId)</th>
+                        <th>组名称 (FName)</th>
+                        <th>组编号 (FNumber)</th>
                         <th>操作</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for column in tabletype %}                    
-                        <td>
-                            {% if column.type == "select" %}
-                            <select name="{{ column.name }}" required>
-                                {% for option in column.options %}
-                                    <option value="{{ option.Id }}">{{ option.Name }}</option>
-                                {% endfor %}
-                            </select>
-                            {% else %}
-                                <input type="{{ column.type }}" name="{{ column.name }}" {{ column.required }}>
-                            {% endif %}
-                        </td>
-                    {% endfor %}
+                    <td><input type="number" name="FId[]" required></td>
+                    <td><input type="text" name="FName[]" required></td>
+                    <td><input type="text" name="FNumber[]" required></td>
                     <td>
                         <button type="button" id="remove-row" class="remove-row">删除</button>
                     </td>
@@ -101,9 +64,7 @@
     <!-- 模态框遮罩层 -->
     <div id="modal-overlay" class="modal-overlay"></div>
 
-
     {{ block.super }}
-
 
 </div>
 
@@ -119,12 +80,11 @@
         getTableData,
         styleCell, 
         fetchParentMaterials,
-        updataInputSelectOptions,
         } from "{% static 'js/bmui.js' %}";
 
     document.addEventListener("DOMContentLoaded", function () {
         const addRowButton = document.getElementById("add-row");
-        const tableBodySelector = "#material-details tbody";
+        const tableBodySelector = "#materialGroup-details tbody";
         const quickFillButton = document.getElementById("quick-fill");
         const importModal = document.getElementById("quick-fill-modal");
         const importoverlay = document.getElementById("modal-overlay");
@@ -153,15 +113,15 @@
         toggleMaximizeModal(importModal, document.getElementById("maximize-modal"), editableTable);
 
         // 启用表格粘贴功能
-        enableTablePaste(editableTable, 9);
+        enableTablePaste(editableTable, 8);
 
         // 绑定点击事件
         const submitImportButton = document.querySelector("#submit-import");
         const csrfToken = "{{ csrf_token }}";
         bindQuickFillSave(submitImportButton, 
-        "{% url 'admin:bmui_material_addlist' %}", csrfToken, 
+        "{% url 'admin:bmui_materialgroup_addlist' %}", csrfToken, 
         () => {
-            return {materials: getTableData(editableTable)}; },
+            return {materialgroups: getTableData(editableTable)}; },
         (result) => {
             // 保存成功后的操作
             switchOverlay(importoverlay, importModal, false);
@@ -171,12 +131,7 @@
             console.error("保存失败回调：", error);
             alert("保存失败，请检查网络或数据！");
         });
-        const input = document.querySelector('input[name="FGroup__FClass__exact"]');
-        const subInput = document.querySelector('input[name="FGroup__FGroupCode__exact"]');
-        const subSubInput = document.querySelector('input[name="FGroup__FSubGroupCode__exact"]');
 
- 
     });
 </script>
 {% endblock %}
-

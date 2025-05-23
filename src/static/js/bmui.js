@@ -361,3 +361,65 @@ export function fetchParentMaterials(groupName, subName, material, selectElement
         });
 }
 
+export function mutationInputChange(input)
+{
+    if (input === null) {
+        console.error(`未找到输入框`);
+        return;
+    }
+    let oldValue = input.value;
+
+    // 通过MutationObserver监听属性变化
+    const observer = new MutationObserver(function(mutations) {
+        if(input.value !== oldValue) {
+            console.log('值变为:', input.value);
+            oldValue = input.value;
+            updateDropdownList(dropdownList, '值变为777');
+        }
+    });
+    observer.observe(input, { attributes: true, childList: false, subtree: false });
+
+    // 同时绑定常规事件
+    input.addEventListener('input', function() {
+        oldValue = this.value;
+    });
+
+    function updateDropdownList(dropdownList, value) {
+        // 清空原有选项
+        dropdownList.innerHTML = "";
+
+        // 模拟根据输入值生成新选项
+        const options = generateOptions(value);
+
+        // 动态添加新选项
+        options.forEach((option) => {
+            const listItem = document.createElement("li");
+            listItem.className = "el-select-dropdown__item";
+            listItem.textContent = option.label;
+            listItem.setAttribute("data-value", option.value);
+            dropdownList.appendChild(listItem);
+        });
+    }
+
+    /**
+     * 模拟生成选项数据
+     * @param {string} value 输入框的值
+     * @returns {Array} 选项数组
+     */
+    function generateOptions(value) {
+        if (!value) return [];
+        return [
+            { value: `${value}-1`, label: `选项 ${value}-1` },
+            { value: `${value}-2`, label: `选项 ${value}-2` },
+            { value: `${value}-3`, label: `选项 ${value}-3` },
+        ];
+    }
+    
+}
+
+export function updataInputSelectOptions(input, subInput, subSubInput)
+{
+
+    mutationInputChange(input);
+}
+
