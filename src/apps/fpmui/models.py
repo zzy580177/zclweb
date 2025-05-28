@@ -2,7 +2,7 @@ from django.db import models
 from django.conf import settings
 from django_starter.db.models import Step, ProcessStep, ProcessRoute
 
-schema = settings.DATABASES["default"].get("SCHEMA", "default_schema")
+schema = 'fpmui'
 app_name = 'fpmui'
 # Create your models here.
 class Step(Step):
@@ -10,21 +10,24 @@ class Step(Step):
 	class Meta:		
 		db_table = "[%s].[Step]"% schema
 		app_label = app_name
-		managed = False
+		verbose_name = '生产工序'
+		verbose_name_plural = verbose_name
 		
 class ProcessStep(ProcessStep):
 	""""工序配方表"""
 	class Meta:
 		db_table = "[%s].[ProcessStep]"% schema
 		app_label = app_name
-		managed = False
+		verbose_name = '工序配方'
+		verbose_name_plural = verbose_name
 
 class ProcessRoute(ProcessRoute):
 	""""工艺流程管理表"""
 	class Meta:
 		db_table = "[%s].[ProcessRoute]"% schema
 		app_label = app_name
-		managed = False
+		verbose_name = '工艺流程'
+		verbose_name_plural = verbose_name
 
 class VirtualProcessRoute(ProcessRoute):
     steps = None  # 需要确保在使用前正确初始化

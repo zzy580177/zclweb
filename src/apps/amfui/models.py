@@ -5,7 +5,6 @@ from .urls import app_name
 from datetime import datetime, timedelta, date, time
 import math
 from django.conf import settings
-from django_starter.db.models import Step, ProcessStep, ProcessRoute
 
 # 动态获取 schema
 schema = settings.DATABASES["default"].get("SCHEMA", "default_schema")
@@ -194,7 +193,7 @@ class Record(models.Model):
 	class Meta:
 		db_table = f"[{schema}].[Record]"
 		app_label = app_name
-		verbose_name = '工单加工日志'
+		verbose_name = '加工日志'
 		verbose_name_plural = verbose_name		
 	def WorkSheet_id(self):
 		return self.WorkSheet.Id
@@ -204,7 +203,7 @@ class RecordManage(Record):
 	class Meta:
 		proxy = True
 		app_label = app_name
-		verbose_name = '工单加工记录'
+		verbose_name = '加工记录'
 		verbose_name_plural = verbose_name
 
 class WorkSheet(models.Model):
@@ -252,42 +251,6 @@ class Order(models.Model):
 	class Meta:
 		db_table = f"[{schema}].[Order]"
 		app_label = app_name
-		verbose_name = '订单管理表'
+		verbose_name = '生产订单管理'
 		verbose_name_plural = verbose_name
 
-class Step(Step):
-	""""工序索引表"""
-	class Meta:
-		app_label = app_name
-		
-class ProcessStep(ProcessStep):
-	""""工序配方表"""
-	class Meta:
-		app_label = app_name
-
-class ProcessRoute(ProcessRoute):
-	""""工艺流程管理表"""
-	class Meta:
-		app_label = app_name
-
-class VirtualProcessRoute(ProcessRoute):
-	steps_list = None
-	class Meta:
-		proxy = True
-		app_label = app_name
-		verbose_name = '工艺流程'
-		verbose_name_plural = verbose_name
-
-	def get_steps_list(self):
-		"""动态获取关联步骤列表"""
-		return list(self.steps.all().order_by('SeqNum'))
-	
-	@property
-	def formatted_steps(self):
-		"""返回结构化步骤数据"""
-		return [{
-			'SeqNum': step.SeqNum,
-			'StepName': step.Step__Name,
-			'EqpType': step.Step__EqpType,
-			'params': step.Parameters
-		} for step in self.steps.all()]

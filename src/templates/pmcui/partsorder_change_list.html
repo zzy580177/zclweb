@@ -1,0 +1,45 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/bmui.css' %}">
+
+<div class="container">
+    <form method="post" action="{% url 'admin:pmcui_partsorder_add' %}">
+        {% csrf_token %}
+        <div>
+            <h3>新增零件订单</h3>
+            <table id="partsorder-details">
+                <thead>
+                    <tr>
+                        {% for column in tableHead %}
+                            <th>{{ column }}</th>
+                        {% endfor %}
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for column in tabletype %}
+                        <td>
+                            {% if column.type == "select" %}
+                            <select name="{{ column.name }}" required>
+                                {% for option in column.options %}
+                                    <option value="{{ option.Id }}">{{ option.Name }}</option>
+                                {% endfor %}
+                            </select>
+                            {% else %}
+                                <input type="{{ column.type }}" name="{{ column.name }}" {{ column.required }}>
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                    <td>
+                        <button type="button" id="remove-row" class="remove-row">删除</button>
+                    </td>
+                </tbody>
+            </table>
+        </div>
+        <div>
+            <button type="submit">提交</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

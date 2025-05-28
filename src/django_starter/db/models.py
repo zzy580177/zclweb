@@ -19,53 +19,9 @@ class ModelExt(models.Model):
 from django.conf import settings
 
 schema = settings.DATABASES["default"].get("SCHEMA", "default_schema")
-schema1 = 'bmui'
+bmuiAppName = 'bmui'
 # Create your models here.
-class Step(models.Model):
-    """"工序索引表"""
-    Id = models.SmallIntegerField("工序编号", primary_key=True); 
-    Name = models.CharField('工序名称',max_length =40)
-    EqpType = models.IntegerField('类别',null=True, blank=True)
-    Description = models.IntegerField('备注索引',null=True, blank=True)
-    def __str__(self):
-        return str(self.Id) + " " + self.Name 
-    class Meta:
-        abstract = True
-        db_table = "[%s].[Step]"% schema
-        verbose_name = '工序索引表'
-        verbose_name_plural = verbose_name
-        
-class ProcessStep(models.Model):
-    """"工序配方表"""
-    StepId = models.SmallIntegerField("工艺配方编号", primary_key=True); 
-    Step = models.ForeignKey('Step', on_delete=models.CASCADE, null=True,blank=True, verbose_name = '工序')
-    Route = models.ForeignKey('ProcessRoute', on_delete=models.CASCADE, null=True,blank=True, verbose_name = '工艺流程')
-    Parameters = models.JSONField ('参数', null = True, blank= True)
-    SeqNum = models.IntegerField('工序序列号',null=True, blank=True)
-    Description = models.IntegerField('备注索引',null=True, blank=True)
-    def __str__(self):
-        return str(self.Id) + " " + self.StepId + " " + self.Step_Name
-    class Meta:
-        abstract = True
-        db_table = "[%s].[ProcessStep]"% schema
-        verbose_name = '工艺配方表'
-        verbose_name_plural = verbose_name
 
-class ProcessRoute(models.Model):
-    """"工艺流程管理表"""
-    Id = models.SmallIntegerField("工艺流程编号", primary_key=True);
-    Product_id = models.CharField("款号", max_length =50); 
-    ApprovalStatus = models.CharField ('状态', max_length =40);    
-    Version = models.SmallIntegerField ('版本', null = True, blank= True);
-    StartDay = models.DateField ('创建日期', null = True, blank= True);
-    Description = models.IntegerField('备注索引',null=True, blank=True)
-    def __str__(self):
-        return str(self.Id) + " " + self.Product_id + "工艺流程" 
-    class Meta:
-        abstract = True
-        db_table = "[%s].[ProcessRoute]"% schema
-        verbose_name = '工艺流程管理表'
-        verbose_name_plural = verbose_name
 
 class AbstractBaseModel(models.Model):
     """抽象基类，包含通用字段和方法"""
@@ -99,7 +55,8 @@ class Attribute(models.Model):
 
     class Meta:
         abstract = True
-        db_table = "[%s].[ProcessRoute]"% schema1
+        db_table = "[%s].[ProcessRoute]"% bmuiAppName
+        app_label = bmuiAppName
         verbose_name = '属性表'
         verbose_name_plural = verbose_name
 
@@ -160,7 +117,8 @@ class MaterialGroup(models.Model):
 
     class Meta:
         abstract = True
-        db_table = f"[{schema1}].[MaterialGroup]"
+        db_table = f"[{bmuiAppName}].[MaterialGroup]"
+        app_label = bmuiAppName
         verbose_name = '物料组管理'
         verbose_name_plural = verbose_name
 
@@ -201,7 +159,8 @@ class Material(AbstractBaseModel):
 
     class Meta:
         abstract = True
-        db_table = f"[{schema1}].[Material]"
+        db_table = f"[{bmuiAppName}].[Material]"
+        app_label = bmuiAppName
         verbose_name = '物料管理'
         verbose_name_plural = verbose_name
 
@@ -218,6 +177,65 @@ class BOM(AbstractBaseModel):
 
     class Meta:
         abstract = True
-        db_table = "[%s].[BOM]" % schema1
+        db_table = "[%s].[BOM]" % bmuiAppName
+        app_label = bmuiAppName
         verbose_name = '物料表管理'
         verbose_name_plural = verbose_name
+
+class Step(models.Model):
+    """"工序索引表"""
+    Id = models.CharField("工序编号", max_length=8, primary_key=True)  # 改为 CharField
+    Name = models.CharField('工序名称',max_length =40)
+    EqpType = models.ForeignKey(Attribute, on_delete=models.SET_NULL, null=True,blank=True,
+        verbose_name="工序分类",limit_choices_to={'Description': '工序分类'} );
+    UCost = models.DecimalField('工序计件单价/元', max_digits=10, decimal_places=2, null=True, blank=True)
+    HCost = models.DecimalField('工序计时单价/元', max_digits=10, decimal_places=2, null=True, blank=True)
+    Description = models.IntegerField('备注索引',null=True, blank=True)
+    def __str__(self):
+        return self.Id + " " + self.Name 
+
+    class Meta:
+        abstract = True
+        
+class ProcessStep(models.Model):
+    """"工序配方表"""
+    PFId = models.SmallIntegerField("工艺配方编号", primary_key=True); 
+    Step = models.ForeignKey('Step', on_delete=models.CASCADE, null=True,blank=True, verbose_name = '工序')
+    Route = models.ForeignKey(
+        'ProcessRoute',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        verbose_name='工艺流程',
+        related_name='main_steps'      # 添加唯一 related_name
+    )
+    subRoute = models.ForeignKey(
+        'ProcessRoute',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        verbose_name='CNC工艺流程',
+        related_name='sub_steps'       # 添加唯一 related_name
+    )
+    Parameters = models.JSONField ('参数', null = True, blank= True)
+    SeqNum = models.IntegerField('工序序列号',null=True, blank=True)
+    Description = models.IntegerField('备注索引',null=True, blank=True)
+    def __str__(self):
+        return str(self.Id) + " " + self.StepId + " " + self.Step_Name
+    class Meta:
+        abstract = True
+
+class ProcessRoute(models.Model):
+    """"工艺流程管理表"""
+    Id = models.SmallIntegerField("工艺流程编号", primary_key=True);
+    Product_id = models.CharField("款号", max_length =50); 
+    ApprovalStatus = models.CharField ('状态', max_length =40);    
+    Version = models.SmallIntegerField ('版本', null = True, blank= True);
+    StartDay = models.DateField ('创建日期', null = True, blank= True);
+    Parameters = models.JSONField ('参数', null = True, blank= True);
+    IsCNC = models.BooleanField('是否CNC工艺流程', default=False);
+    Description = models.IntegerField('备注索引',null=True, blank=True)
+    def __str__(self):
+        return self.Product_id + "工艺流程 V" + self.Version
+    class Meta:
+        abstract = True

@@ -13,6 +13,16 @@ from django.contrib.admin import SimpleListFilter
 
 from django.utils.translation import gettext_lazy as _
 
+def delete_selected(self, request, queryset):
+    """自定义动作：删除选中的 Attribute 项"""
+    count = queryset.count()
+    queryset.delete()
+    self.message_user(request, f"成功删除了 {count} 条记录！", level="success")
+    return None  # 返回 None 表示操作完成
+
+delete_selected.short_description = "删除选中项"
+
+
 class GroupFilter(admin.SimpleListFilter):
     title = _('子分类')
     parameter_name = 'GroupCode'
@@ -56,11 +66,11 @@ class SubGroupFilter(admin.SimpleListFilter):
 class AttributeAdmin(admin.ModelAdmin):
     list_display = ['Id', 'Name', 'Description']
     change_list_template = "bmui/attribute_change_list.html"
-    actions = ['delete_selected_attributes']  # 添加自定义动作
+    actions = ['delete_selected']  # 添加自定义动作
 
     def changelist_view(self, request, extra_context=None):
         # 定义 Description 的选项
-        description_options = ["单位", "获取方式"]
+        description_options = ["单位", "获取方式", "工序分类"]
 
         # 传递到模板的上下文
         extra_context = extra_context or {}
@@ -99,21 +109,13 @@ class AttributeAdmin(admin.ModelAdmin):
 
         return super().add_view(request, form_url, extra_context)
 
-    def delete_selected_attributes(self, request, queryset):
-        """自定义动作：删除选中的 Attribute 项"""
-        count = queryset.count()
-        queryset.delete()
-        self.message_user(request, f"成功删除了 {count} 条 Attribute 项！", level="success")
-        return None  # 返回 None 表示操作完成
-
-    delete_selected_attributes.short_description = "删除选中项"
 
 @admin.register(MaterialGroup)
 class MaterialGroupAdmin(admin.ModelAdmin):
     list_display = ['FId','FName','FParent','FNumber','FLevel', 'get_FClass', 'get_FGroupCode', 'FSubGroupCode']
     list_filter = ['FClass']
     change_list_template = "bmui/materialgroup_change_list.html"
-    actions = ['delete_selected_materialgroup']  # 添加自定义动作
+    actions = ['delete_selected']  # 添加自定义动作
 
     def get_FClass(self, obj):
         """显示分类的可读值"""
@@ -176,7 +178,7 @@ class MaterialGroupAdmin(admin.ModelAdmin):
                                 FPNumber=FSubGroupCode
                             if FLevel > 3:
                                 FPNumber=FPNumber  + '.' + FNumber.split('.')[3]    
-                            FPId=MaterialGroup.objects.get(FId=FPNumber).id if FLevel>0 else None
+                            FPId=MaterialGroup.objects.get(FNumber=FPNumber).FId if FLevel>0 else None
                             MaterialGroup.objects.create(FId=FId, FNumber=FNumber, FName=FName, FLevel=FLevel, FParent_id=FPId, 
                                                          FClass=FClass, FGroupCode=FGroupCode, FSubGroupCode=FSubGroupCode)
                 # 显示成功消息
@@ -216,25 +218,17 @@ class MaterialGroupAdmin(admin.ModelAdmin):
                 return JsonResponse({"success": False, "message": str(e)}, status=500)
 
 
-    def delete_selected_materialgroup(self, request, queryset):
-        """自定义动作：删除选中的 Attribute 项"""
-        count = queryset.count()
-        queryset.delete()
-        self.message_user(request, f"成功删除了 {count} 条 MaterialGroup 项！", level="success")
-        return None  # 返回 None 表示操作完成
-
-    delete_selected_materialgroup.short_description = "删除选中项"
 
 @admin.register(Material)
 class MaterialAdmin(admin.ModelAdmin):
     list_display = ['FId','FName','FGroup','FNumber','FHelpCode', 'FModel', 'FUnit', 'FSource','FDescription']
     list_filter = ['FGroup__FClass', GroupFilter, SubGroupFilter]
-
+    actions = ['delete_selected']  # 添加自定义动作
     class Media:
         js = ('js/filter_chain.js',)
     
     change_list_template = "bmui/material_change_list.html"
-    actions = ['delete_selected_material']  # 添加自定义动作
+
 
     tableHead = ['物料序号','物料名称','物料组','物料编号','助记码', '型号', '单位', '来源','备注']
     tabletype = [
@@ -332,14 +326,6 @@ class MaterialAdmin(admin.ModelAdmin):
             FGroupCode=fclass, FSubGroupCode='' 
         ).values_list('FNumber', 'FName').distinct()
         return JsonResponse(list(group_codes), safe=False)    
-    def delete_selected_material(self, request, queryset):
-        """自定义动作：删除选中的 Attribute 项"""
-        count = queryset.count()
-        queryset.delete()
-        self.message_user(request, f"成功删除了 {count} 条 Material 项！", level="success")
-        return None  # 返回 None 表示操作完成
-
-    delete_selected_material.short_description = "删除选中项"
 
 
 

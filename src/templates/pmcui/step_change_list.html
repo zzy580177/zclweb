@@ -1,0 +1,112 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/bmui.css' %}">
+
+<div class="container">
+    <form method="post" action="{% url 'admin:pmcui_step_add' %}">
+        {% csrf_token %}
+        <div>
+            <h3>新增属性</h3>
+            <table id="step-details">
+                <thead>
+                    <tr>
+                        {% for column in tableHead %}
+                            <th>{{ column }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        {% for column in tabletype %}                    
+                            <td>
+                                {% if column.type == "select" %}
+                                <select name="{{ column.name }}" required>
+                                    {% for option in column.options %}
+                                        <option value="{{ option.Id }}">{{ option.Name }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% elif column.type == "number" %}
+                                    <input type="{{ column.type }}" name="{{ column.name }}" {{ column.required }} min="0" step="0.1">
+                                {% else %}
+                                    <input type="{{ column.type }}" name="{{ column.name }}" {{ column.required }}>
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                        <td>
+                            <button type="button" id="remove-row" class="remove-row">删除</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div>
+            <button type="submit">提交</button>
+            <button type="button" id="add-row">+ 添加</button>
+            <button type="button" id="quick-fill">⛶ 快速填报</button>
+        </div>
+    </form>
+
+
+    {{ block.super }}
+</div>
+
+
+<script type="module">
+    import { addRow, enableRowDeletion, getTableData, enableTablePaste, hideLoading, 
+        switchOverlay, bindQuickFillSave, initializeTableRows, styleCell } from "{% static 'js/bmui.js' %}";
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const addRowButton = document.getElementById("add-row");
+        const tableBodySelector = "#step-details tbody";  
+        const quickFillTable = document.querySelector("#quick-fill-table");
+        const csrfToken = "{{ csrf_token }}";
+        const quickFillButton = document.getElementById("quick-fill");
+        const closeModalButton = document.getElementById("close-modal");
+        const modal = document.getElementById("quick-fill-modal");
+        const overlay = document.getElementById("modal-overlay");
+
+        // 动态添加行
+        addRowButton.addEventListener("click", function () {
+            addRow(tableBodySelector);
+        });
+
+        // 启用删除行功能
+        enableRowDeletion(tableBodySelector);
+
+        // 打开快速填报浮窗
+        quickFillButton.addEventListener("click", function () {
+            switchOverlay(overlay, modal, true);
+            // 初始化表格行数
+            initializeTableRows(quickFillTable, 6, ["* 名称 (Name)"]);
+        });
+
+        // 关闭快速填报浮窗
+        closeModalButton.addEventListener("click", function () {
+            switchOverlay(overlay, modal, false);
+        });
+
+        // 启用表格粘贴功能
+        enableTablePaste(quickFillTable);
+
+        // 绑定快速填报保存事件
+        const saveButton = document.querySelector("#apply-quick-fill");
+        bindQuickFillSave(saveButton, "/bmui/save-steps/", csrfToken, 
+        () => {
+            return { 
+                description: document.querySelector("#description").value, 
+                names: getTableData(quickFillTable)}; },
+        (result) => {
+            // 保存成功后的操作
+            switchOverlay(overlay, modal, false);
+            alert("保存成功！");},
+        (error) => {
+            // 保存失败后的操作
+            console.error("保存失败回调：", error);
+            alert("保存失败，请检查网络或数据！");
+        });
+    });
+        
+</script>
+{% endblock %}

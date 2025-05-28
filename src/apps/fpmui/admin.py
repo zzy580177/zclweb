@@ -4,15 +4,12 @@ from django_starter.contrib.admin.tags import html_tags
 from .models import *
 
 
-@admin.register(Step)
-class StepAdmin(admin.ModelAdmin):
-    list_display = ['Id','Name','EqpType','Description',]
 
     
 
 @admin.register(ProcessStep)
 class ProcessStepAdmin(admin.ModelAdmin):
-    list_display = ['StepId','Step','Route','Parameters','SeqNum','Description',]
+    list_display = ['PFId','Step','Route','Parameters','SeqNum','Description',]
 
     
 

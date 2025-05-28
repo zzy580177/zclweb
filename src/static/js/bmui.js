@@ -27,7 +27,11 @@ export function hideLoading() {
 }
 
 // 初始化表格行数
-export function initializeTableRows(tableElement, rowCount, columnHeaders = []) {
+export function initializeTableRows(tableElement, rowCount, columnHeaders = [], ptable = null, importModal=null) {
+    if (!tableElement) {
+        console.error("表格元素未找到，无法初始化行数");
+        return;
+    }
     if (!tableElement) {
         console.error("表格体未找到，无法初始化行数");
         return;
@@ -59,6 +63,18 @@ export function initializeTableRows(tableElement, rowCount, columnHeaders = []) 
             newRow.appendChild(newCell);
         }
         tbody.appendChild(newRow);
+    }
+    if(ptable)
+    {
+        const requiredFields = ptable.querySelectorAll("input"); 
+        requiredFields.forEach((field) => {
+            const name = field.name;
+            // 选择浮窗内同名 input
+            const input = importModal.querySelector(`input[name="${name}"]`);
+            if (input) {
+                input.value = field.value;
+            }
+        }); 
     }
 }
 
@@ -419,7 +435,14 @@ export function mutationInputChange(input)
 
 export function updataInputSelectOptions(input, subInput, subSubInput)
 {
-
     mutationInputChange(input);
+}
+
+export function updateInput(source, target) {
+    const sourceInput = table.querySelector('input[name="${source}"]');
+    const targetInput = importModal.querySelector('input[name="${target}"]');
+    if (sourceInput && targetInput) {
+        targetInput.value = sourceInput.value;
+    }
 }
 

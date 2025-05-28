@@ -12,7 +12,7 @@ DATABASES = {
         'PASSWORD':'OH12345!',
         "SCHEMA": "CNC700Cutting",
         'OPTIONS':{
-            'driver': 'ODBC Driver 18 for SQL Server',  # 'DRIVER':'SQL server Native Client 11.0',
+            'DRIVER':'SQL server Native Client 11.0',
             'encrypt': 'yes',
             'extra_params': 'TrustServerCertificate=yes'
         }
@@ -26,7 +26,7 @@ DATABASES = {
         'PASSWORD':'Zclamfdb123',
         "SCHEMA": "CNC700Cutting",
         'OPTIONS':{
-            'driver': 'ODBC Driver 18 for SQL Server',  # 指定新版本驱动
+            'DRIVER':'SQL server Native Client 11.0',  # 指定新版本驱动
             'encrypt': 'yes',
             'extra_params': 'TrustServerCertificate=yes'
         }
@@ -40,7 +40,7 @@ DATABASES = {
         'PASSWORD':'Zclamfdb123',
         "SCHEMA": "CNC700Cutting",
         'OPTIONS':{
-            'driver': 'ODBC Driver 18 for SQL Server',  # 指定新版本驱动
+            'DRIVER':'SQL server Native Client 11.0',  # 指定新版本驱动
             'encrypt': 'yes',
             'extra_params': 'TrustServerCertificate=yes'
         }
@@ -54,7 +54,7 @@ DATABASES = {
         'PASSWORD':'Okia2541!',
         "SCHEMA": "CNC700Cutting",
         'OPTIONS':{
-            'driver': 'ODBC Driver 18 for SQL Server',  # 指定新版本驱动
+            'DRIVER':'SQL server Native Client 11.0',  # 指定新版本驱动
             'encrypt': 'yes',
             'extra_params': 'TrustServerCertificate=yes'
         }
@@ -70,6 +70,8 @@ DATABASE_APPS_MAPPING = {
 SCHEMA_MAPPING = {
     'default_schema': 'CNC700Cutting',
     'OKIAVN': 'CNC700Cutting',
+    'pmcui': 'base',
+    'bmui': 'base',
 }
 
 # Default primary key field type
