@@ -13,13 +13,10 @@ from django.contrib.admin import SimpleListFilter
 
 from django.utils.translation import gettext_lazy as _
 
-def delete_selected(self, request, queryset):
-    """自定义动作：删除选中的 Attribute 项"""
+def delete_selected(modeladmin, request, queryset):
     count = queryset.count()
     queryset.delete()
-    self.message_user(request, f"成功删除了 {count} 条记录！", level="success")
-    return None  # 返回 None 表示操作完成
-
+    modeladmin.message_user(request, f"成功删除了 {count} 条记录！", level="success")
 delete_selected.short_description = "删除选中项"
 
 
@@ -65,8 +62,9 @@ class SubGroupFilter(admin.SimpleListFilter):
 @admin.register(Attribute)
 class AttributeAdmin(admin.ModelAdmin):
     list_display = ['Id', 'Name', 'Description']
+    list_filter = ['Description']
     change_list_template = "bmui/attribute_change_list.html"
-    actions = ['delete_selected']  # 添加自定义动作
+    actions = [delete_selected]  # 添加自定义动作
 
     def changelist_view(self, request, extra_context=None):
         # 定义 Description 的选项
@@ -115,7 +113,7 @@ class MaterialGroupAdmin(admin.ModelAdmin):
     list_display = ['FId','FName','FParent','FNumber','FLevel', 'get_FClass', 'get_FGroupCode', 'FSubGroupCode']
     list_filter = ['FClass']
     change_list_template = "bmui/materialgroup_change_list.html"
-    actions = ['delete_selected']  # 添加自定义动作
+    actions = [delete_selected]  # 添加自定义动作
 
     def get_FClass(self, obj):
         """显示分类的可读值"""
@@ -223,7 +221,7 @@ class MaterialGroupAdmin(admin.ModelAdmin):
 class MaterialAdmin(admin.ModelAdmin):
     list_display = ['FId','FName','FGroup','FNumber','FHelpCode', 'FModel', 'FUnit', 'FSource','FDescription']
     list_filter = ['FGroup__FClass', GroupFilter, SubGroupFilter]
-    actions = ['delete_selected']  # 添加自定义动作
+    actions = [delete_selected]  # 添加自定义动作
     class Media:
         js = ('js/filter_chain.js',)
     
@@ -300,23 +298,54 @@ class MaterialAdmin(admin.ModelAdmin):
                     return JsonResponse({"success": False, "message": "material 数据为空"}, status=400)
 
                 with transaction.atomic():
-                    FIds, FNames, FGroupIds, FNumbers, FHelpcodes,  FModels, FUnits, FSources, FDescriptions = zip(*materials)
-                    if not FIds or not FNames or not FNumbers:
-                        self.message_user(request, "提交的数据不完整，请检查后重试！", level="error")
-                        return self.changelist_view(request)
+                    # 提取所有需要的 FGroup 和 FUnit 名称
+                    FGroupIds = set(row[2] for row in materials)
+                    FUnits = set(row[6] for row in materials)
 
-                    for FId, FName, FGroup, FNumber, FHelpCode, FModel, FUnit, FSource, FDescription in zip(FIds, FNames, FGroupIds, FNumbers, FHelpcodes,  FModels, FUnits, FSources, FDescriptions):
+                    # 批量获取所有相关的 MaterialGroup 和 Attribute
+                    group_objs = MaterialGroup.objects.filter(FId__in=FGroupIds)
+                    group_map = {str(obj.FId): obj for obj in group_objs}
+
+                    unit_objs = Attribute.objects.filter(Name__in=FUnits, Description='单位')
+                    unit_map = {obj.Name: obj for obj in unit_objs}
+
+                    # 检查是否需要新建 MaterialGroup
+                    missing_groups = FGroupIds - set(group_map.keys())
+                    
+                    # 需要新建的单位
+                    missing_units = FUnits - set(unit_map.keys())
+                    new_units = [Attribute(Name=name, Description='单位') for name in missing_units if name.strip()]
+                    Attribute.objects.bulk_create(new_units)
+                    # 更新 unit_map
+                    if new_units:
+                        for obj in Attribute.objects.filter(Name__in=missing_units, Description='单位'):
+                            unit_map[obj.Name] = obj
+
+                    # 批量 upsert Material
+                    for FId, FName, FGroup, FNumber, FHelpCode, FModel, FUnit, FSource, FDescription in materials:
                         if FId.strip() and FUnit.strip():
-                            unit_attribute, created = Attribute.objects.get_or_create(
-                                Name=FUnit, Description='单位', defaults={'Description': '单位'} )
-                            Material.objects.update_or_create(FId=FId, FNumber=FNumber, defaults={
-                                'FName': FName, 'FHelpCode': FHelpCode, 'FModel': FModel, 'FGroup_id': FGroup,
-                                'FUnit_id': unit_attribute.Id, 'FSource': FSource, 'FDescription': FDescription })
-                    return JsonResponse({"success": True, "message": "BOM 数据保存成功"})
+                            group_obj = group_map.get(str(FGroup))
+                            unit_obj = unit_map.get(FUnit)
+                            if not group_obj or not unit_obj:
+                                msg = (f"/r/n未找到物料组: {FGroup}, 请先添加物料组")
+                                return JsonResponse({"success": False, "message": msg}, status=500)
+                            Material.objects.update_or_create(
+                                FId=FId, FNumber=FNumber,
+                                defaults={
+                                    'FName': FName,
+                                    'FHelpCode': FHelpCode,
+                                    'FModel': FModel,
+                                    'FGroup': group_obj,
+                                    'FUnit': unit_obj,
+                                    'FSource': FSource,
+                                    'FDescription': FDescription
+                                }
+                            )
+                return JsonResponse({"success": True, "message": "BOM 数据保存成功"})
 
             except Exception as e:
                 return JsonResponse({"success": False, "message": str(e)}, status=500)
-
+        
     def getgroup_view(self, request):
         fclass = request.GET.get('FClass')
         if not fclass:

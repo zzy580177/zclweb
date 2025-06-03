@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import connections
 DATABASES_MAPPING = settings.DATABASE_APPS_MAPPING
-apps=['amfui',  'bmui','pmcui']
+apps=['amfui',  'bmui','pmcui', 'jihuaManagerUI']
 
 class DatabaseRouter:
     def db_for_read(self, model, **hints):
@@ -22,7 +22,7 @@ class DatabaseRouter:
  
     def allow_relation(self, obj1, obj2, **hints):
         db_list = [db for db in [self.db_for_read(obj1), self.db_for_read(obj2)] if db]
-        return db_list == [db_list[0]] if db_list else True
+        return db_list == [db_list[0]] or [db_list[1]] == [db_list[0]] if db_list else True
  
     def allow_syncdb(self, db, model):
         return db in self.db_for_write(model)

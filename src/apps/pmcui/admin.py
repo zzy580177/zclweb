@@ -11,14 +11,17 @@ from django.db.models import F
 from django.db import transaction
 from decimal import Decimal
 from django.utils.translation import gettext_lazy as _
+from django.utils.html import format_html
 from .models import *
+from apps.bmui.models import Attribute
+from django.contrib import messages
 
-def delete_selected(modeladmin, request, queryset):
-    """自定义动作：删除选中项"""
-    count = queryset.count()
-    queryset.delete()
-    modeladmin.message_user(request, f"成功删除了 {count} 条数据！", level="success")
-delete_selected.short_description = "删除选中项"
+from decimal import Decimal
+
+def to_decimal(val):
+    return Decimal(val) if val not in [None, ''] else None
+
+
 
 @admin.register(Step)
 class StepAdmin(admin.ModelAdmin):
@@ -51,7 +54,7 @@ class StepAdmin(admin.ModelAdmin):
         """
         urls = super().get_urls()
         custom_urls = [
-           # path('addlist/', self.admin_site.admin_view(self.addlist_view), name='bmui_material_addlist'),
+           path('addlist/', self.admin_site.admin_view(self.addlist_view), name='pmcui_step_addlist'),
         ]
         return custom_urls + urls
     def add_view(self, request, form_url='', extra_context=None):
@@ -88,6 +91,34 @@ class StepAdmin(admin.ModelAdmin):
 
         return super().add_view(request, form_url, extra_context)
 
+    def addlist_view(self, request, form_url='', extra_context=None):
+        msg = ''
+        if request.method == "POST":
+            try:
+                payload = json.loads(request.body)
+                steps = payload.get("steps", [])
+                if not steps:
+                    return JsonResponse({"success": False, "message": "step 数据为空"}, status=400)
+ 
+                with transaction.atomic():
+                    Names, Eqptypes, UCosts, HCosts, Descriptions = zip(*steps)
+                    if not Names and not Eqptypes:
+                        self.message_user(request, "提交的数据不完整，请检查后重试！", level="error")
+                        return self.changelist_view(request)
+                    for Name, Eqptype, UCost, HCost, Description in zip(Names, Eqptypes, UCosts, HCosts, Descriptions):
+                        if Name.strip() and Eqptype.strip():
+                            Eqptype_attribute = Attribute.objects.get(
+                                Name=Eqptype, Description='工序分类')
+                        Step.objects.update_or_create(Name = Name, EqpType_id=Eqptype_attribute.Id, defaults={
+                                'UCost': Decimal(UCost) if UCost else None, 'HCost': Decimal(HCost) if HCost else None, 
+                                'Description': Description if Description else None})
+                    return JsonResponse({"success": True, "message": "Step 数据保存成功" + msg})
+
+            except Exception as e:
+                return JsonResponse({"success": False, "message": str(e)}, status=500)
+
+
+
 @admin.register(ProcessStep)
 class ProcessStepAdmin(admin.ModelAdmin):
     list_display = ['PFId', 'Step', 'Route', 'Parameters', 'SeqNum', 'Description']
@@ -111,125 +142,35 @@ class ProcessRouteAdmin(admin.ModelAdmin):
 
         return super().changelist_view(request, extra_context=extra_context)
 
-@admin.register(POrder)
-class POrderAdmin(admin.ModelAdmin):
-    list_display = ['CreateTime','OrderId', 'Product_id', 'LotId', 'DeadLine', 'Status',  'Owner', 'WH', 'Audit', 'Description']
-    change_list_template = "pmcui/porder_change_list.html"
-    actions = ['delete_selected']
 
-    tableHead = ['订单号','产品型号','产品批次号', '交货日期','订单状态','制单员', '仓管', '审核','备注']
-    partsHead = ['物料编号','物料名称', '物料型号','单位','数量','备注']
-    tabletype = [
-            {'type':'text','name':'OrderId[]','required': 'required'},{'type':'text','name':'Product_id[]','required': 'required'},
-            {'type':'text','name':'LotId[]','required': ''},{'type':'date','name':'DeadLine[]','required': 'required'},
-            {'type':'select','name':'Status[]','required': '', 'options': ['新建', '已变更', '已审核', '已完成', '已取消']}, 
-            {'type':'text','name':'Owner[]', 'required': ''}, {'type':'text','name':'WH[]','required': ''}, 
-            {'type':'text','name':'Audit[]', 'required': ''}, {'type':'text','name':'FDescription[]','required': ''}]
-    def changelist_view(self, request, extra_context=None):
-        extra_context = extra_context or {}        
-        extra_context['partsHead'] = self.partsHead  
-        extra_context['tableHead'] = self.tableHead        
-        extra_context['tabletype'] = self.tabletype
-        if request.method == "POST":
-            return super().changelist_view(request, extra_context=extra_context)
-        elif request.method == "GET":
-            return super().changelist_view(request, extra_context=extra_context)
+class PartFilter(admin.SimpleListFilter):
+    title = _('子分类')
+    parameter_name = 'Part'
 
-        return super().changelist_view(request, extra_context=extra_context)
-    def get_urls(self):
-        """
-        添加自定义 URL 路由
-        """
-        urls = super().get_urls()
-        custom_urls = [
-            path('add/', self.admin_site.admin_view(self.add_view), name='bmui_porder_add'),
-            path('getgroup/', self.admin_site.admin_view(self.getgroup_view), name='bmui_porder_getgroup'),
-            path('addlist/', self.admin_site.admin_view(self.addlist_view), name='bmui_porder_addlist'),
-        ]
-        return custom_urls + urls
+    def lookups(self, request, model_admin):
+        # 根据主分类动态返回子分类选项
+        porder = request.GET.get('POrder__OrderId__exact')
+        if porder :
+            parts = PartsOrder.objects.filter(
+                POrder_id=porder).values_list('Part_id', 'Part__FName').distinct()
+            return [(code, str(code) + "-" + name) for code, name in parts if code and name]
+        return []
 
-
-    def add_view(self, request, form_url='', extra_context=None):
-        if request.method == "POST":
-            try:
-                result = {}
-                for each in self.tabletype:
-                    key = each['name'] 
-                    result[key] = request.POST.getlist(each['name'])  
-
-                for OrderId, Product_id, LotId, DeadLine, Status,  Owner, WH, Audit, FDescription in zip(
-                    result['OrderId[]'], result['Product_id[]'], result['LotId[]'], result['DeadLine[]'], result['Status[]'],
-                    result['Owner[]'], result['WH[]'], result['Audit[]'], result['FDescription[]']):
-                    if OrderId.strip():
-                        POrder.objects.update_or_create(OrderId=OrderId, defaults={ 'Product_id':Product_id, 
-                            'LotId': LotId,'DeadLine': DeadLine,'Status': Status, 'Owner': Owner,
-                            'WH': WH, 'Description': FDescription, 'Audit': Audit})
-                self.message_user(request, " 新订单创建成功！", level="success")
-            except Exception as e:
-                self.message_user(request, f"发生错误：{str(e)}", level="error")
-            return self.changelist_view(request)
-
-        return super().add_view(request, form_url, extra_context)
-
-    def addlist_view(self, request, form_url='', extra_context=None):
-        msg = ''
-        if request.method == "POST":
-            try:
-                payload = json.loads(request.body)
-                parts = payload.get("parts", [])
-                order = payload.get("order", None)  # 获取 POrderId
-                if not parts:
-                    return JsonResponse({"success": False, "message": "material 数据为空"}, status=400)
-                if order:
-                    POrder.objects.update_or_create(OrderId=order['POrder'], Product_id=order['Product'], 
-                        defaults={'LotId': order['LotId'],'DeadLine': order['DeadLine'],'Status': "新建", 'Owner': order['Owner']})
-
-                with transaction.atomic():
-                    FNumbers, FNames, FModels, FUnits, Quantitys, Descriptions = zip(*parts)
-                    if not FNumbers and not FNames:
-                        self.message_user(request, "提交的数据不完整，请检查后重试！", level="error")
-                        return self.changelist_view(request)
-                    index = 1
-                    for FNumber, FName, FModel, FUnit, Quantity, Description in zip(FNumbers, FNames, FModels, FUnits, Quantitys, Descriptions):
-                        if FNumber.strip() and FUnit.strip():
-                            partObj = Material.objects.filter(FNumber=FNumber, FName=FName,FModel=FModel).first()
-                            PartsOrder.objects.update_or_create(POrder_id = order['POrder'], Part_id=partObj.FId, defaults={
-                                'Status': "未就绪", 'Quantity': Quantity, 'Description': Description, 'Idex': index})
-                            index += 1
-                        elif FName.strip() and FModel.strip():
-                            partObj = Material.objects.filter(FModel=FModel).first()
-                            if not partObj:
-                                msg = msg + (f"/r/n未找到物料: {FModel} {FName}, 请先添加物料")
-                                continue
-                            PartsOrder.objects.update_or_create(POrder_id = order['POrder'], Part_id=partObj.FId, defaults={
-                                'Status': "未就绪", 'Quantity': Quantity, 'Description': Description, 'Idex': index})
-                            index += 1
-                    return JsonResponse({"success": True, "message": "BOM 数据保存成功" + msg})
-
-            except Exception as e:
-                return JsonResponse({"success": False, "message": str(e)}, status=500)
-
-    def getgroup_view(self, request):
-        fclass = request.GET.get('FClass')
-        if not fclass:
-            return JsonResponse([], safe=False)
-
-        group_codes = POrder.objects.filter(
-            FGroupCode=fclass, FSubGroupCode='' 
-        ).values_list('FNumber', 'FName').distinct()
-        return JsonResponse(list(group_codes), safe=False)    
-
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(Part_id=self.value())
+        return queryset
 
 @admin.register(PartsOrder)
 class PartsOrderAdmin(admin.ModelAdmin):
-    list_display = ['POrder', 'Idex','getPartNumber', 'getPartName','getPartModel','getPartUnit', 'Quantity', 'Status', 'DeadLine', 'Cost']
-    list_filter = ['POrder']
-    actions = ['delete_selected']
+    list_filter = ['POrder', PartFilter]
+    partsHead = ['物料编号','数量','备注']
+    change_list_template = "pmcui/partsorder_change_list.html"
     def getPartName(self, obj):
         """获取物料名称"""
         return obj.Part.FName if obj.Part else None
     def getPartNumber(self, obj):
-        """获取物料名称"""
+        """获取物料名称"""      
         return obj.Part.FNumber if obj.Part else None
     def getPartModel(self, obj):
         """获取物料名称"""
@@ -237,8 +178,109 @@ class PartsOrderAdmin(admin.ModelAdmin):
     def getPartUnit(self, obj):
         """获取物料名称"""
         return obj.Part.FUnit.Name if obj.Part and obj.Part.FUnit else None
+    def getQuantity(self, obj):
+        """渲染为input"""
+        value = to_decimal(obj.Quantity) if obj.Quantity else None
+        return format_html(
+            '<input  type="text" class="part-quantity-input" data-oid="{}" value="{}" style="width:120px;" />',
+            obj.pk, value)
+    def getDescription(self, obj):
+        """渲染为input"""
+        value = obj.Description
+        return format_html(
+            '<input  type="text" class="part-description-input" data-oid="{}" value="{}" style="width:120px;" />',
+            obj.pk, value)
+    def subAction(self, obj):
+        result = format_html(
+            f'<button type="button" id="part-change" class="el-button el-button--warning el-button--small" style="color: #ffffff;">变更保存</button>'
+        )
+        return result
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('add/', self.admin_site.admin_view(self.add_view), name='bmui_partsorder_add'),
+            path('change/', self.admin_site.admin_view(self.change_part_view), name='bmui_partsorder_change'),
+        ]
+        return custom_urls + urls
+
+    def get_list_display(self, request):
+        # 例如：根据用户权限或请求参数动态返回不同的列
+        OrderId = request.POST.get('POrder') or request.GET.get('POrder')
+        if OrderId:
+            return ['Idex', 'POrder', 'getPartNumber', 'getPartName','getPartModel','getPartUnit', 'getQuantity', 'Status', 'getDescription', 'subAction']
+
+        else:
+            return ['Idex', 'POrder', 'getPartNumber', 'getPartName','getPartModel','getPartUnit', 'Quantity', 'Status']
+
+    def change_part_view(self, request):
+        if request.method == "POST":
+            try:
+                data = json.loads(request.body)
+                oid = data.get("oid")
+                quantity = data.get("quantity")
+                description = data.get("description")
+                obj = PartsOrder.objects.get(pk=oid)
+                OrderId = data.get('POrder')
+                if quantity in [None, '', 'None']:
+                    obj.Quantity = 0
+                else:
+                    obj.Quantity = Decimal(str(quantity))
+                if description is not None:
+                    obj.Description = description
+                obj.save()
+                POrder.objects.filter(OrderId=OrderId).update(Status="已变更")
+                return JsonResponse({"success": True, "message": "保存成功"})
+            except Exception as e:
+                return JsonResponse({"success": False, "message": str(e)}, status=500)
+        return JsonResponse({"success": False, "message": "无效请求"}, status=400)
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}        
+        extra_context['partsHead'] = self.partsHead
+        data = request.GET.get('POrder')
+        extra_context['POrder'] = data if data else ''
+        if request.method == "POST":
+            return super().changelist_view(request, extra_context=extra_context)
+        elif request.method == "GET":
+            return super().changelist_view(request, extra_context=extra_context)
+
+    def add_view(self, request, form_url = ..., extra_context =None):
+        extra_context = extra_context or {}        
+        extra_context['partsHead'] = self.partsHead
+        extra_context['POrder'] = ''
+        if request.method == "POST":
+            try:
+                result = {}
+                parts = request.POST.getlist('Parts[]')
+                descriptions = request.POST.getlist('Description[]')
+                quantitys = request.POST.getlist('Quantity[]')
+                OrderId = request.POST.get('POrder')
+                extra_context['POrder'] = OrderId
+                index = PartsOrder.objects.filter(POrder_id=OrderId).count() + 1
+                for part, quantity, description in zip(parts, quantitys, descriptions):
+                    if part.strip() and quantity.strip():
+                        partObj = Material.objects.filter(FNumber=part).first()
+                        if not partObj:
+                            msg = (f"/r/n未找到物料: {part}, 请先添加物料")
+                            self.message_user(request,  f"发生错误：{msg}", level="error")
+                            return super().changelist_view(request, extra_context = extra_context)
+                        PartsOrder.objects.update_or_create(POrder_id = OrderId, Part_id=partObj.FId, defaults={
+                            'Status': "未就绪", 'Quantity': quantity, 'Description': description, 'Idex': index})
+                        index += 1
+                POrder.objects.filter(OrderId=OrderId).update(Status="已变更")
+                self.message_user(request, " 零件追加成功！", level="success")
+            except Exception as e:
+                self.message_user(request, f"发生错误：{str(e)}", level="error")
+
+            return super().changelist_view(request, extra_context = extra_context)
+
+        return super().add_view(request, form_url, extra_context)
 
     getPartNumber.short_description = '物料编号'
     getPartModel.short_description = '物料型号'
     getPartUnit.short_description = '单位'
     getPartName.short_description = '物料名称'
+    getQuantity.short_description = '数量'
+    getDescription.short_description = '备注'
+    subAction.short_description = '操作'

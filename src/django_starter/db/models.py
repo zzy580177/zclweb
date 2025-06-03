@@ -20,6 +20,8 @@ from django.conf import settings
 
 schema = settings.DATABASES["default"].get("SCHEMA", "default_schema")
 bmuiAppName = 'bmui'
+pmcuiAppName = 'pmcui'
+scgAppName = 'jihuaManagerUI'  # 假设这是另一个应用的名称
 # Create your models here.
 
 
@@ -237,5 +239,45 @@ class ProcessRoute(models.Model):
     Description = models.IntegerField('备注索引',null=True, blank=True)
     def __str__(self):
         return self.Product_id + "工艺流程 V" + self.Version
+    class Meta:
+        abstract = True
+
+class POrder(AbstractBaseModel):
+    """订单表"""
+    OrderId = models.CharField("订单号",max_length =50, primary_key=True); 
+    Status = models.CharField("订单状态",max_length=50, null=True, blank=True);
+    Product_id = models.CharField("产品编号",max_length=50, null=True, blank=True);
+    DeadLine = models.DateTimeField("交货日期",null=True, blank=True);
+    Owner = models.CharField("制单员",max_length=50, null=True, blank=True);
+    WH = models.CharField("仓库员",max_length=50, null=True, blank=True);
+    Audit = models.CharField("审计员",max_length=50, null=True, blank=True);
+    Cost = models.DecimalField("成本", max_digits=10, decimal_places=2, null=True, blank=True)
+    LotId = models.CharField("批次号", max_length=50, null=True, blank=True);
+    Description = models.TextField("备注", null=True, blank=True); 
+
+    def __str__(self):
+        return self.OrderId
+    class Meta:
+        abstract = True
+        db_table = f"[{scgAppName}].[POrder]"
+        app_label = scgAppName
+        verbose_name = '产品订单管理'
+        verbose_name_plural = verbose_name
+
+class PartsOrder(AbstractBaseModel):
+    Id = models.AutoField("序号", primary_key=True);
+    POrder = models.ForeignKey(POrder, on_delete=models.SET_NULL,
+        null=True, blank=True, verbose_name="订单号");
+    Part = models.ForeignKey(Material, on_delete=models.SET_NULL,
+        null=True, blank=True, verbose_name="物料编号");
+    Idex = models.IntegerField("零件序列号");
+    Status = models.CharField("状态",max_length=50, null=True, blank=True);
+    DeadLine = models.DateTimeField("交货日期",null=True, blank=True);
+    Cost = models.DecimalField("成本", max_digits=10, decimal_places=2, null=True, blank=True);
+    Quantity = models.DecimalField("数量", max_digits=10, decimal_places=2);
+    Description = models.TextField("备注", null=True, blank=True);
+
+    def __str__(self):
+        return self.POrder.OrderId +" " + self.Part.FName
     class Meta:
         abstract = True

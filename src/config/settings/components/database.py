@@ -6,6 +6,20 @@ DATABASES = {
     'default': {
         'ENGINE':'mssql',
         'HOST':'47.121.177.127',
+        'NAME':'amfAuth',
+        'PORT':'1433',
+        'USER':'amfAuth1234',
+        'PASSWORD':'Zclamfdb123',
+        "SCHEMA": "CNC700Cutting",
+        'OPTIONS':{
+            'DRIVER':'SQL server Native Client 11.0',
+            'encrypt': 'yes',
+            'extra_params': 'TrustServerCertificate=yes'
+        }
+    },
+    'ouhaidb': {
+        'ENGINE':'mssql',
+        'HOST':'47.121.177.127',
         'NAME':'ouhaidb',
         'PORT':'1433',
         'USER':'ouhai',

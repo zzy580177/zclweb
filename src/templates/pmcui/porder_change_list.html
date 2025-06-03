@@ -73,8 +73,8 @@
             </table>
         </div>
         <div>
-            <button type="submit">提交订单</button>
-            <button type="button" id="quick-fill">⛶ 快速添加订单子项</button>
+            <button type="submit" el-button el-button--warning el-button--small>提交订单</button>
+            <button type="button" el-button el-button--primary el-button--small id="quick-fill">⛶ 快速添加订单子项</button>
         </div>
     </form>
 
@@ -116,7 +116,15 @@
     <!-- 模态框遮罩层 -->
     <div id="modal-overlay" class="modal-overlay"></div>
 
+    <div id="execution-result" style="margin-top: 20px; color: red;">
+        {% if messages %}
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        {% endif %}
+    </div>
     {{ block.super }}
+
 
 </div>
 
@@ -212,5 +220,31 @@
     });
         
 
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('#status-change').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var oid = btn.closest('tr').querySelector('.status-select').getAttribute('data-oid');
+            var select = document.getElementById('status_option_' + oid);
+            var status = select.value;
+            fetch("{% url 'admin:bmui_porder_change_status' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    oid: oid,
+                    status: status
+                })
+            }).then(resp => resp.json()).then(data => {
+                alert(data.message || (data.success ? "状态已更新" : "更新失败"));
+                if(data.success) location.reload();
+            });
+        });
+    });
+});
 </script>
 {% endblock %}
