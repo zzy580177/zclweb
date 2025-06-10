@@ -7,7 +7,7 @@ from django.shortcuts import redirect
 from .models import *
 from apps.bmui.models import Material
 import json
-from django.db.models import F
+from django.db.models import F,Q
 from django.db import transaction
 from decimal import Decimal
 from django.utils.translation import gettext_lazy as _
@@ -121,10 +121,14 @@ class StepAdmin(admin.ModelAdmin):
 
 @admin.register(ProcessStep)
 class ProcessStepAdmin(admin.ModelAdmin):
-    list_display = ['PFId', 'Step', 'Route', 'Parameters', 'SeqNum', 'Description']
-    list_filter = ['Step', 'Route']
+    list_display = ['PFId', 'display_Steps', 'Route', 'Parameters', 'SeqNum', 'Description']
+    list_filter = ['Steps', 'Route']
     #change_list_template = "pmcui/processstep_change_list.html"
     actions = ['delete_selected']
+
+    def display_Steps(self, obj):
+        return ", ".join([x for x in obj.Steps.all()])
+    display_Steps.short_description = '工序列表'
 
 @admin.register(ProcessRoute)
 class ProcessRouteAdmin(admin.ModelAdmin):
@@ -132,7 +136,10 @@ class ProcessRouteAdmin(admin.ModelAdmin):
     list_filter = ['Product_id', 'ApprovalStatus']
     #change_list_template = "pmcui/processroute_change_list.html"
     actions = ['delete_selected']
-
+    def get_change_list_template(self, request):
+        if request.user.is_superuser:
+            return "pmcui/partsorder_change_list_super.html"
+        return "pmcui/partsorder_change_list.html"
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         if request.method == "POST":
@@ -165,13 +172,16 @@ class PartFilter(admin.SimpleListFilter):
 class PartsOrderAdmin(admin.ModelAdmin):
     list_filter = ['POrder', PartFilter]
     partsHead = ['物料编号','数量','备注']
+    ordering = ['Idex'] 
     change_list_template = "pmcui/partsorder_change_list.html"
     def getPartName(self, obj):
         """获取物料名称"""
         return obj.Part.FName if obj.Part else None
     def getPartNumber(self, obj):
         """获取物料名称"""      
-        return obj.Part.FNumber if obj.Part else None
+        return format_html(
+            '<a href="javascript:void(0);" class="part-number-link" data-oid="{}">{}</a>',
+            obj.pk, obj.Part.FNumber)
     def getPartModel(self, obj):
         """获取物料名称"""
         return obj.Part.FModel if obj.Part else None
@@ -211,7 +221,7 @@ class PartsOrderAdmin(admin.ModelAdmin):
             return ['Idex', 'POrder', 'getPartNumber', 'getPartName','getPartModel','getPartUnit', 'getQuantity', 'Status', 'getDescription', 'subAction']
 
         else:
-            return ['Idex', 'POrder', 'getPartNumber', 'getPartName','getPartModel','getPartUnit', 'Quantity', 'Status']
+            return ['Idex', 'getPartNumber', 'getPartName','getPartModel', 'Status']
 
     def change_part_view(self, request):
         if request.method == "POST":
@@ -240,6 +250,8 @@ class PartsOrderAdmin(admin.ModelAdmin):
         extra_context['partsHead'] = self.partsHead
         data = request.GET.get('POrder')
         extra_context['POrder'] = data if data else ''
+        qs = Attribute.objects.filter(Description="工序分类").values('Name', 'Id').distinct()
+        extra_context['StepGroup'] = [{'label':data['Name'], 'value' :data['Id']} for data in qs]
         if request.method == "POST":
             return super().changelist_view(request, extra_context=extra_context)
         elif request.method == "GET":
@@ -284,3 +296,112 @@ class PartsOrderAdmin(admin.ModelAdmin):
     getQuantity.short_description = '数量'
     getDescription.short_description = '备注'
     subAction.short_description = '操作'
+
+@admin.register(MaterialParm)
+class MaterialParmAdmin(admin.ModelAdmin):
+    list_display = ['Material', 'Size', 'Stuff', 'Surface', 'Cost', 'Description']
+
+    change_list_template = "pmcui/materialParm_change_list.html"
+    actions = ['delete_selected']
+    tableHead = ['物料', '材料', '加工要求', '表面处理', '成本', '备注']
+    FastTabHead = ['物料编号', '物料名', '规格型号', '材料', '加工要求', '表面处理', '成本', '备注']
+    tabletype = [
+            {'type':'text','name':'Material[]','required': 'required'},
+            {'type':'text','name':'Size[]','required': 'required'},
+            {'type':'text','name':'Stuff[]','required': ''},
+            {'type':'text','name':'Surface[]','required': ''},
+            {'type':'number','name':'Cost[]','required': ''},
+            {'type':'text','name':'Description[]', 'required': ''}]
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}        
+        extra_context['tableHead'] = self.tableHead        
+        extra_context['tabletype'] = self.tabletype        
+        extra_context['FastTabHead'] = self.FastTabHead
+        if request.method == "POST":
+            return super().changelist_view(request, extra_context=extra_context)
+        elif request.method == "GET":
+            return super().changelist_view(request, extra_context=extra_context)
+
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def get_urls(self):
+        """
+        添加自定义 URL 路由
+        """
+        urls = super().get_urls()
+        custom_urls = [
+           path('addlist/', self.admin_site.admin_view(self.addlist_view), name='pmcui_materialparm_addlist'),
+        ]
+        return custom_urls + urls
+    def add_view(self, request, form_url='', extra_context=None):
+        if request.method == "POST":
+            result = {}
+            try:
+                for each in self.tabletype:
+                    key = each['name'] 
+                    result[key] = request.POST.getlist(each['name'])  
+
+                for Part, Size, Stuff, Surface, Cost, Description in zip(
+                    result['Material[]'], result['Size[]'], result['Stuff[]'], result['Surface[]'], result['Cost[]'], result['Description[]']):
+                    if Material.strip():
+                        MaterialObj = Material.objects.filter(FNumber=Part).first()
+                        if not MaterialObj:
+                            msg = (f"/r/n未找到物料: {Part}, 请先添加物料")
+                            self.message_user(request,  f"发生错误：{msg}", level="error")
+                            return super().changelist_view(request, extra_context = extra_context)
+                        MaterialParm.objects.update_or_create(
+                            Material_id=MaterialObj.FId,
+                            defaults={
+                                'Size': Size if Size else None,
+                                'Stuff': Stuff if Stuff else None,
+                                'Surface': Surface if Surface else None,
+                                'Cost': Decimal(Cost) if Cost else None,
+                                'Description': Description})
+                # 显示成功消息
+                self.message_user(request, "Attribute 填报成功！", level="success")
+
+            except Exception as e:
+                # 捕获异常并显示错误消息
+                self.message_user(request, f"发生错误：{str(e)}", level="error")
+
+            # 返回到列表页面
+            return self.changelist_view(request)
+
+        return super().add_view(request, form_url, extra_context)
+
+    def addlist_view(self, request, form_url='', extra_context=None):
+        msg = ''
+        if request.method == "POST":
+            try:
+                payload = json.loads(request.body)
+                parms = payload.get("parms", [])
+                if not parms:
+                    return JsonResponse({"success": False, "message": "step 数据为空"}, status=400)
+ 
+                with transaction.atomic():
+                    FNumbers, FNames, FModels, Stuffs, Sizes, Surfaces, Costs, Descriptions = zip(*parms)
+                    for FNumber, FName, FModel, Stuff, Size, Surface, Cost, Description in zip(FNumbers, FNames, FModels, Stuffs, Sizes, Surfaces, Costs, Descriptions):
+                        if FNumber.strip() or FName.strip() or FModel.strip():
+                            filters = Q()
+                            if FNumber:
+                                filters &= Q(FNumber=FNumber)
+                            if FName:
+                                filters &= Q(FName=FName)
+                            if FModel:
+                                filters &= Q(FModel=FModel)
+                            partObj = Material.objects.filter(filters).first()
+                        if not partObj:
+                            msg = (f"未找到物料: {FNumber} {FName} {FModel} 请先添加物料")
+                            return JsonResponse({"success": False, "message": msg}, status=500)
+                        MaterialParm.objects.update_or_create(
+                            Material_id=partObj.FId,
+                            defaults={
+                                'Size': Size if Size else None,
+                                'Stuff': Stuff if Stuff else None,
+                                'Surface': Surface if Surface else None,
+                                'Cost': Decimal(Cost) if Cost else None,
+                                'Description': Description})
+                    return JsonResponse({"success": True, "message": "Step 数据保存成功" + msg})
+
+            except Exception as e:
+                return JsonResponse({"success": False, "message": str(e)}, status=500)

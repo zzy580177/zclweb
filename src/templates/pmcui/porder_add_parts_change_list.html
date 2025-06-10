@@ -1,0 +1,94 @@
+{# filepath: d:\work\venv\code\zclweb\src\templates\pmcui\porder_add_parts_change_list.html #}
+
+{% extends "admin/change_list.html" %}
+{% load static %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/bmui.css' %}">
+<div class="container">
+
+    <form id="add-new-part-form" method="post" action="{% url 'admin:bmui_partsorder_add' %}">
+        {% csrf_token %}
+        <input type="hidden" name="POrder" value="{{ POrder }}">
+        <div>
+            <h3>追加零件到订单: {{POrder|safe}}</h3>
+            <table id="porder-details">
+                <thead>
+                    <tr>
+                        {% for column in partsHead %}
+                            <th>{{ column }}</th>
+                        {% endfor %}
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <td><input type="text" name="Parts[]" required></td>
+                    <td><input type="number" name="Quantity[]" required></td>
+                    <td><input type="text" name="Description[]"></td>
+                    <td>
+                        <button type="button" id="remove-row" class="el-button el-button--danger el-button--small"  >删除</button>
+                    </td>
+                </tbody>
+            </table>
+        </div>
+        <div>
+            <button type="submit" class="el-button el-button--warning el-button--small">提交</button>
+            <button type="button" class="el-button el-button--warning el-button--small" id="add-row">+ 添加</button>
+        </div>
+    </form>
+
+    <div id="execution-result" style="margin-top: 20px; color: red;">
+        {% if messages %}
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        {% endif %}
+    </div>
+    {{ block.super }}
+
+
+</div>
+
+<script type="module">
+    import {addRow, enableRowDeletion} from "{% static 'js/bmui.js' %}";
+    document.addEventListener("DOMContentLoaded", function () {
+        const addRowButton = document.getElementById("add-row");
+        const tableBodySelector = "#porder-details tbody";
+        if(addRowButton){
+            addRowButton.addEventListener("click", function () {
+                addRow(tableBodySelector);
+            });
+        }
+        enableRowDeletion(tableBodySelector);
+    });
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('#part-change').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            var tr = btn.closest('tr');
+            var oid = tr.querySelector('.part-quantity-input').getAttribute('data-oid');
+            var quantity = tr.querySelector('.part-quantity-input').value;
+            var description = tr.querySelector('.part-description-input').value;
+            var porder = document.querySelector('input[name="POrder"]').value;
+            fetch("{% url 'admin:bmui_partsorder_change' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    oid: oid,
+                    quantity: quantity,
+                    description: description,
+                    POrder: porder
+                })
+            }).then(resp => resp.json()).then(data => {
+                alert(data.message || (data.success ? "保存成功" : "保存失败"));
+                if(data.success) location.reload();
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

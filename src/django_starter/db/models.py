@@ -201,15 +201,21 @@ class Step(models.Model):
         
 class ProcessStep(models.Model):
     """"工序配方表"""
-    PFId = models.SmallIntegerField("工艺配方编号", primary_key=True); 
-    Step = models.ForeignKey('Step', on_delete=models.CASCADE, null=True,blank=True, verbose_name = '工序')
+    PFId = models.SmallIntegerField("工艺配方编号", primary_key=True)
+    Steps = models.ManyToManyField(
+        'Step', 
+        blank=True,
+        verbose_name='工序列表',
+        through='ProcessStepSteps'  # Add explicit through model
+    )
+
     Route = models.ForeignKey(
         'ProcessRoute',
         on_delete=models.CASCADE,
         null=True,
         blank=True,
         verbose_name='工艺流程',
-        related_name='main_steps'      # 添加唯一 related_name
+        related_name='main_steps'
     )
     subRoute = models.ForeignKey(
         'ProcessRoute',
@@ -217,26 +223,39 @@ class ProcessStep(models.Model):
         null=True,
         blank=True,
         verbose_name='CNC工艺流程',
-        related_name='sub_steps'       # 添加唯一 related_name
+        related_name='sub_steps'
     )
-    Parameters = models.JSONField ('参数', null = True, blank= True)
-    SeqNum = models.IntegerField('工序序列号',null=True, blank=True)
-    Description = models.IntegerField('备注索引',null=True, blank=True)
+    Parameters = models.JSONField('参数', null=True, blank=True)
+    SeqNum = models.IntegerField('工序序列号', null=True, blank=True)
+    Description = models.TextField('备注', null=True, blank=True)
+    
     def __str__(self):
-        return str(self.Id) + " " + self.StepId + " " + self.Step_Name
+        return str(self.PFId)  # Updated to use PFId since Id doesn't exist
+    
     class Meta:
+        abstract = True
+
+# Add explicit through model for Steps relationship
+class ProcessStepSteps(models.Model):
+    processstep = models.ForeignKey('ProcessStep', on_delete=models.CASCADE)
+    step = models.ForeignKey('Step', on_delete=models.CASCADE)
+    
+    class Meta:
+        db_table = 'ProcessStepSteps'  # Explicit table name without underscore prefix
         abstract = True
 
 class ProcessRoute(models.Model):
     """"工艺流程管理表"""
     Id = models.SmallIntegerField("工艺流程编号", primary_key=True);
     Product_id = models.CharField("款号", max_length =50); 
+    Material = models.ForeignKey(Material, on_delete=models.SET_NULL,
+        null=True, blank=True, verbose_name="物料编号");
     ApprovalStatus = models.CharField ('状态', max_length =40);    
     Version = models.SmallIntegerField ('版本', null = True, blank= True);
     StartDay = models.DateField ('创建日期', null = True, blank= True);
     Parameters = models.JSONField ('参数', null = True, blank= True);
     IsCNC = models.BooleanField('是否CNC工艺流程', default=False);
-    Description = models.IntegerField('备注索引',null=True, blank=True)
+    Description = models.TextField('备注索引',null=True, blank=True)
     def __str__(self):
         return self.Product_id + "工艺流程 V" + self.Version
     class Meta:
@@ -279,5 +298,20 @@ class PartsOrder(AbstractBaseModel):
 
     def __str__(self):
         return self.POrder.OrderId +" " + self.Part.FName
+    class Meta:
+        abstract = True
+
+class MaterialParm(models.Model):
+    Id = models.AutoField("序号", primary_key=True);
+    Material = models.ForeignKey(Material, on_delete=models.SET_NULL,
+        null=True, blank=True, verbose_name="物料编号");
+    Size = models.CharField("加工尺寸",max_length=50, null=True, blank=True);
+    Stuff = models.CharField("材料",max_length=50, null=True, blank=True);
+    Cost = models.DecimalField("材料成本", max_digits=10, decimal_places=2, null=True, blank=True);
+    Surface = models.CharField("表面处理", max_length=50, null=True, blank=True);
+    Description = models.TextField("备注", null=True, blank=True);
+
+    def __str__(self):
+        return self.Stuff +" " + self.Size
     class Meta:
         abstract = True

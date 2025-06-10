@@ -171,7 +171,8 @@ export function addRow(tableBodySelector) {
 export function enableRowDeletion(tableBodySelector) {
     const tableBody = document.querySelector(tableBodySelector);
     tableBody.addEventListener("click", function (event) {
-        if (event.target.classList.contains("remove-row")) {
+        // 只响应 id 为 "remove-row" 的按钮
+        if (event.target.id === "remove-row") {
             const row = event.target.closest("tr");
             if (tableBody.children.length > 1) {
                 row.remove();
@@ -272,7 +273,7 @@ export function toggleMaximizeModal(modalElement, maximizeButton, tableElement) 
         console.error("无法找到模态框或最大化按钮");
         return;
     }
-    const tableContainer = tableElement.parentElement
+    const tableContainer = tableElement ? tableElement.parentElement : null;
 
     maximizeButton.addEventListener("click", function () {
         if (modalElement.classList.contains("modal-maximized")) {
@@ -293,7 +294,8 @@ export function toggleMaximizeModal(modalElement, maximizeButton, tableElement) 
             const modalHeaderHeight = modalElement.querySelector(".modal-header").offsetHeight || 50;
             const modalFooterHeight = modalElement.querySelector(".modal-footer").offsetHeight || 50;
             const availableHeight = window.innerHeight - modalHeaderHeight - modalFooterHeight - 60; // 减去内边距
-            tableContainer.style.height = `${availableHeight}px`;
+            if (tableContainer)
+            {tableContainer.style.height = `${availableHeight}px`;}
 
             // 动态增加表格行数
             const rowHeight = 25; // 单元格高度

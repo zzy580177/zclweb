@@ -1,0 +1,283 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'admin/simpleui-x/elementui/theme-chalk/index.css' %}">
+<link rel="stylesheet" href="{% static 'css/bmui.css' %}">
+<script src="{% static 'admin/simpleui-x/elementui/index.js' %}"></script>
+<style>
+    .el-descriptions__table,
+    .el-descriptions__table td,
+    .el-descriptions__table th {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    .el-descriptions-item__label { font-weight: bold;}
+    .el-descriptions__title { color: #2f7deb !important; }
+</style>
+<div class="container">
+    <div class="product-list-page" style="display: flex;">
+        {% csrf_token %}
+        <!-- 左侧筛选栏 -->
+        <aside style="width:280px; margin-right:30px; border-right:1px solid #ddd; padding-right:20px; box-sizing:border-box;">
+            <div class="filter-block" style="margin-bottom:24px;">
+                <h4>选择产品订单</h4>
+                <table id="product-order-table" 
+                    data-headers='["订单号","产品","批次"]'
+                    data-keys='["OrderId","Product_id","LotId"]'
+                    data-api="/api/jihua/order/order" >
+                </table>
+            </div>
+            <div class="filter-block">
+                <h4>零件编码</h4>
+                <input type="text" name="FName" placeholder="搜索零件编码" style="width:90%;">
+            </div>
+            <div class="filter-block">
+                <h4>规格型号</h4>
+                <input type="text" name="FModel" placeholder="搜索零件型号" style="width:90%;">
+            </div>
+            <div class="filter-block">
+                <h4>状态</h4>
+                <input type="text" name="Status" placeholder="搜索零件订单状态" style="width:90%;">
+            </div>
+            <div style="text-align:right;margin-top:16px;">
+                <button id="filter-confirm-btn" class="el-button el-button--primary el-button--small">确认过滤条件</button>
+            </div>
+        </aside>
+        <!-- 竖线分割，可选：用div更灵活 -->
+
+
+        <!-- 右侧表格 -->
+        <main style="flex:1;">
+            <div style="margin-bottom:10px;">
+                <span style="font-weight:bold;font-size:16px;">订单零件明细</span>
+            </div>
+            <div id="filter-detail" style="margin:12px 0;color:#666;font-size:13px;">
+                当前过滤条件：
+                <span id="filter-detail-content">无</span>
+            </div>
+            <table id="product-parts-table" 
+                    data-headers='["零件编码","零件名称","规格型号","生产单位","数量", "状态"]'
+                    data-keys='["Part.FNumber","Part.FName","Part.FModel","Part.FUnit.Name","Quantity","Status"]'
+                    data-api="/api/pmcui/parts_order/parts_list_by_order?OrderId=">
+            </table>
+
+        </main>
+    </div>
+
+    <!-- 工序填报模态框 -->
+    <div id="quick-fill-modal" class="modal">
+        <section class="el-container is-vertical">
+            <header class="el-header" style="height: 60px;">
+                <div class="fx-modal-header" style="display: flex; align-items: center; justify-content: space-between;">
+                    <div class="header-title" style="margin-right: 16px;">
+                    <div class="title-text" title="title-text" style="font-size: 20px; font-weight: bold;"></div>
+                </div>
+                <div class="modal-controls" style="display: flex; align-items: center; gap: 8px;">
+                    <div class="el-button-group btn-group" size="small">
+                        <button type="button" id="maximize-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
+                            <span class="el-icon-full-screen"></span>
+                        </button>
+                        <button type="button" id="switch-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
+                            <span class="el-icon-switch-button"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            </header> 
+            <footer class="el-footer" style="height: 60px;">
+                <hr style="border-bottom:1px solid #e4e7ed; margin: 12px 0; height: 0;" aria-hidden="true">
+                <div class="fx-data-menu" style="display: flex; align-items: center; gap: 24px; justify-content: space-between;">
+                    <div class="button-pane">
+                        <div class="el-button-group btn-group" size="small">
+                            <button type="button" id="modal_printer" class="el-button el-button--default el-button--small" style="cursor: pointer">
+                                <span class="el-icon-printer"></span>
+                            </button>
+                            <button type="button" id="modal_edit" class="el-button el-button--default el-button--small" style="cursor: pointer">
+                                <span class="el-icon-edit"></span>
+                            </button>
+                            <button type="button" id="modal_delete" class="el-button el-button--default el-button--small" style="cursor: pointer">
+                                <span class="el-icon-delete"></span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="switch-pane fx-data-switch" style="display: flex; align-items: center; gap: 8px;">
+                        <button class="switch-btn active" aria-label="Previous"></button>
+                        <div class="switch-index">2/6</div>
+                        <button class="switch-btn active" aria-label="Next"></button>
+                    </div>
+                </div>
+                <hr style="border-bottom:1px solid #e4e7ed; margin: 12px 0; height: 0;" aria-hidden="true">
+            </footer>
+            <main class="el-main" style="max-height: 60vh; overflow-y: auto;">
+                <div id="descriptions-order"></div>
+                <div id="descriptions-wuliao"></div>
+                <div id="descriptions-chanshu"></div>
+                <div id="descriptions-gongyi"></div>
+            </main> 
+        </section>
+    </div>
+    <!-- 模态框遮罩层 -->
+    <div id="modal-overlay" class="modal-overlay"></div>
+
+
+</div>
+
+
+
+<script type="module">
+
+
+    import { 
+        loadTableVIAPI,loadTreeTableVIAPI,loadAndRenderDescriptionsPart1, loadAndRenderDescriptionsPart2
+        } from "{% static 'js/load_data_vi_api.js' %}";
+    import {  switchOverlay, toggleMaximizeModal} from "{% static 'js/bmui.js' %}";
+    function updateFilterDetail(orderId, FName, FModel, Status) {
+        let detail = [];
+        if (orderId) detail.push(`订单号: ${orderId}`);
+        if (FName) detail.push(`零件编码: ${FName}`);
+        if (FModel) detail.push(`规格型号: ${FModel}`);
+        if (Status) detail.push(`状态: ${Status}`);
+        document.getElementById('filter-detail-content').textContent = detail.length ? detail.join('，') : '无';
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const ordertable = document.getElementById('product-order-table');
+        const partstable = document.getElementById('product-parts-table');
+        const apiBase = partstable.getAttribute('data-api');
+        const importModal = document.getElementById("quick-fill-modal");
+        const importoverlay = document.getElementById("modal-overlay");
+        // 这里orderId可根据你的业务逻辑获取
+        let orderId = '';
+
+        loadTableVIAPI(ordertable);
+        // 关闭快速填报模态框        
+        const closeModalButton = document.getElementById("switch-modal");
+        closeModalButton.addEventListener("click", function () {
+            switchOverlay(importoverlay, importModal, false);
+        });   
+
+        toggleMaximizeModal(importModal, document.getElementById("maximize-modal"), null);
+        
+        let isGongyiEditing = false;
+        document.getElementById('modal_edit').addEventListener('click', function() {
+            const gongyiDiv = document.getElementById('descriptions-gongyi');
+            if (!gongyiDiv) return;
+            const table = gongyiDiv.querySelector('.el-descriptions__table');
+            if (!table) return;
+
+            if (!isGongyiEditing) {
+                // 进入编辑状态
+                const contentSpans = table.querySelectorAll('.el-descriptions-item__content');
+                contentSpans.forEach(span => {
+                    const value = span.textContent.trim();
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = value;
+                    input.className = 'el-input__inner';
+                    input.style = 'width: 90%;';
+                    span.replaceWith(input);
+                });
+
+                // 增加保存按钮（只加一次）
+                if (!gongyiDiv.querySelector('#gongyi-save-btn')) {                    
+                    const saveBtn = document.createElement('button');
+                    saveBtn.id = 'gongyi-save-btn';
+                    saveBtn.className = 'el-button el-button--primary el-button--small';
+                    saveBtn.style = 'margin: 12px 0;';
+                    saveBtn.textContent = '保存';
+                    gongyiDiv.appendChild(saveBtn);
+
+                    saveBtn.onclick = function() {
+                        const inputs = table.querySelectorAll('input');
+                        inputs.forEach(input => {
+                            const span = document.createElement('span');
+                            span.className = 'el-descriptions-item__content';
+                            span.textContent = input.value;
+                            input.replaceWith(span);
+                        });
+                        saveBtn.remove();
+                        isGongyiEditing = false;
+                        document.getElementById('modal_edit').textContent = '编辑';
+                        // 可加ajax保存
+                    };
+                }
+                isGongyiEditing = true;                
+            } else {
+                // 退出编辑状态（还原为span）
+                const inputs = table.querySelectorAll('input');
+                inputs.forEach(input => {
+                    const span = document.createElement('span');
+                    span.className = 'el-descriptions-item__content';
+                    span.textContent = input.value;
+                    input.replaceWith(span);
+                });
+                const saveBtn = gongyiDiv.querySelector('#gongyi-save-btn');
+                if (saveBtn) saveBtn.remove();
+                isGongyiEditing = false;
+                return;
+            }
+        });
+        // 监听订单表点击
+        ordertable.addEventListener('click', function(e) 
+        {
+            const FName = document.querySelector('input[name="FName"]').value.trim();
+            const FModel = document.querySelector('input[name="FModel"]').value.trim();
+            const Status = document.querySelector('input[name="Status"]').value.trim();
+            let tr = e.target.closest('tr');
+            if (!tr || tr.parentNode.tagName.toLowerCase() !== 'tbody') return;
+            // 假设订单号在第一列
+            orderId = tr.children[0].textContent.trim();
+            if (orderId) {
+                updateFilterDetail(orderId, FName, FModel, Status);
+                // 拼接右侧API
+                let params = [];
+                if (orderId) params.push('OrderId=' + encodeURIComponent(orderId));
+                if (FName) params.push('FNumber=' + encodeURIComponent(FName));
+                if (FModel) params.push('FModel=' + encodeURIComponent(FModel));
+                let apiUrl = apiBase.split('?')[0] + '?' + params.join('&');
+                loadTableVIAPI(partstable, apiUrl, 1, 20);
+            }
+        });
+
+        document.getElementById('filter-confirm-btn').onclick = function() {
+            // 获取当前筛选条件
+            const FName = document.querySelector('input[name="FName"]').value.trim();
+            const FModel = document.querySelector('input[name="FModel"]').value.trim();
+            const Status = document.querySelector('input[name="Status"]').value.trim();
+
+            // 更新过滤条件明细
+            updateFilterDetail(orderId, FName, FModel, Status);
+
+            // 拼接右侧API
+            const partstable = document.getElementById('product-parts-table');
+            let params = [];
+            if (orderId) params.push('OrderId=' + encodeURIComponent(orderId));
+            if (FName) params.push('FNumber=' + encodeURIComponent(FName));
+            if (FModel) params.push('FModel=' + encodeURIComponent(FModel));
+            let apiUrl = apiBase.split('?')[0] + '?' + params.join('&');
+            if (orderId)
+            {    loadTableVIAPI(partstable, apiUrl, 1, 20);}
+            else{
+                loadTreeTableVIAPI(partstable, apiUrl,'POrder', 1, 20);
+            }
+        };
+        // 在 DOMContentLoaded 事件内添加
+        const stepGroup = {{ StepGroup|safe }};
+        partstable.addEventListener('click', function(e) {
+            let tr = e.target.closest('tr');
+            if (!tr || tr.parentNode.tagName.toLowerCase() !== 'tbody') return;
+            let tds = Array.from(tr.children).map(td => td.textContent.trim());
+            let headers = JSON.parse(partstable.getAttribute('data-headers'));
+            let code = tr.children[0].textContent.trim();
+            switchOverlay(importoverlay, importModal, true);
+            let url = `/api/pmcui/parts_order/parts_list_by_order?OrderId=${encodeURIComponent(orderId)}&FNumber=${encodeURIComponent(code)}`;
+            loadAndRenderDescriptionsPart1(url);
+            let parm_url = `/api/pmcui/material_parm/material_parm?FNumber=${encodeURIComponent(code)}`;
+            loadAndRenderDescriptionsPart2(parm_url, stepGroup);
+        });
+
+
+    });
+</script>
+{% endblock %}

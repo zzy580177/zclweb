@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from django_starter.db.models import Step, ProcessStep, ProcessRoute, AbstractBaseModel, PartsOrder
+from django_starter.db.models import Step, ProcessStep, ProcessRoute, AbstractBaseModel, PartsOrder, MaterialParm, ProcessStepSteps
 from apps.jihuaManagerUI.models import POrder
 
 app_name = "pmcui"  # 关联应用名称
@@ -13,7 +13,7 @@ class PartsOrder(PartsOrder):
     class Meta:
         db_table = f"[{schema}].[PartsOrder]"
         app_label = app_name
-        verbose_name = '产品订单详情管理'
+        verbose_name = '产品详情列表'
         verbose_name_plural = verbose_name
 
 class Step(Step):
@@ -34,6 +34,14 @@ class Step(Step):
         verbose_name = '生产工序'
         verbose_name_plural = verbose_name
 
+class ProcessStepSteps(ProcessStepSteps):
+    """"工序配方表"""
+    class Meta:
+        db_table = "[%s].[ProcessStepSteps]"% schema
+        app_label = app_name
+        verbose_name = '工序列表'
+        verbose_name_plural = verbose_name
+
 class ProcessStep(ProcessStep):
     """"工序配方表"""
     class Meta:
@@ -48,6 +56,14 @@ class ProcessRoute(ProcessRoute):
         db_table = "[%s].[ProcessRoute]"% schema
         app_label = app_name
         verbose_name = '生产工艺流程'
+        verbose_name_plural = verbose_name
+
+class MaterialParm(MaterialParm):
+    """物料参数表"""
+    class Meta:
+        db_table = "[%s].[MaterialParm]"% schema
+        app_label = app_name
+        verbose_name = '生产参数管理'
         verbose_name_plural = verbose_name
 
 class VirtualProcessRoute(ProcessRoute):

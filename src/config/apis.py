@@ -8,6 +8,9 @@ from ninja.renderers import JSONRenderer, BaseRenderer
 from django_starter.apis import router
 from apps.account.apis import router as account_router
 from apps.amfui.apis import router as amfui_router
+from apps.pmcui.apis import router as pmcui_router
+from apps.bmui.apis import router as bmui_router
+from apps.jihuaManagerUI.apis import router as jihua_router
 
 
 class ORJSONRenderer(JSONRenderer):
@@ -38,3 +41,6 @@ api = NinjaAPI(
 api.add_router('django-starter', router)
 api.add_router('account', account_router)
 api.add_router('amfui', amfui_router)
+api.add_router('jihua', jihua_router)
+api.add_router('pmcui', pmcui_router)
+api.add_router('bmui', bmui_router)
