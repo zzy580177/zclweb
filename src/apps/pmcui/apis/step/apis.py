@@ -26,8 +26,12 @@ def retrieve(request, item_id):
 
 @router.get('/step', response=List[StepOut], url_name='pmcui/step/list')
 @paginate
-def list_items(request):
-    qs = Step.objects.all()
+def list_items(request, EqpType: int = None, EqpName: str = None):
+    qs = Step.objects.select_related('EqpType')  # 关联 Material
+    if EqpName:
+        qs = Step.objects.filter(EqpType__Name=EqpName)
+    if EqpType:
+        qs = Step.objects.filter(EqpType_id=EqpType)
     return qs
 
 

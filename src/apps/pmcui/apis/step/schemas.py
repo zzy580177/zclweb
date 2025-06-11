@@ -1,5 +1,7 @@
 from ninja import ModelSchema
 from apps.pmcui.models import *
+from apps.bmui.apis.attribute.schemas import AttributeOut
+from typing import Optional
 
 
 class StepIn(ModelSchema):
@@ -13,6 +15,7 @@ class StepIn(ModelSchema):
 
 
 class StepOut(ModelSchema):
+    EqpType:Optional[AttributeOut]
     class Meta:
         model = Step
         fields = ['Id', 'Name', 'EqpType', 'UCost', 'HCost', 'Description', ]

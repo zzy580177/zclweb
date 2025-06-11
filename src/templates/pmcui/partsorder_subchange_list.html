@@ -13,6 +13,43 @@
     }
     .el-descriptions-item__label { font-weight: bold;}
     .el-descriptions__title { color: #2f7deb !important; }
+
+    .transfer-container {
+        display: flex;
+        width: 100%;
+    }
+    .transfer-panel {
+        flex: 0 0 48%;  /* 固定40%宽度 */
+        min-width: 0;   /* 防止内容溢出 */
+    }
+    .sort-buttons {
+        flex: 0 0 4%;  /* 固定20%宽度 */
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+    }
+    .step-item {
+        -webkit-user-select: text;  /* Chrome/Safari */
+        -moz-user-select: text;     /* Firefox */
+        -ms-user-select: text;      /* IE10+ */
+        user-select: text;          /* 标准语法 */
+        cursor: default;            /* 保持默认指针样式 */
+        padding: 8px 12px;          /* 增加点击区域 */
+    }
+    .step-item:hover {
+        background-color: #f5f7fa;  /* 悬停背景色 */
+    }
+    .step-item:active {
+        background-color: #e4e7ed;  /* 点击态背景色 */
+    }
+
+    .btn-active {
+        background-color: #409EFF;
+        color: white;
+    }
+
 </style>
 <div class="container">
     <div class="product-list-page" style="display: flex;">
@@ -29,10 +66,10 @@
             </div>
             <div class="filter-block">
                 <h4>零件编码</h4>
-                <input type="text" name="FName" placeholder="搜索零件编码" style="width:90%;">
+                <input type="text" name="FNumber" placeholder="搜索零件编码" style="width:90%;">
             </div>
             <div class="filter-block">
-                <h4>规格型号</h4>
+                <h4>零件型号</h4>
                 <input type="text" name="FModel" placeholder="搜索零件型号" style="width:90%;">
             </div>
             <div class="filter-block">
@@ -64,13 +101,13 @@
         </main>
     </div>
 
-    <!-- 工序填报模态框 -->
-    <div id="quick-fill-modal" class="modal">
+    <!-- 零件详情查询框 -->
+    <div id="parts-detail-modal" class="modal">
         <section class="el-container is-vertical">
             <header class="el-header" style="height: 60px;">
                 <div class="fx-modal-header" style="display: flex; align-items: center; justify-content: space-between;">
                     <div class="header-title" style="margin-right: 16px;">
-                    <div class="title-text" title="title-text" style="font-size: 20px; font-weight: bold;"></div>
+                    <div class="title-text" id="parts-detail-modal-title" title="title-text" style="font-size: 20px; font-weight: bold;"></div>
                 </div>
                 <div class="modal-controls" style="display: flex; align-items: center; gap: 8px;">
                     <div class="el-button-group btn-group" size="small">
@@ -118,9 +155,69 @@
         </section>
     </div>
     <!-- 模态框遮罩层 -->
-    <div id="modal-overlay" class="modal-overlay"></div>
+    <div id="detail-modal-overlay" class="modal-overlay"></div>
 
+    <die id="process-design-modal" class="modal">
+        <div class="el-dialog__header" style="height: 60px;">
+        <span class="el-dialog__title">工序设计</span>
+        </div>
+        <hr style="border-bottom:1px solid #e4e7ed; margin: 12px 0; height: 0;" aria-hidden="true">
+        <div class="el-dialog__body" style="max-height: 80vh; overflow-y: auto;">
+            <!-- 1.工序组选择 -->
+            <div style="margin-bottom: 15px;">
+            <label>工序组：</label>
+            <select id="select-step-group" class="el-select__inner">
+                <option value="" >请选择工序组</option>
+                {% for column in StepGroup %}
+                    <option value={{column.label}} >{{column.label}}</option>
+                {% endfor %}
+            </select>
+            </div>
 
+            <!-- 2.工序选择与排序 -->
+            <div class="transfer-container"  style="display: flex; align-items: center; ">
+                <div class="transfer-panel">
+                    <div class="el-transfer-panel__header">可选工序</div>
+                    <div id="available-steps" class="el-transfer-panel__body" style="border:1px solid #ddd; overflow-y: auto;" ></div>
+                </div>
+                <div class="sort-buttons"></div>
+                <div class="transfer-panel">
+                    <div class="el-transfer-panel__header">已选工序</div>
+                    <div id="selected-steps" class="el-transfer-panel__body" style="border:1px solid #ddd; overflow-y: auto;" ></div>
+                </div>
+            </div>
+
+            <!-- 3.工艺参数设置 -->
+            <div style="margin: 20px 0;">
+            <div class="el-table__header-wrapper" id="param-table" >
+                <table class="el-table__header" width="100%">
+                    <thead>
+                        <tr>
+                        <th>工序名称</th>
+                        <th>工艺参数</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>            
+                </table>
+            </div>
+            <div class="el-table__body-wrapper"></div>
+            </div>
+
+            <!-- 4.备注输入 -->
+            <div style="margin: 15px 0;">
+            <label>备注：</label>
+            <textarea id="remark" class="el-textarea__inner" rows="3"></textarea>
+            </div>
+
+            <!-- 5.确认按钮 -->
+            <div style="text-align: right;">
+            <button class="el-button" id="close-step-design-modal">取消</button>
+            <button class="el-button el-button--primary" id="load-step-design"">确认</button>
+            </div>
+        </div>
+    </div>
+    <!-- 模态框遮罩层 -->
+    <div id="process-design-modal-overlay" class="modal-overlay"></div>
 </div>
 
 
@@ -129,155 +226,102 @@
 
 
     import { 
-        loadTableVIAPI,loadTreeTableVIAPI,loadAndRenderDescriptionsPart1, loadAndRenderDescriptionsPart2
+        loadTableVIAPI,
+        loadTreeTableVIAPI,
+        loadAndRenderDescriptionsPart1, 
+        loadAndRenderDescriptionsPart2,
+        loadStepsByGroup,
+        LoadDateFromStepDesign,
         } from "{% static 'js/load_data_vi_api.js' %}";
     import {  switchOverlay, toggleMaximizeModal} from "{% static 'js/bmui.js' %}";
-    function updateFilterDetail(orderId, FName, FModel, Status) {
-        let detail = [];
-        if (orderId) detail.push(`订单号: ${orderId}`);
-        if (FName) detail.push(`零件编码: ${FName}`);
-        if (FModel) detail.push(`规格型号: ${FModel}`);
-        if (Status) detail.push(`状态: ${Status}`);
-        document.getElementById('filter-detail-content').textContent = detail.length ? detail.join('，') : '无';
-    }
+    import {
+        renderTitleDiv,
+        bindInputsForFilter,
+        getSelectedCellValue,
+    } from "{% static 'js/load_data_vi_dom.js' %}";
+
     
     document.addEventListener('DOMContentLoaded', function() {
         const ordertable = document.getElementById('product-order-table');
         const partstable = document.getElementById('product-parts-table');
         const apiBase = partstable.getAttribute('data-api');
-        const importModal = document.getElementById("quick-fill-modal");
-        const importoverlay = document.getElementById("modal-overlay");
+        const stepDesignModal = document.getElementById("process-design-modal");
+        const stepDesignoverlay = document.getElementById("process-design-modal-overlay");
         // 这里orderId可根据你的业务逻辑获取
         let orderId = '';
+        let isTreeMode = false;
 
         loadTableVIAPI(ordertable);
-        // 关闭快速填报模态框        
-        const closeModalButton = document.getElementById("switch-modal");
-        closeModalButton.addEventListener("click", function () {
-            switchOverlay(importoverlay, importModal, false);
-        });   
 
-        toggleMaximizeModal(importModal, document.getElementById("maximize-modal"), null);
-        
-        let isGongyiEditing = false;
-        document.getElementById('modal_edit').addEventListener('click', function() {
-            const gongyiDiv = document.getElementById('descriptions-gongyi');
-            if (!gongyiDiv) return;
-            const table = gongyiDiv.querySelector('.el-descriptions__table');
-            if (!table) return;
-
-            if (!isGongyiEditing) {
-                // 进入编辑状态
-                const contentSpans = table.querySelectorAll('.el-descriptions-item__content');
-                contentSpans.forEach(span => {
-                    const value = span.textContent.trim();
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.value = value;
-                    input.className = 'el-input__inner';
-                    input.style = 'width: 90%;';
-                    span.replaceWith(input);
-                });
-
-                // 增加保存按钮（只加一次）
-                if (!gongyiDiv.querySelector('#gongyi-save-btn')) {                    
-                    const saveBtn = document.createElement('button');
-                    saveBtn.id = 'gongyi-save-btn';
-                    saveBtn.className = 'el-button el-button--primary el-button--small';
-                    saveBtn.style = 'margin: 12px 0;';
-                    saveBtn.textContent = '保存';
-                    gongyiDiv.appendChild(saveBtn);
-
-                    saveBtn.onclick = function() {
-                        const inputs = table.querySelectorAll('input');
-                        inputs.forEach(input => {
-                            const span = document.createElement('span');
-                            span.className = 'el-descriptions-item__content';
-                            span.textContent = input.value;
-                            input.replaceWith(span);
-                        });
-                        saveBtn.remove();
-                        isGongyiEditing = false;
-                        document.getElementById('modal_edit').textContent = '编辑';
-                        // 可加ajax保存
-                    };
-                }
-                isGongyiEditing = true;                
-            } else {
-                // 退出编辑状态（还原为span）
-                const inputs = table.querySelectorAll('input');
-                inputs.forEach(input => {
-                    const span = document.createElement('span');
-                    span.className = 'el-descriptions-item__content';
-                    span.textContent = input.value;
-                    input.replaceWith(span);
-                });
-                const saveBtn = gongyiDiv.querySelector('#gongyi-save-btn');
-                if (saveBtn) saveBtn.remove();
-                isGongyiEditing = false;
-                return;
-            }
-        });
-        // 监听订单表点击
         ordertable.addEventListener('click', function(e) 
         {
-            const FName = document.querySelector('input[name="FName"]').value.trim();
-            const FModel = document.querySelector('input[name="FModel"]').value.trim();
-            const Status = document.querySelector('input[name="Status"]').value.trim();
-            let tr = e.target.closest('tr');
-            if (!tr || tr.parentNode.tagName.toLowerCase() !== 'tbody') return;
-            // 假设订单号在第一列
-            orderId = tr.children[0].textContent.trim();
-            if (orderId) {
-                updateFilterDetail(orderId, FName, FModel, Status);
-                // 拼接右侧API
-                let params = [];
-                if (orderId) params.push('OrderId=' + encodeURIComponent(orderId));
-                if (FName) params.push('FNumber=' + encodeURIComponent(FName));
-                if (FModel) params.push('FModel=' + encodeURIComponent(FModel));
-                let apiUrl = apiBase.split('?')[0] + '?' + params.join('&');
-                loadTableVIAPI(partstable, apiUrl, 1, 20);
-            }
+            let v= getSelectedCellValue([0],e)
+            if (!v[0]) return;
+            orderId = v[0];
+            let params = bindInputsForFilter(orderId,["FNumber","FModel","Status"]);
+            let apiUrl = apiBase.split('?')[0] + '?' + params.join('&');
+            loadTableVIAPI(partstable, apiUrl, 1, 20);
         });
 
         document.getElementById('filter-confirm-btn').onclick = function() {
-            // 获取当前筛选条件
-            const FName = document.querySelector('input[name="FName"]').value.trim();
-            const FModel = document.querySelector('input[name="FModel"]').value.trim();
-            const Status = document.querySelector('input[name="Status"]').value.trim();
-
-            // 更新过滤条件明细
-            updateFilterDetail(orderId, FName, FModel, Status);
-
-            // 拼接右侧API
-            const partstable = document.getElementById('product-parts-table');
-            let params = [];
-            if (orderId) params.push('OrderId=' + encodeURIComponent(orderId));
-            if (FName) params.push('FNumber=' + encodeURIComponent(FName));
-            if (FModel) params.push('FModel=' + encodeURIComponent(FModel));
+            let params = bindInputsForFilter(orderId,["FNumber","FModel","Status"]);
             let apiUrl = apiBase.split('?')[0] + '?' + params.join('&');
             if (orderId)
-            {    loadTableVIAPI(partstable, apiUrl, 1, 20);}
+            {   loadTableVIAPI(partstable, apiUrl, 1, 20);}
             else{
                 loadTreeTableVIAPI(partstable, apiUrl,'POrder', 1, 20);
+                isTreeMode = true;
             }
         };
-        // 在 DOMContentLoaded 事件内添加
-        const stepGroup = {{ StepGroup|safe }};
+
         partstable.addEventListener('click', function(e) {
-            let tr = e.target.closest('tr');
-            if (!tr || tr.parentNode.tagName.toLowerCase() !== 'tbody') return;
-            let tds = Array.from(tr.children).map(td => td.textContent.trim());
-            let headers = JSON.parse(partstable.getAttribute('data-headers'));
-            let code = tr.children[0].textContent.trim();
-            switchOverlay(importoverlay, importModal, true);
-            let url = `/api/pmcui/parts_order/parts_list_by_order?OrderId=${encodeURIComponent(orderId)}&FNumber=${encodeURIComponent(code)}`;
+            let v= getSelectedCellValue([0,1,2],e)
+            if (!v[0]) return;
+            switchOverlay(detailOverlay, detailModal, true);
+            renderTitleDiv( '#parts-detail-modal-title' ,`${v[2]}  ${v[1]}`)
+            let url = `/api/pmcui/parts_order/parts_list_by_order?OrderId=${encodeURIComponent(orderId)}&FNumber=${encodeURIComponent(v[0])}`;
             loadAndRenderDescriptionsPart1(url);
-            let parm_url = `/api/pmcui/material_parm/material_parm?FNumber=${encodeURIComponent(code)}`;
-            loadAndRenderDescriptionsPart2(parm_url, stepGroup);
+            let parm_url = `/api/pmcui/material_parm/material_parm?FNumber=${encodeURIComponent(v[0])}`;
+            loadAndRenderDescriptionsPart2(parm_url);
         });
 
 
+        // 零件详情查询框
+        const detailModal = document.getElementById("parts-detail-modal");
+        const detailOverlay = document.getElementById("detail-modal-overlay");
+    
+        const closeModalButton = document.getElementById("switch-modal");
+        closeModalButton.addEventListener("click", function () {
+            switchOverlay(detailOverlay, detailModal, false);
+        });
+
+        toggleMaximizeModal(detailModal, document.getElementById("maximize-modal"), null);
+        
+        document.getElementById('select-step-group').addEventListener('change', function() {
+            const group = document.getElementById('select-step-group').value
+            let url = `/api/pmcui/step/step?EqpName=`+ group;
+            loadStepsByGroup('select-step-group', url);
+        });
+
+        let isGongyiEditing = false;
+        document.getElementById('modal_edit').addEventListener('click', function() {
+            isGongyiEditing = !isGongyiEditing;
+            if (isGongyiEditing) {
+                this.classList.toggle('btn-active');
+            }else{
+                this.classList.remove('btn-active');
+            }
+        });
+
+        
+        // 工艺设计模态框
+        document.getElementById("close-step-design-modal").addEventListener("click", function () {
+            switchOverlay(stepDesignoverlay, stepDesignModal, false);
+        });
+        document.getElementById("load-step-design").addEventListener("click", function () {            
+            LoadDateFromStepDesign();
+            switchOverlay(stepDesignoverlay, stepDesignModal, false);
+        });
     });
 </script>
 {% endblock %}

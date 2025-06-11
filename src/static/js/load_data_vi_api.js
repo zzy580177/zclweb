@@ -1,5 +1,3 @@
-
-
 export function loadTreeTableVIAPI(table, apiUrlOverride, groupKey, page = 1, limit = 10) {
     if (!table) return;
     const headers = JSON.parse(table.getAttribute('data-headers'));
@@ -165,86 +163,86 @@ export function loadTableVIAPI(table, apiUrlOverride, page = 1, limit = 10) {
             }
         });
 }
-// 辅助函数：支持 'Part.FNumber' 取值
-function getValueByPath(obj, path) {
-    return path.split('.').reduce((acc, key) => (acc && acc[key] !== undefined) ? acc[key] : '', obj);
-}
-// 渲染分页控件
-function renderPagination(table, total, page, limit, apiUrlOverride) {
-    let pager = table.nextElementSibling;
-    if (!pager || !pager.classList.contains('table-pager')) {
-        pager = document.createElement('div');
-        pager.className = 'table-pager';
-        pager.style = 'margin:10px 0;text-align:center;';
-        table.parentNode.insertBefore(pager, table.nextSibling);
+    // 辅助函数：支持 'Part.FNumber' 取值
+    function getValueByPath(obj, path) {
+        return path.split('.').reduce((acc, key) => (acc && acc[key] !== undefined) ? acc[key] : '', obj);
     }
-    const totalPages = Math.max(1, Math.ceil(total / limit));
-    page = Math.max(1, Math.min(page, totalPages));
-
-    let html = `共 ${total} 条 `;
-
-    // 上一页
-    if (page > 1) {
-        html += `<a href="#" data-page="${page - 1}" class="pager-btn">&lt;</a>`;
-    } else {
-        html += `<span class="pager-btn pager-disabled">&lt;</span>`;
-    }
-
-    // 数字页码（最多显示7个，含省略号）
-    let start = Math.max(1, page - 2);
-    let end = Math.min(totalPages, page + 2);
-    if (page <= 3) end = Math.min(5, totalPages);
-    if (page >= totalPages - 2) start = Math.max(1, totalPages - 4);
-
-    if (start > 1) {
-        html += `<a href="#" data-page="1" class="pager-btn">1</a>`;
-        if (start > 2) html += `<span class="pager-ellipsis">...</span>`;
-    }
-    for (let i = start; i <= end; i++) {
-        if (i === page) {
-            html += `<b class="pager-btn pager-current">${i}</b>`;
-        } else {
-            html += `<a href="#" data-page="${i}" class="pager-btn">${i}</a>`;
+    // 渲染分页控件
+    function renderPagination(table, total, page, limit, apiUrlOverride) {
+        let pager = table.nextElementSibling;
+        if (!pager || !pager.classList.contains('table-pager')) {
+            pager = document.createElement('div');
+            pager.className = 'table-pager';
+            pager.style = 'margin:10px 0;text-align:center;';
+            table.parentNode.insertBefore(pager, table.nextSibling);
         }
-    }
-    if (end < totalPages) {
-        if (end < totalPages - 1) html += `<span class="pager-ellipsis">...</span>`;
-        html += `<a href="#" data-page="${totalPages}" class="pager-btn">${totalPages}</a>`;
-    }
+        const totalPages = Math.max(1, Math.ceil(total / limit));
+        page = Math.max(1, Math.min(page, totalPages));
 
-    // 下一页
-    if (page < totalPages) {
-        html += `<a href="#" data-page="${page + 1}" class="pager-btn">&gt;</a>`;
-    } else {
-        html += `<span class="pager-btn pager-disabled">&gt;</span>`;
-    }
+        let html = `共 ${total} 条 `;
 
-    // 跳转输入框
-    html += `&nbsp;前往 <input type="number" min="1" max="${totalPages}" value="${page}" class="pager-input" style="width:40px;text-align:center;"> 页`;
+        // 上一页
+        if (page > 1) {
+            html += `<a href="#" data-page="${page - 1}" class="pager-btn">&lt;</a>`;
+        } else {
+            html += `<span class="pager-btn pager-disabled">&lt;</span>`;
+        }
 
-    pager.innerHTML = html;
+        // 数字页码（最多显示7个，含省略号）
+        let start = Math.max(1, page - 2);
+        let end = Math.min(totalPages, page + 2);
+        if (page <= 3) end = Math.min(5, totalPages);
+        if (page >= totalPages - 2) start = Math.max(1, totalPages - 4);
 
-    // 绑定点击事件
-    pager.querySelectorAll('a[data-page]').forEach(a => {
-        a.onclick = function(e) {
-            e.preventDefault();
-            loadTableVIAPI(table, apiUrlOverride, parseInt(a.dataset.page), limit);
-        };
-    });
+        if (start > 1) {
+            html += `<a href="#" data-page="1" class="pager-btn">1</a>`;
+            if (start > 2) html += `<span class="pager-ellipsis">...</span>`;
+        }
+        for (let i = start; i <= end; i++) {
+            if (i === page) {
+                html += `<b class="pager-btn pager-current">${i}</b>`;
+            } else {
+                html += `<a href="#" data-page="${i}" class="pager-btn">${i}</a>`;
+            }
+        }
+        if (end < totalPages) {
+            if (end < totalPages - 1) html += `<span class="pager-ellipsis">...</span>`;
+            html += `<a href="#" data-page="${totalPages}" class="pager-btn">${totalPages}</a>`;
+        }
 
-    // 跳转输入框事件
-    const input = pager.querySelector('.pager-input');
-    if (input) {
-        input.onkeydown = function(e) {
-            if (e.key === 'Enter') {
-                let val = parseInt(input.value);
-                if (!isNaN(val) && val >= 1 && val <= totalPages) {
-                    loadTableVIAPI(table, apiUrlOverride, val, limit);
+        // 下一页
+        if (page < totalPages) {
+            html += `<a href="#" data-page="${page + 1}" class="pager-btn">&gt;</a>`;
+        } else {
+            html += `<span class="pager-btn pager-disabled">&gt;</span>`;
+        }
+
+        // 跳转输入框
+        html += `&nbsp;前往 <input type="number" min="1" max="${totalPages}" value="${page}" class="pager-input" style="width:40px;text-align:center;"> 页`;
+
+        pager.innerHTML = html;
+
+        // 绑定点击事件
+        pager.querySelectorAll('a[data-page]').forEach(a => {
+            a.onclick = function(e) {
+                e.preventDefault();
+                loadTableVIAPI(table, apiUrlOverride, parseInt(a.dataset.page), limit);
+            };
+        });
+
+        // 跳转输入框事件
+        const input = pager.querySelector('.pager-input');
+        if (input) {
+            input.onkeydown = function(e) {
+                if (e.key === 'Enter') {
+                    let val = parseInt(input.value);
+                    if (!isNaN(val) && val >= 1 && val <= totalPages) {
+                        loadTableVIAPI(table, apiUrlOverride, val, limit);
+                    }
                 }
             }
-        };
+        }
     }
-}
 
 /**
  * 重构版：将数据填充到已存在的 el-descriptions 结构中
@@ -253,17 +251,12 @@ function renderPagination(table, total, page, limit, apiUrlOverride) {
  * @param {Array} fields - 需要展示的字段及标签 [{label: '用户名', key: 'username'}, ...]
  * @param {string} containerId - 容器ID（el-descriptions 外层div的id）
  */
-function renderDescriptions(title, data, fields, containerId) {
+function renderDescriptions(data, fields, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
     // 找到 el-descriptions 结构
     const desc = container.querySelector('.el-descriptions');
     if (!desc) return;
-
-    if (desc) desc.classList.remove('el-descriptions--border', 'is-bordered');
-    // 填充标题
-    const titleDiv = desc.querySelector('.el-descriptions__title');
-    if (titleDiv) titleDiv.textContent = title || '';
 
     // 填充内容
     const tbody = desc.querySelector('.el-descriptions__table > tbody');
@@ -301,62 +294,8 @@ function renderDescriptions(title, data, fields, containerId) {
     }
 }
 
-function createDescriptionsSkeleton(containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
 
-    // 清空容器
-    while (container.firstChild) container.removeChild(container.firstChild);
 
-    // el-descriptions
-    const desc = document.createElement('div');
-    desc.className = 'el-descriptions';
-
-    // header
-    const header = document.createElement('div');
-    header.className = 'el-descriptions__header';
-
-    const titleDiv = document.createElement('div');
-    titleDiv.className = 'el-descriptions__title';
-    header.appendChild(titleDiv);
-
-    const extraDiv = document.createElement('div');
-    extraDiv.className = 'el-descriptions__extra';
-    header.appendChild(extraDiv);
-
-    desc.appendChild(header);
-
-    // 蓝色分割线
-    const line = document.createElement('div');
-    line.style.height = '1px';
-    line.style.background = '#2f7deb';
-    line.style.borderRadius = '1px';
-    line.style.margin = '8px 0';
-    desc.appendChild(line);
-
-    
-    // body
-    const body = document.createElement('div');
-    body.className = 'el-descriptions__body';
-
-    const table = document.createElement('table');
-    table.className = 'el-descriptions__table';
-    table.style.width = '100%';
-    table.style.borderCollapse = 'collapse';
-
-    const tbody = document.createElement('tbody');
-    table.appendChild(tbody);
-
-    body.appendChild(table);
-    desc.appendChild(body);
-    container.appendChild(desc);
-}
-
-function createDescriptionsAndRenderData(containerId, title, data, fields) 
-{
-    createDescriptionsSkeleton(containerId);
-    renderDescriptions(title, data, fields, containerId);
-}
 
 let FNumber = '';
     // 示例：调用API并渲染
@@ -384,20 +323,66 @@ export function loadAndRenderDescriptionsPart1(url) {
                     { label: '截至日期', key: 'DeadLine' }
                     // ...可扩展更多字段
                 ];
-                FNumber = data.data.items[0].Part.FNumber;
-                const part = data.data.items[0].Part
-                const partName = (part.FName === 'NULL' ) ? '' : part.FName|| '';
-                const partModel = (part.FModel === 'NULL' ) ? '' : part.FModel|| '';
-                const titleTextDiv = document.querySelector('.title-text');
-                if (titleTextDiv) {
-                    titleTextDiv.textContent = `${partModel}  ${partName}`;
-                    titleTextDiv.setAttribute('title', `${partModel}  ${partName}`);
-                }
-                createDescriptionsAndRenderData('descriptions-order', '订单信息', data.data.items[0].POrder, order_fields);
-                createDescriptionsAndRenderData('descriptions-wuliao', '零件信息', data.data.items[0], parts_fields);
-
+                renderDescriptionsFrame('descriptions-order', '订单信息');
+                renderDescriptionsFrame('descriptions-wuliao', '零件信息');
+                renderDescriptions(data.data.items[0].POrder, order_fields, 'descriptions-order');
+                renderDescriptions(data.data.items[0], parts_fields, 'descriptions-wuliao');
             });
 }
+    function renderDescriptionsFrame(containerId, title) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        // 清空容器
+        while (container.firstChild) container.removeChild(container.firstChild);
+
+        // el-descriptions
+        const desc = document.createElement('div');
+        desc.className = 'el-descriptions';
+
+        // header
+        const header = document.createElement('div');
+        header.className = 'el-descriptions__header';
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'el-descriptions__title';
+        titleDiv.textContent = title || '';
+        header.appendChild(titleDiv);
+
+        const extraDiv = document.createElement('div');
+        extraDiv.className = 'el-descriptions__extra';
+        header.appendChild(extraDiv);
+
+        desc.appendChild(header);
+
+        // 蓝色分割线
+        const line = document.createElement('div');
+        line.style.height = '1px';
+        line.style.background = '#2f7deb';
+        line.style.borderRadius = '1px';
+        line.style.margin = '8px 0';
+        desc.appendChild(line);
+
+        
+        // body
+        const body = document.createElement('div');
+        body.className = 'el-descriptions__body';
+
+        const table = document.createElement('table');
+        table.className = 'el-descriptions__table';
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+
+        const tbody = document.createElement('tbody');
+        table.appendChild(tbody);
+
+        body.appendChild(table);
+        desc.appendChild(body);
+        container.appendChild(desc);
+    }
+
+
+
     let currentIndex = 1; // Start index counter
     function reRenderTable(containerId, fields) {
         const container = document.getElementById(containerId);
@@ -442,7 +427,7 @@ export function loadAndRenderDescriptionsPart1(url) {
         removeBtn.className = 'el-button el-button--warning el-button--small';
         removeBtn.textContent = '撤销工序';
         removeBtn.onclick = function() {
-            if (tbody.rows.length > 1) {
+            if (tbody.rows.length > 0) {
                 const row = tbody.rows[tbody.rows.length - 1];
                 row.remove();
                 currentIndex--;
@@ -451,11 +436,14 @@ export function loadAndRenderDescriptionsPart1(url) {
 
         // Add row button
         const addButton = document.createElement('button');
-        addButton.textContent = '新增工序';
+        addButton.textContent = '添加工序';
         addButton.className = 'el-button el-button--primary el-button--small';
         addButton.onclick = function() {
-            addTableRow(tbody, fields);
-            currentIndex++
+            const overlaymodal = document.getElementById('process-design-modal-overlay');
+            const modal = document.getElementById('process-design-modal');
+            overlaymodal.style.display = 'block';
+            modal.style.display = 'block';
+            
         };
 
         // Save button
@@ -467,50 +455,12 @@ export function loadAndRenderDescriptionsPart1(url) {
             // Save functionality to be implemented
             alert('保存功能待实现');
         };
-        buttonContainer.appendChild(removeBtn);
         buttonContainer.appendChild(addButton);
+        buttonContainer.appendChild(removeBtn);
         buttonContainer.appendChild(saveButton);
         tableDiv.appendChild(buttonContainer);
 
-        // 添加默认行
-        addTableRow(tbody, fields); 
-        currentIndex++;
-
     }
-
-    function addTableRow(tbody, fields) {
-        const row = document.createElement('tr');
-            
-        fields.forEach(col => {
-            const cell = document.createElement('td');
-            const span = document.createElement('span');
-            span.name = col.key.split('.').pop();
-            if (col.key === 'Index') {
-                span.textContent = currentIndex;
-            }
-            if(col.type !== '') {
-                cell.appendChild(span);
-                row.appendChild(cell);
-            }
-        });
-
-        // 添加操作按钮单元格
-        const actionCell = document.createElement('td');
-
-        const editBtn = document.createElement('button');
-        editBtn.className = 'el-button el-button--primary el-button--small';
-        editBtn.textContent = '编辑';
-        editBtn.onclick = function() {
-            // 编辑功能待实现
-            alert('编辑功能待实现'+FNumber+ String(currentIndex));
-        };
-
-        actionCell.appendChild(editBtn);
-        row.appendChild(actionCell);
-
-        tbody.appendChild(row);
-    }
-
 
     /**
      * 重构版：将数据填充到已存在的 el-descriptions 结构中
@@ -566,7 +516,7 @@ export function loadAndRenderDescriptionsPart1(url) {
         }
     }
 
-export function loadAndRenderDescriptionsPart2(url, stepGroup) {
+export function loadAndRenderDescriptionsPart2(url) {
         fetch(url)
             .then(res => res.json())
             .then(data => {
@@ -580,19 +530,166 @@ export function loadAndRenderDescriptionsPart2(url, stepGroup) {
                     // ...可扩展更多字段
                 ];
                 const step_fields = [                    
-                    { label: '工序序号', key: 'Index', type: 'number', required: true},
-                    { label: '设备', key: 'Group', type: 'select', required: true,  options: stepGroup},
-                    { label: '工序列表', key: 'Steps', type: 'text', required: true},
-                    { label: '加工参数', key: 'parmeters', type: 'text', required: true},
-                    { label: '备注', key: 'Description', type: 'text', required: true},
-                    { label: '操作', key: '', type: '', enable: true},
+                    { label: '工序序号', key: 'Index'},
+                    { label: '设备', key: 'Group'},
+                    { label: '工序列表', key: 'Steps'},
+                    { label: '加工参数', key: 'parmeters'},
+                    { label: '备注', key: 'Description'},
                     // ...可扩展更多字段
                 ];
-
-                createDescriptionsAndRenderData('descriptions-chanshu', '规格参数', data.data.items[0], parm_fields);                
-                createDescriptionsSkeleton('descriptions-gongyi');
+                renderDescriptionsFrame('descriptions-chanshu', '规格参数');
+                renderDescriptions( data.data.items[0], parm_fields, 'descriptions-chanshu');
+                renderDescriptionsFrame('descriptions-gongyi', '工艺线路');
                 reRenderTable('descriptions-gongyi', step_fields)
                 renderReRenderTable('工艺线路', [], step_fields, 'descriptions-gongyi');
 
             });
 }
+    // 加载工序组数据
+export function loadStepsByGroup(containerID, url) {
+    if(!containerID || !document.getElementById(containerID)) {
+        console.error('无效的容器ID');
+        return;
+    }
+    
+    const groupId = document.getElementById(containerID).value;
+    const selectedEl = document.getElementById('selected-steps');
+    const availableEl = document.getElementById('available-steps');
+    const paramTableEl = document.querySelector('#param-table tbody');
+    const remarkEl = document.getElementById('remark');
+    
+    // 清空已选工序
+    selectedEl && (selectedEl.innerHTML = '');
+    paramTableEl && (paramTableEl.innerHTML = '');
+    remarkEl && (remarkEl.value = '');
+    if(!groupId) {
+        availableEl && (availableEl.innerHTML = '');
+        return;
+    }
+    fetch(url)
+        .then(res => {
+            if(!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            if(data?.data?.items) {
+                renderAvailableSteps(data.data.items);
+            } else {
+                console.warn('返回数据格式不符合预期');
+            }
+        })
+        .catch(error => {
+            console.error('请求失败:', error);
+            availableEl && (availableEl.innerHTML = '加载失败');
+        });
+    }
+
+
+    // 渲染可选工序
+    function renderAvailableSteps(data) {
+        const container = document.getElementById('available-steps');
+        container.innerHTML = '';
+        
+        data.forEach(step => {
+            const div = document.createElement('div');
+            div.className = 'step-item';
+            div.textContent = step.Name;
+            div.dataset.id = step.Id;
+            div.onclick = function() {
+                addSelectedStep(step);
+                renderParamTable(step);
+            };
+            container.appendChild(div);
+        });
+    }
+
+    // 添加已选工序
+    function addSelectedStep(step) {
+        const container = document.getElementById('selected-steps');
+        const div = document.createElement('div');
+        div.className = 'step-item';
+        div.textContent = step.Name;
+        div.dataset.id = step.Id;
+        div.onclick = function() {
+            removeSelectedStep(step);
+            removeParamTable(step);
+        };
+        container.appendChild(div);
+    }
+    // 移除已选工序
+    function removeSelectedStep(step) {
+        const container = document.getElementById('selected-steps');
+        // 查找所有step-item元素
+        const items = container.querySelectorAll('.step-item');
+        // 遍历查找匹配data-id的元素
+        items.forEach(item => {
+            if (item.dataset.id === step.Id) {
+                container.removeChild(item);
+            }
+        });
+    }
+        // 渲染参数表格
+    function renderParamTable(step) {
+        const table = document.querySelector('#param-table tbody');
+        const newRow = table.insertRow();
+        newRow.dataset.stepId = step.Id;
+        newRow.insertCell(0).textContent = step.Name;
+        newRow.insertCell(1).innerHTML = '<input type="text" class="el-input__inner" data-step="${step.Id}">';
+    }
+
+    function removeParamTable(step) {
+        const tbody = document.querySelector('#param-table tbody');
+        if (!tbody) return;
+
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach(row => {
+            if (row.dataset.stepId === step.Id) {
+            tbody.removeChild(row);
+            }
+        });
+        
+    }
+    
+export function LoadDateFromStepDesign()
+    {
+        const table = document.querySelector('#param-table tbody');
+        if (!table) return null;
+        
+        const paramsList = [];
+        const stepsList = [];
+        const rows = table.querySelectorAll('tr');
+        
+        rows.forEach(row => {
+            const stepId = row.dataset.stepId;
+            const stepName = row.cells[0].textContent;
+            const inputValue = row.cells[1].querySelector('input').value ||"null";
+            paramsList.push(stepName + ":" + inputValue);
+            stepsList.push(stepName)
+        });
+
+        const targetTbody = document.querySelector('#descriptions-gongyi table tbody');;
+        const fields = ['Index','Group','Steps','parmeters','Description'];
+        
+        const row = document.createElement('tr');
+        fields.forEach(col => {
+            const cell = document.createElement('td');
+            const span = document.createElement('span');
+            span.name = col;
+            if (col === 'Index') {
+                span.textContent = currentIndex;
+                currentIndex ++;
+            }else if (col === 'Steps') {
+                span.textContent = stepsList.join('; ');
+            }else if (col === 'parmeters') {
+                span.textContent = paramsList.join('; ');
+            }else if (col === 'Group') {
+                span.textContent = document.getElementById('select-step-group').value || '';
+            }else if (col === 'Description') {
+                span.textContent = document.getElementById('remark').value || 'null';
+            }
+            cell.appendChild(span);
+            row.appendChild(cell);
+        });
+        targetTbody.appendChild(row);
+
+    }
