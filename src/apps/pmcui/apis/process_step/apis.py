@@ -27,7 +27,7 @@ def retrieve(request, item_id):
 @router.get('/process_step', response=List[ProcessStepOut], url_name='pmcui/process_step/list')
 @paginate
 def list_items(request):
-    qs = ProcessStep.objects.select_related('Route','subRoute') 
+    qs = ProcessStep.objects.select_related('Route','subRoute').prefetch_related('Steps') 
     qs = qs.order_by('Route_id', 'subRoute_id', 'SeqNum')
     return qs
 

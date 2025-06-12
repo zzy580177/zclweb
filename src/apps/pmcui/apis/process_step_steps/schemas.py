@@ -11,9 +11,8 @@ class ProcessStepStepsIn(ModelSchema):
         model = ProcessStepSteps
         fields = ['processstep', 'step', ]
 
-
 class ProcessStepStepsOut(ModelSchema):
     step: Optional[StepOut] = []
     class Meta:
         model = ProcessStepSteps
-        fields = ['processstep', 'step', ]
+        fields = ['processstep', 'step', 'parameters']

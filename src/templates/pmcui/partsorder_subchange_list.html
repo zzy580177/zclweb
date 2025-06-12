@@ -151,6 +151,7 @@
                 <div id="descriptions-wuliao"></div>
                 <div id="descriptions-chanshu"></div>
                 <div id="descriptions-gongyi"></div>
+                <div id="descriptions-cnc-gongyi"></div>
             </main> 
         </section>
     </div>
@@ -176,9 +177,10 @@
 
             <!-- 2.工序选择与排序 -->
             <div class="transfer-container"  style="display: flex; align-items: center; ">
-                <div class="transfer-panel">
+                <div class="transfer-panel">                    
                     <div class="el-transfer-panel__header">可选工序</div>
-                    <div id="available-steps" class="el-transfer-panel__body" style="border:1px solid #ddd; overflow-y: auto;" ></div>
+                    <div id="available-steps" class="el-transfer-panel__body" style="border:1px solid #ddd; overflow-y: auto;" 
+                        data_api = "/api/pmcui/step/step?EqpName="></div>
                 </div>
                 <div class="sort-buttons"></div>
                 <div class="transfer-panel">
@@ -223,13 +225,13 @@
 
 
 <script type="module">
-
-
     import { 
         loadTableVIAPI,
+        loadDetTableVIAPI,
         loadTreeTableVIAPI,
-        loadAndRenderDescriptionsPart1, 
-        loadAndRenderDescriptionsPart2,
+        renderDescriptionsFrame, 
+        addSelectProcessButtonForGongyi,
+        addDesignProcessButtonForGongyi,
         loadStepsByGroup,
         LoadDateFromStepDesign,
         } from "{% static 'js/load_data_vi_api.js' %}";
@@ -240,7 +242,44 @@
         getSelectedCellValue,
     } from "{% static 'js/load_data_vi_dom.js' %}";
 
-    
+    function renderDetailModalFrame(orderId, FNumber, title){
+        const partsH = ['组别', '物料编码', '物料名称', '规格型号', '生产单位', '生产数量', '零件当前状态', '交付截至'];
+        const partKeys = ['Part.FGroup.FName', 'Part.FNumber', 'Part.FName', 'Part.FModel', 'Part.FUnit.Name', 'Quantity', 'Status', 'DeadLine'];
+        const orderH = ['订单', '产品信息', '批次号', '订单状态', '截止日期'];
+        const orderKeys = ['OrderId','Product_id','LotId','Status','Deadline'];
+        const parmH = ['材料', '加工尺寸', '毛料尺寸', '镀层要求', '备注']
+        const parmKey = ['Stuff', 'Size', 'Cost', 'Surface', 'Description']
+        const stepH = ['工序序号', '设备', '工序列表', '加工参数', '备注']
+        const stepKey = ['Index', 'Group', 'Steps', 'parmeters', 'Description']
+
+        const parts_url = `/api/pmcui/parts_order/parts_list_by_order?OrderId=${encodeURIComponent(orderId)}&FNumber=${encodeURIComponent(FNumber)}`;
+        const order_url = `/api/jihua/order/order?OrderId=${encodeURIComponent(orderId)}`;
+        const parm_url = `/api/pmcui/material_parm/material_parm?FNumber=${encodeURIComponent(FNumber)}`;
+        renderTitleDiv( '#parts-detail-modal-title', title)
+        renderDescriptionsFrame('descriptions-order', '订单信息', orderH, orderKeys, order_url);
+        renderDescriptionsFrame('descriptions-wuliao', '零件信息', partsH, partKeys, parts_url);
+        renderDescriptionsFrame('descriptions-chanshu', '规格参数', parmH, parmKey, parm_url);
+        renderDescriptionsFrame('descriptions-gongyi', '工艺线路', stepH, stepKey, '');
+        renderDescriptionsFrame('descriptions-cnc-gongyi', 'CNC工艺设计', stepH, stepKey, '');
+        addSelectProcessButtonForGongyi(FNumber);
+    }
+
+    function renderOrderPartsParmTable() {
+        const orderTable = container.querySelector('#descriptions-order .el-descriptions .el-descriptions__table');
+        loadDetTableVIAPI(orderTable);
+        const wuliaoTable = container.querySelector('#descriptions-wuliao .el-descriptions .el-descriptions__table');
+        loadDetTableVIAPI(wuliaoTable);
+        const pamarTable = container.querySelector('#descriptions-chanshu .el-descriptions .el-descriptions__table');
+        loadDetTableVIAPI(pamarTable);    
+        const processTable = container.querySelector('#descriptions-gongyi .el-descriptions .el-descriptions__table');        
+        loadTableVIAPI(processTable)
+        const cncprocessTable = container.querySelector('#descriptions-cnc-gongyi .el-descriptions .el-descriptions__table');        
+        loadTableVIAPI(cncprocessTable)
+
+    }
+
+
+
     document.addEventListener('DOMContentLoaded', function() {
         const ordertable = document.getElementById('product-order-table');
         const partstable = document.getElementById('product-parts-table');
@@ -250,7 +289,7 @@
         // 这里orderId可根据你的业务逻辑获取
         let orderId = '';
         let isTreeMode = false;
-
+        let FNumber = null;
         loadTableVIAPI(ordertable);
 
         ordertable.addEventListener('click', function(e) 
@@ -277,12 +316,11 @@
         partstable.addEventListener('click', function(e) {
             let v= getSelectedCellValue([0,1,2],e)
             if (!v[0]) return;
+            FNumber = v[0];
             switchOverlay(detailOverlay, detailModal, true);
-            renderTitleDiv( '#parts-detail-modal-title' ,`${v[2]}  ${v[1]}`)
-            let url = `/api/pmcui/parts_order/parts_list_by_order?OrderId=${encodeURIComponent(orderId)}&FNumber=${encodeURIComponent(v[0])}`;
-            loadAndRenderDescriptionsPart1(url);
-            let parm_url = `/api/pmcui/material_parm/material_parm?FNumber=${encodeURIComponent(v[0])}`;
-            loadAndRenderDescriptionsPart2(parm_url);
+
+            renderDetailModalFrame(orderId, FNumber, `${v[2]}  ${v[1]}`);
+            renderOrderPartsParmTable();
         });
 
 
@@ -308,8 +346,13 @@
             isGongyiEditing = !isGongyiEditing;
             if (isGongyiEditing) {
                 this.classList.toggle('btn-active');
+                addDesignProcessButtonForGongyi(FNumber);
+                const orderTable = container.querySelector('#descriptions-gongyi .el-descriptions .el-descriptions__table tbody');
+                orderTable.innerHTML = '';
             }else{
                 this.classList.remove('btn-active');
+                const div = container.querySelector('#descriptions-gongyi .el-descriptions .el-descriptions__footer');
+                div.innerHTML = '';
             }
         });
 

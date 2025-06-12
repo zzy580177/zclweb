@@ -26,8 +26,11 @@ def retrieve(request, item_id):
 
 @router.get('/order', response=List[POrderOut], url_name='jihuaManagerUI/p_order/list')
 @paginate
-def list_items(request):
-    qs = POrder.objects.all()
+def list_items(request, OrderId: str = None):
+    if OrderId:
+        qs = POrder.objects.filter(OrderId=OrderId)
+    else:
+        qs = POrder.objects.all()
     return qs
 
 

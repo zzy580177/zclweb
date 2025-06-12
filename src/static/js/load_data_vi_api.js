@@ -98,8 +98,6 @@ export function loadTreeTableVIAPI(table, apiUrlOverride, groupKey, page = 1, li
         });
 }
 
-// 复用 getValueByPath 和 renderPagination
-
 export function loadTableVIAPI(table, apiUrlOverride, page = 1, limit = 10) {
     if (!table) return;
     const headers = JSON.parse(table.getAttribute('data-headers'));
@@ -115,11 +113,11 @@ export function loadTableVIAPI(table, apiUrlOverride, page = 1, limit = 10) {
         thead = document.createElement('thead');
         table.insertBefore(thead, table.firstChild);
     }
-    let theadHtml = '<tr>';
+    let theadHtml = '<tr> <div style = "font-weight: bold">';
     headers.forEach(h => {
         theadHtml += `<td><label>${h}</label></td>`;
     });
-    theadHtml += '</tr>';
+    theadHtml += '</div></tr>';
     thead.innerHTML = theadHtml;
 
     fetch(apiUrl)
@@ -244,92 +242,9 @@ export function loadTableVIAPI(table, apiUrlOverride, page = 1, limit = 10) {
         }
     }
 
-/**
- * 重构版：将数据填充到已存在的 el-descriptions 结构中
- * @param {string} title - 标题
- * @param {object} data - API返回的对象
- * @param {Array} fields - 需要展示的字段及标签 [{label: '用户名', key: 'username'}, ...]
- * @param {string} containerId - 容器ID（el-descriptions 外层div的id）
- */
-function renderDescriptions(data, fields, containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    // 找到 el-descriptions 结构
-    const desc = container.querySelector('.el-descriptions');
-    if (!desc) return;
+let currentIndex = 1; 
 
-    // 填充内容
-    const tbody = desc.querySelector('.el-descriptions__table > tbody');
-    if (!tbody) return;
-    tbody.innerHTML = ''; // 清空原内容
-
-    for (let i = 0; i < fields.length; i += 3) {
-        const labeltr = document.createElement('tr');
-        labeltr.className = 'el-descriptions-row';
-        const contentltr = document.createElement('tr');
-        labeltr.className = 'el-descriptions-row';
-        for (let j = i; j < i + 3 && j < fields.length; j++) {
-            const field = fields[j];
-            const td1 = document.createElement('td');
-            td1.colSpan = 1;
-            td1.className = 'el-descriptions-item el-descriptions-item__cell';
-            td1.innerHTML = `
-                <div class="el-descriptions-item__container">
-                    <span class="el-descriptions-item__label">${field.label}</span>
-                </div>
-            `;
-            const td2 = document.createElement('td');
-            td2.colSpan = 1;
-            td2.className = 'el-descriptions-item el-descriptions-item__cell';
-            td2.innerHTML = `
-                <div class="el-descriptions-item__container">
-                    <span class="el-descriptions-item__content">${getValueByPath(data, field.key) ?? ''}</span>
-                </div>
-            `;
-            labeltr.appendChild(td1);
-            contentltr.appendChild(td2);          
-        }
-        tbody.appendChild(labeltr);
-        tbody.appendChild(contentltr);
-    }
-}
-
-
-
-
-let FNumber = '';
-    // 示例：调用API并渲染
-export function loadAndRenderDescriptionsPart1(url) {
-        fetch(url)
-            .then(res => res.json())
-            .then(data => {
-                // 根据实际API返回结构调整字段
-                const parts_fields = [
-                    { label: '组别', key: 'Part.FGroup.FName' },
-                    { label: '物料编码', key: 'Part.FNumber' },
-                    { label: '物料名称', key: 'Part.FName' },
-                    { label: '规格型号', key: 'Part.FModel' },
-                    { label: '生产单位', key: 'Part.FUnit.Name' },                                       
-                    { label: '生产数量', key: 'Quantity' },                    
-                    { label: '零件当前状态', key: 'Status' },                 
-                    { label: '交付截至', key: 'DeadLine' }
-                    // ...可扩展更多字段
-                ];
-                const order_fields = [
-                    { label: '订单', key: 'OrderId' },
-                    { label: '产品信息', key: 'Product_id' },
-                    { label: '批次号', key: 'LotId' },                    
-                    { label: '订单状态', key: 'Status' },                 
-                    { label: '截至日期', key: 'DeadLine' }
-                    // ...可扩展更多字段
-                ];
-                renderDescriptionsFrame('descriptions-order', '订单信息');
-                renderDescriptionsFrame('descriptions-wuliao', '零件信息');
-                renderDescriptions(data.data.items[0].POrder, order_fields, 'descriptions-order');
-                renderDescriptions(data.data.items[0], parts_fields, 'descriptions-wuliao');
-            });
-}
-    function renderDescriptionsFrame(containerId, title) {
+export function renderDescriptionsFrame(containerId, title, tableHeaders, dataKeys, url) {
         const container = document.getElementById(containerId);
         if (!container) return;
 
@@ -343,16 +258,10 @@ export function loadAndRenderDescriptionsPart1(url) {
         // header
         const header = document.createElement('div');
         header.className = 'el-descriptions__header';
-
         const titleDiv = document.createElement('div');
         titleDiv.className = 'el-descriptions__title';
         titleDiv.textContent = title || '';
         header.appendChild(titleDiv);
-
-        const extraDiv = document.createElement('div');
-        extraDiv.className = 'el-descriptions__extra';
-        header.appendChild(extraDiv);
-
         desc.appendChild(header);
 
         // 蓝色分割线
@@ -364,69 +273,113 @@ export function loadAndRenderDescriptionsPart1(url) {
         desc.appendChild(line);
 
         
+        const extraDiv = document.createElement('div');
+        extraDiv.className = 'el-descriptions__extra';
+        extraDiv.style.marginBottom = '20px';
+        extraDiv.style.marginTop = '20px';
+        desc.appendChild(extraDiv);
+        
         // body
         const body = document.createElement('div');
         body.className = 'el-descriptions__body';
-
         const table = document.createElement('table');
+        table.dataset.headers = JSON.stringify(tableHeaders);
+        table.dataset.keys = JSON.stringify(dataKeys);
+        table.dataset.api = url;
+
         table.className = 'el-descriptions__table';
         table.style.width = '100%';
         table.style.borderCollapse = 'collapse';
 
         const tbody = document.createElement('tbody');
         table.appendChild(tbody);
-
         body.appendChild(table);
         desc.appendChild(body);
+
+        const footerDiv = document.createElement('div');
+        footerDiv.className = 'el-descriptions__footer';
+        footerDiv.style.marginBottom = '20px';
+        footerDiv.style.marginTop = '20px';
+        desc.appendChild(footerDiv);
+
         container.appendChild(desc);
     }
 
+export function loadDetTableVIAPI(table, apiUrlOverride, isClean = true) {
+        if (!table) return;
+        const headers = JSON.parse(table.getAttribute('data-headers'));
+        const keys = JSON.parse(table.getAttribute('data-keys'));
+        let apiUrl = apiUrlOverride || table.getAttribute('data-api') || '';
 
+        apiUrl = String(apiUrl); 
 
-    let currentIndex = 1; // Start index counter
-    function reRenderTable(containerId, fields) {
-        const container = document.getElementById(containerId);
-        if (!container) return null;
-        
-        // Use querySelector to get a single element instead of NodeList
-        const tableDiv = container.querySelector('.el-descriptions__table');
-        if (!tableDiv) return;
-        
-        // 重置表格样式
-        tableDiv.className = 'el-table el-table--fit el-table--scrollable-x el-table--scrollable-y';
-        
-        // 清空现有内容
-        tableDiv.innerHTML = '';
-        currentIndex = 1
-        // 创建表格结构
-        const table = document.createElement('table');
-        const thead = document.createElement('thead');
-        const tbody = document.createElement('tbody');
-        
-        // 创建表头
-        const headerRow = document.createElement('tr');
-        fields.forEach(field => {
-            const th = document.createElement('th');
-            th.textContent = field.label;
-            headerRow.appendChild(th);
-        });
-        thead.appendChild(headerRow);
-        
-        // 组装表格
-        table.appendChild(thead);
-        table.appendChild(tbody);
-        tableDiv.appendChild(table);
+        // 先生成表头
+        let thead = table.querySelector('thead');
+        if (!thead) {
+            thead = document.createElement('thead');
+            table.insertBefore(thead, table.firstChild);
+        }
+
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                let tableBody = table.querySelector('tbody');
+                if (!tableBody) {
+                    tableBody = document.createElement('tbody');
+                    table.appendChild(tableBody);
+                }
+                if(isClean)
+                    tableBody.innerHTML = '';
+
+                if (
+                    data.code !== 200 ||
+                    data.success !== true ||
+                    data.message !== "请求成功"
+                ) {
+                    tableBody.innerHTML = `<tr><td colspan="${headers.length}" style="color:red;">${data.message || '接口返回异常'}</td></tr>`;
+                    return;
+                }
+
+                const items = (data.data && data.data.items) ? data.data.items : [];
+                if (items.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="${headers.length}" style="color:#888;">暂无数据</td></tr>`;
+                    return;
+                }
+                for (let i = 0; i < headers.length; i += 3) {
+                    const tr1 = document.createElement('tr');
+                    const tr2 = document.createElement('tr');
+                    let row1 = ``;
+                    let row2 = ``;
+                    for (let j = i; j < i + 3 && j < headers.length; j++) {
+                        row1 = `${row1} <td> <div ><span class="el-descriptions-item__label">${headers[j]}</span></div></td>`;
+                        row2 = `${row2} <td> <div ><span class="el-descriptions-item__content"> ${getValueByPath(items[0], keys[j])}</span></div></td>`;
+                    }
+                    tr1.innerHTML = row1;
+                    tr2.innerHTML = row2;
+                    tableBody.appendChild(tr1);
+                    tableBody.appendChild(tr2);
+                }
+            })
+    }
+
+export function addDesignProcessButtonForGongyi(FNumber) {
+        const container = document.getElementById('descriptions-gongyi');
+        const div = container.querySelector('.el-descriptions .el-descriptions__footer');
+        if (!div) return;
+        currentIndex = 1; // 重置当前索引
 
         // After the table is created and appended to tableDiv
         const buttonContainer = document.createElement('div');
         buttonContainer.style.marginTop = '10px';
         buttonContainer.style.textAlign = 'right';
+        buttonContainer.style.display = 'flex';
 
         // Add row button
         const removeBtn = document.createElement('button');
         removeBtn.className = 'el-button el-button--warning el-button--small';
         removeBtn.textContent = '撤销工序';
         removeBtn.onclick = function() {
+            const tbody = container.querySelector('.el-descriptions .el-descriptions__table tbody');
             if (tbody.rows.length > 0) {
                 const row = tbody.rows[tbody.rows.length - 1];
                 row.remove();
@@ -439,6 +392,8 @@ export function loadAndRenderDescriptionsPart1(url) {
         addButton.textContent = '添加工序';
         addButton.className = 'el-button el-button--primary el-button--small';
         addButton.onclick = function() {
+            const tbody = container.querySelector('.el-descriptions .el-descriptions__table tbody');
+            currentIndex = tbody.rows.length + 1; // 更新当前索引
             const overlaymodal = document.getElementById('process-design-modal-overlay');
             const modal = document.getElementById('process-design-modal');
             overlaymodal.style.display = 'block';
@@ -452,99 +407,190 @@ export function loadAndRenderDescriptionsPart1(url) {
         saveButton.className = 'el-button el-button--primary el-button--small';
         saveButton.style.marginLeft = '10px';
         saveButton.onclick = function() {
-            // Save functionality to be implemented
-            alert('保存功能待实现');
+            saveDesignedProcess(FNumber);
         };
         buttonContainer.appendChild(addButton);
         buttonContainer.appendChild(removeBtn);
         buttonContainer.appendChild(saveButton);
-        tableDiv.appendChild(buttonContainer);
-
+        div.appendChild(buttonContainer);
     }
 
-    /**
-     * 重构版：将数据填充到已存在的 el-descriptions 结构中
-     * @param {string} title - 标题
-     * @param {object} data - API返回的对象
-     * @param {Array} fields - 需要展示的字段及标签 [{label: '用户名', key: 'username'}, ...]
-     * @param {string} containerId - 容器ID（el-descriptions 外层div的id）
-     */
-    function renderReRenderTable(title, data, fields, containerId) {
-        const container = document.getElementById(containerId);
-        if (!container) return;
-        // 找到 el-descriptions 结构
-        const desc = container.querySelector('.el-descriptions');
-        if (!desc) return;
+    
+    const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
 
-        // 填充标题
-        const titleDiv = desc.querySelector('.el-descriptions__title');
-        if (titleDiv) titleDiv.textContent = title || '';
+    function saveDesignedProcess(FNumber) {
+        const container = document.getElementById('descriptions-gongyi');
+        const tbody = container.querySelector('.el-descriptions .el-descriptions__table tbody');
+        const rows = tbody.querySelectorAll('tr');
+        
+        // 提取表格数据
+        const processData = [];
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            const rowData = {
+                seqNum: cells[0].textContent.trim(),
+                eqpName: cells[1].textContent.trim(),
+                stepList: cells[2].textContent.trim(),
+                params: cells[3].textContent.trim(),
+                description: cells[4].textContent.trim(),
+            };
+            processData.push(rowData);
+        });
+        const spanEls = document.querySelectorAll('.el-descriptions-item__content');
+        const order = spanEls[0].textContent.trim();  
+        const number = spanEls[6].textContent.trim();  
+        const selectRoute = document.querySelector('#process-select').value.trim();
 
-        // 填充内容
-        const tbody = desc.querySelector('.el-table > tbody');
-        if (!tbody) return;
-        tbody.innerHTML = ''; // 清空原内容
-
-        for (let i = 0; i < fields.length; i += 3) {
-            const labeltr = document.createElement('tr');
-            labeltr.className = 'el-descriptions-row';
-            const contentltr = document.createElement('tr');
-            labeltr.className = 'el-descriptions-row';
-            for (let j = i; j < i + 3 && j < fields.length; j++) {
-                const field = fields[j];
-                const td1 = document.createElement('td');
-                td1.colSpan = 1;
-                td1.className = 'el-descriptions-item el-descriptions-item__cell';
-                td1.innerHTML = `
-                    <div class="el-descriptions-item__container">
-                        <span class="el-descriptions-item__label">${field.label}</span>
-                    </div>
-                `;
-                const td2 = document.createElement('td');
-                td2.colSpan = 1;
-                td2.className = 'el-descriptions-item el-descriptions-item__cell';
-                td2.innerHTML = `
-                    <div class="el-descriptions-item__container">
-                        <span class="el-descriptions-item__content">${getValueByPath(data, field.key) ?? ''}</span>
-                    </div>
-                `;
-                labeltr.appendChild(td1);
-                contentltr.appendChild(td2);          
+        fetch('saveProcess/', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken
+            },
+            body: JSON.stringify({steps: processData, order: order, number: number, route: selectRoute})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message || '工艺数据已保存！');
+                // 可选：保存成功后刷新页面或关闭弹窗
+                refreshProcessRouteSelect(FNumber, data.route_id);
+            } else {
+                alert(data.message || '保存失败，请检查数据！');
             }
-            tbody.appendChild(labeltr);
-            tbody.appendChild(contentltr);
+        })
+        .catch(error => {
+            console.error('保存失败:', error);
+            alert('保存失败，请重试！');
+        });
+    }
+
+export function addSelectProcessButtonForGongyi(FNumber) {
+        const container = document.getElementById('descriptions-gongyi');
+        const div = container.querySelector('.el-descriptions .el-descriptions__extra');
+        if (!div) return;
+        div.style.display = 'flex';
+        div.style.gap = '10px';
+
+        // 创建工序选择器
+        const select = document.createElement('select');
+        select.className = 'el-select__inner';
+        select.id = 'process-select';
+
+        // 先添加默认选项
+        refreshProcessRouteSelect(FNumber, null, select);
+
+        // select变更时自动fetch并渲染
+        select.addEventListener('change', function() {
+            const routeId = select.value;
+            if (!routeId) return;
+            fetchAndRenderProcessRouteToTable(routeId, container);
+        });
+
+        // 创建确认按钮
+        const button = document.createElement('button');
+        button.className = 'el-button el-button--primary  el-button--small';
+        button.textContent = '确认选择';
+        button.addEventListener('click', () => {
+            alert(`已选择工序: ${select.value}`);
+            // 这里添加实际业务逻辑
+        });
+
+        // 组装元素
+        div.appendChild(select);
+        div.appendChild(button);
+    }
+
+    function refreshProcessRouteSelect(FNumber, routeId = null, input_select = null) {
+        const select = document.getElementById('process-select') || input_select;
+        if (!select) return;
+        const url = `/api/pmcui/process_route/process_route?FNumber=${FNumber}`;
+        fetchDataViApiUrl(url).then(routes => {
+            // 清空原有选项
+            select.innerHTML = '';
+            // 添加默认选项
+            const defaultOption = document.createElement('option');
+            defaultOption.value = "";
+            defaultOption.textContent = "请选择历史工艺线路设计";
+            select.appendChild(defaultOption);
+            // 添加新选项
+            routes.forEach(route => {
+                const option = document.createElement('option');
+                option.value = route.Id;
+                option.textContent = route.Product_id || `工艺路线${route.Id}`;
+                select.appendChild(option);
+            });
+        });
+        // 设置选中为刚保存的 routeId
+        if (routeId)
+        {
+            select.value = routeId;                
+            select.textContent = `工艺路线${routeId}`;
+            select.dispatchEvent(new Event('change'));
         }
     }
 
-export function loadAndRenderDescriptionsPart2(url) {
-        fetch(url)
+    function fetchDataViApiUrl(url) {
+        return fetch(url)
             .then(res => res.json())
             .then(data => {
-                // 根据实际API返回结构调整字段
-                const parm_fields = [
-                    { label: '材料', key: 'Stuff' },
-                    { label: '加工尺寸', key: 'Size' },
-                    { label: '毛料尺寸', key: 'Cost' },                 
-                    { label: '镀层要求', key: 'Surface' },                 
-                    { label: '备注', key: 'Description' },
-                    // ...可扩展更多字段
-                ];
-                const step_fields = [                    
-                    { label: '工序序号', key: 'Index'},
-                    { label: '设备', key: 'Group'},
-                    { label: '工序列表', key: 'Steps'},
-                    { label: '加工参数', key: 'parmeters'},
-                    { label: '备注', key: 'Description'},
-                    // ...可扩展更多字段
-                ];
-                renderDescriptionsFrame('descriptions-chanshu', '规格参数');
-                renderDescriptions( data.data.items[0], parm_fields, 'descriptions-chanshu');
-                renderDescriptionsFrame('descriptions-gongyi', '工艺线路');
-                reRenderTable('descriptions-gongyi', step_fields)
-                renderReRenderTable('工艺线路', [], step_fields, 'descriptions-gongyi');
+                if (!data.success) {
+                    console.error('API请求失败:', data.message || '未知错误');
+                    return [];
+                }
+                // 兼容后端返回结构
+                if (Array.isArray(data)) return data;
+                if (data.items) return data.items;
+                if (data.data && data.data.items) return data.data.items;
+                if (data.data && typeof data.data === 'object') return data.data;
+                return [];
+            })
+            .catch(() => []);
+    }
 
+    // 渲染工艺路线到表格
+    function fetchAndRenderProcessRouteToTable(routeId, container) {
+        const url = `/api/pmcui/process_route/process_route_steps/${routeId}`;
+        fetchDataViApiUrl(url).then(routeData => {
+            // 假设 routeData.main_steps 是步骤数组
+            const table = container.querySelector('.el-descriptions__table');
+            if (!table) return;
+            const tbody = table.querySelector('tbody');
+            if (!tbody) return;
+            tbody.innerHTML = ''; // 清空原有内容
+
+            if (!routeData.main_steps || !Array.isArray(routeData.main_steps) || routeData.main_steps.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="5" style="color:#888;">该工艺路线无步骤</td>`;
+                tbody.appendChild(tr);
+                return;
+            }
+
+            routeData.main_steps.forEach((step, idx) => {
+                // 处理 Steps 多行
+                const steps = Array.isArray(step.Steps) ? step.Steps : [];
+                // 拼接所有 step.Name
+                const stepNames = steps.map(s => s.step && s.step.Name ? s.step.Name : '').join('; <br>');
+                // 拼接所有 step.Name: parameters
+                const stepParams = steps.map(s => {
+                    const name = s.step && s.step.Name ? s.step.Name : '';
+                    const param = s.parameters != "" ? s.parameters : 'null';
+                    return `${name}${param !== '' ? ':' + param : ''}`;
+                }).join('; <br>');
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${step.SeqNum || ''}</td>
+                    <td>${steps[0] && steps[0].step && steps[0].step.EqpType && steps[0].step.EqpType.Name ? steps[0].step.EqpType.Name : ''}</td>
+                    <td>${stepNames}</td>
+                    <td>${stepParams}</td>
+                    <td>${step.Description || ''}</td>
+                `;
+                tbody.appendChild(tr);
             });
-}
+        })
+    }
+
     // 加载工序组数据
 export function loadStepsByGroup(containerID, url) {
     if(!containerID || !document.getElementById(containerID)) {
@@ -597,7 +643,6 @@ export function loadStepsByGroup(containerID, url) {
             div.dataset.id = step.Id;
             div.onclick = function() {
                 addSelectedStep(step);
-                renderParamTable(step);
             };
             container.appendChild(div);
         });
@@ -609,45 +654,33 @@ export function loadStepsByGroup(containerID, url) {
         const div = document.createElement('div');
         div.className = 'step-item';
         div.textContent = step.Name;
-        div.dataset.id = step.Id;
+        // 生成唯一标识
+        const uuid = Date.now().toString() + Math.random().toString(36).slice(2);
+        div.dataset.uuid = uuid;
+        div.dataset.stepId = step.Id; // 如需追踪原始step.Id
         div.onclick = function() {
-            removeSelectedStep(step);
-            removeParamTable(step);
+            container.removeChild(div); // 直接移除当前点击的div
+            removeParamTable(uuid);     // 用uuid移除参数表
         };
         container.appendChild(div);
+        renderParamTable(step, uuid);   // 传uuid给参数表
     }
-    // 移除已选工序
-    function removeSelectedStep(step) {
-        const container = document.getElementById('selected-steps');
-        // 查找所有step-item元素
-        const items = container.querySelectorAll('.step-item');
-        // 遍历查找匹配data-id的元素
-        items.forEach(item => {
-            if (item.dataset.id === step.Id) {
-                container.removeChild(item);
-            }
-        });
-    }
-        // 渲染参数表格
-    function renderParamTable(step) {
+
+    // 渲染参数表格
+    function renderParamTable(step, uuid) {
         const table = document.querySelector('#param-table tbody');
         const newRow = table.insertRow();
-        newRow.dataset.stepId = step.Id;
+        newRow.dataset.uuid = uuid;
         newRow.insertCell(0).textContent = step.Name;
-        newRow.insertCell(1).innerHTML = '<input type="text" class="el-input__inner" data-step="${step.Id}">';
+        newRow.insertCell(1).innerHTML = `<input type="text" class="el-input__inner" data-step="${step.Id}">`;
     }
 
-    function removeParamTable(step) {
+    // 移除参数表格
+    function removeParamTable(uuid) {
         const tbody = document.querySelector('#param-table tbody');
         if (!tbody) return;
-
-        const rows = tbody.querySelectorAll('tr');
-        rows.forEach(row => {
-            if (row.dataset.stepId === step.Id) {
-            tbody.removeChild(row);
-            }
-        });
-        
+        const row = tbody.querySelector(`tr[data-uuid="${uuid}"]`);
+        if (row) tbody.removeChild(row);
     }
     
 export function LoadDateFromStepDesign()

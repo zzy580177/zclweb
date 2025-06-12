@@ -201,7 +201,8 @@ class Step(models.Model):
         
 class ProcessStep(models.Model):
     """"工序配方表"""
-    PFId = models.SmallIntegerField("工艺配方编号", primary_key=True)
+    PFId = models.AutoField("工艺配方编号", primary_key=True)
+    
     Steps = models.ManyToManyField(
         'Step', 
         blank=True,
@@ -239,6 +240,8 @@ class ProcessStep(models.Model):
 class ProcessStepSteps(models.Model):
     processstep = models.ForeignKey('ProcessStep', on_delete=models.CASCADE)
     step = models.ForeignKey('Step', on_delete=models.CASCADE)
+    parameters = models.TextField('参数', null=True, blank=True)  # 新增字段
+
     
     class Meta:
         db_table = 'ProcessStepSteps'  # Explicit table name without underscore prefix
@@ -246,10 +249,9 @@ class ProcessStepSteps(models.Model):
 
 class ProcessRoute(models.Model):
     """"工艺流程管理表"""
-    Id = models.SmallIntegerField("工艺流程编号", primary_key=True);
+    Id = models.AutoField("工艺流程编号", primary_key=True);
     Product_id = models.CharField("款号", max_length =50); 
-    Material = models.ForeignKey(Material, on_delete=models.SET_NULL,
-        null=True, blank=True, verbose_name="物料编号");
+    Material = models.ForeignKey(Material, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="物料编号");
     ApprovalStatus = models.CharField ('状态', max_length =40);    
     Version = models.SmallIntegerField ('版本', null = True, blank= True);
     StartDay = models.DateField ('创建日期', null = True, blank= True);
@@ -257,7 +259,7 @@ class ProcessRoute(models.Model):
     IsCNC = models.BooleanField('是否CNC工艺流程', default=False);
     Description = models.TextField('备注索引',null=True, blank=True)
     def __str__(self):
-        return self.Product_id + "工艺流程 V" + self.Version
+        return self.Material + "工艺流程 V" + self.Version
     class Meta:
         abstract = True
 

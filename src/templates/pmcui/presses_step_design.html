@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工序设计浮窗</title>
+
+  <style>
+    .process-design-dialog {
+      width: 850px;
+    }
+    .transfer-container {
+      position: relative;
+      padding-right: 80px;
+      margin: 15px 0;
+    }
+    .sort-buttons {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    .sortable-ghost {
+      opacity: 0.5;
+      background: #c8ebfb;
+    }
+    .param-table {
+      margin: 15px 0;
+    }
+    .draggable-item {
+      cursor: move;
+      padding: 8px 10px;
+    }
+    .footer-buttons {
+      margin-top: 20px;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- 激活按钮 -->
+    <el-button type="primary" @click="openDialog">添加工序</el-button>
+    
+    <!-- 工序设计浮窗 -->
+    <el-dialog
+      title="工序设计"
+      :visible.sync="dialogVisible"
+      class="process-design-dialog"
+      :close-on-click-modal="false"
+      :before-close="handleClose">
+      
+      <!-- 1.工序组选择 -->
+      <div class="step-group">
+        <el-select v-model="selectedGroup" placeholder="请选择工序组" @change="loadSteps">
+          <el-option
+            v-for="group in stepGroups"
+            :key="group.value"
+            :label="group.label"
+            :value="group.value">
+          </el-option>
+        </el-select>
+      </div>
+
+      <!-- 2.带排序功能的工序选择 -->
+      <div class="transfer-container">
+        <el-transfer
+          v-model="selectedSteps"
+          :data="allSteps"
+          :titles="['可选工序', '已选工序']"
+          :render-content="renderFunc"
+          target-order="unshift"
+          @change="handleStepChange">
+        </el-transfer>
+        <div class="sort-buttons">
+          <el-button-group>
+            <el-button @click="moveStep('up')" :disabled="!currentStep || selectedSteps.indexOf(currentStep) <= 0">
+              <i class="el-icon-top"></i> 上移
+            </el-button>
+            <el-button @click="moveStep('down')" :disabled="!currentStep || selectedSteps.indexOf(currentStep) >= selectedSteps.length - 1">
+              <i class="el-icon-bottom"></i> 下移
+            </el-button>
+          </el-button-group>
+        </div>
+      </div>
+
+      <!-- 3.工艺参数设置 -->
+      <div class="parameter-setting">
+        <el-table :data="stepParams" class="param-table" border>
+          <el-table-column prop="name" label="工序名称" width="150"></el-table-column>
+          <el-table-column label="参数设置">
+            <template slot-scope="scope">
+              <el-input v-model="scope.row.params" placeholder="输入工艺参数"></el-input>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="80">
+            <template slot-scope="scope">
+              <el-button type="danger" icon="el-icon-delete" circle @click="removeStep(scope.$index)"></el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- 4.备注输入 -->
+      <div class="remark-input">
+        <el-input
+          type="textarea"
+          :rows="2"
+          placeholder="请输入工序备注信息"
+          v-model="remark">
+        </el-input>
+      </div>
+
+      <!-- 5.确认按钮 -->
+      <div class="footer-buttons">
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveProcess">确认设计</el-button>
+      </div>
+    </el-dialog>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+  <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+  <script>
+    new Vue({
+      el: '#app',
+      data() {
+        return {
+          dialogVisible: false,
+          stepGroups: [
+            { value: 'group1', label: '机加工组' },
+            { value: 'group2', label: '热处理组' },
+            { value: 'group3', label: '表面处理组' }
+          ],
+          selectedGroup: '',
+          allSteps: [],
+          selectedSteps: [], // 已选工序的key数组
+          stepParams: [],    // 参数配置数据
+          remark: '',
+          currentStep: null, // 当前选中的工序
+          sortable: null     // Sortable实例
+        }
+      },
+      methods: {
+        // 打开浮窗
+        openDialog() {
+          this.dialogVisible = true;
+          // 模拟加载初始数据
+          this.loadSteps();
+        },
+        
+        // 加载工序列表（模拟）
+        loadSteps() {
+          // 根据选择的工序组加载相应工序
+          this.allSteps = [
+            { key: 'step1', label: '车削' },
+            { key: 'step2', label: '铣削' },
+            { key: 'step3', label: '磨削' },
+            { key: 'step4', label: '淬火' },
+            { key: 'step5', label: '回火' },
+            { key: 'step6', label: '抛光' },
+            { key: 'step7', label: '电镀' }
+          ];
+          this.selectedSteps = ['step1', 'step3']; // 默认选中项
+          this.handleStepChange();
+        },
+        
+        // 自定义穿梭框项渲染（添加拖拽样式）
+        renderFunc(h, option) {
+          return h('span', {
+            class: 'draggable-item',
+            on: {
+              click: () => this.selectStep(option.key)
+            }
+          }, option.label);
+        },
+        
+        // 选择工序（高亮当前项）
+        selectStep(stepKey) {
+          this.currentStep = stepKey;
+        },
+        
+        // 工序选择变化时更新参数表格
+        handleStepChange() {
+          this.stepParams = this.selectedSteps.map(key => {
+            const step = this.allSteps.find(s => s.key === key);
+            // 保留已有参数配置
+            const existing = this.stepParams.find(p => p.key === key);
+            return {
+              key: key,
+              name: step.label,
+              params: existing ? existing.params : ''
+            };
+          });
+          
+          // 初始化Sortable（确保DOM已更新）
+          this.$nextTick(() => this.initSortable());
+        },
+        
+        // 初始化拖拽排序
+        initSortable() {
+          const listEl = document.querySelector('.el-transfer-panel__list.is-filterable');
+          if (this.sortable) this.sortable.destroy();
+          
+          if (listEl) {
+            this.sortable = Sortable.create(listEl, {
+              animation: 150,
+              ghostClass: 'sortable-ghost',
+              onEnd: (evt) => {
+                // 手动更新数据顺序
+                const newOrder = Array.from(listEl.children)
+                  .map(el => el.getAttribute('data-key'))
+                  .filter(key => this.selectedSteps.includes(key));
+                
+                // 更新选中工序顺序
+                this.selectedSteps = newOrder;
+                this.handleStepChange();
+              }
+            });
+          }
+        },
+        
+        // 按钮移动工序
+        moveStep(direction) {
+          if (!this.currentStep) return;
+          
+          const index = this.selectedSteps.indexOf(this.currentStep);
+          if (index === -1) return;
+          
+          let newIndex;
+          if (direction === 'up' && index > 0) {
+            newIndex = index - 1;
+          } else if (direction === 'down' && index < this.selectedSteps.length - 1) {
+            newIndex = index + 1;
+          } else {
+            return;
+          }
+          
+          // 执行数组元素位置交换
+          const steps = [...this.selectedSteps];
+          [steps[index], steps[newIndex]] = [steps[newIndex], steps[index]];
+          this.selectedSteps = steps;
+          this.handleStepChange();
+        },
+        
+        // 删除工序
+        removeStep(index) {
+          const stepKey = this.stepParams[index].key;
+          this.selectedSteps = this.selectedSteps.filter(key => key !== stepKey);
+          this.stepParams.splice(index, 1);
+          
+          if (this.currentStep === stepKey) {
+            this.currentStep = null;
+          }
+        },
+        
+        // 保存工序设计
+        saveProcess() {
+          const designData = {
+            group: this.selectedGroup,
+            steps: this.stepParams.map((item, index) => ({
+              id: item.key,
+              name: item.name,
+              params: item.params,
+              order: index + 1 // 记录工序顺序
+            })),
+            remark: this.remark
+          };
+          console.log('工序设计数据:', designData);
+          this.dialogVisible = false;
+          alert('工序设计已保存！');
+        },
+        
+        // 关闭前确认
+        handleClose(done) {
+          this.$confirm('确定关闭？未保存的数据将丢失', '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消'
+          }).then(() => {
+            done();
+          }).catch(() => {});
+        }
+      },
+      mounted() {
+        // 初始化工序数据
+        this.loadSteps();
+      }
+    });
+  </script>
+</body>
+</html>
