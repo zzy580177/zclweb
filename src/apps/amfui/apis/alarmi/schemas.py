@@ -7,10 +7,10 @@ class AlarmiIn(ModelSchema):
 
     class Meta:
         model = Alarmi
-        fields = ['AlarmString', 'TypeID', 'Description_Id', ]
+        fields = ['Name', 'AlarmID', 'AlarmString', 'TypeID', 'Description_Id', ]
 
 
 class AlarmiOut(ModelSchema):
     class Meta:
         model = Alarmi
-        fields = ['AlarmString', 'TypeID', 'Description_Id', ]
+        fields = ['id', 'Name', 'AlarmID', 'AlarmString', 'TypeID', 'Description_Id', ]

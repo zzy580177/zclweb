@@ -5,9 +5,10 @@ from ninja import Router
 from ninja.pagination import paginate
 
 from django_starter.http.response import responses
-from django.db.models import Sum, Q, Count, CharField, F, Max
+
 from apps.amfui.models import *
 from apps.amfui.apis.stato.schemas import *
+from django.db.models import ExpressionWrapper, F, DateTimeField, DurationField
 
 router = Router(tags=['stato'])
 
@@ -54,3 +55,8 @@ def destroy(request, item_id):
     item = get_object_or_404(Stato, id=item_id)
     item.delete()
     return responses.ok('已删除')
+
+@router.get('/abnormal', response=List[StatoOut], url_name='amfui/stato/abnormal')
+@paginate
+def list_items(request):
+    return Stato.objects.all()

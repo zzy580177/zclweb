@@ -8,6 +8,9 @@ from django_starter.http.response import responses
 
 from apps.amfui.models import *
 from apps.amfui.apis.live_state.schemas import *
+from django.db.models.functions import TruncDate, Now
+from django.db.models import Sum,F, Value, CharField, Max, BooleanField, ExpressionWrapper
+from django.db.models.functions import Concat
 
 router = Router(tags=['live_state'])
 
@@ -54,3 +57,30 @@ def destroy(request, item_id):
     item = get_object_or_404(LiveState, id=item_id)
     item.delete()
     return responses.ok('已删除')
+
+@router.get('/dailylist', response=List[DailyLiveStateOut], url_name='amfui/live_state/dailylist')
+@paginate
+def list_items(request):
+    qs = LiveState.objects.select_related('Cell') \
+        .exclude(Cell__Name="ZCL数采平台") \
+        .annotate(
+            date_only=TruncDate('Check1'),
+            cell_str=Concat(F('Cell__Name'), Value(' '), F('Cell__CellID'),
+                output_field=CharField())
+        ) \
+        .values('Cell', 'date_only', 'cell_str') \
+        .annotate(online_sec=Sum('OnLine'))
+    
+    return list(qs)
+
+@router.get('/amflive', response=List[AMFStateOut], url_name='amfui/live_state/amflive')
+@paginate
+def amflive(request):
+    currTm = datetime.now()
+    qs = LiveState.objects.select_related('Cell').filter(Cell__Name="ZCL数采平台").annotate(
+            cell_str=Concat(F('Cell__Name'), Value(' '), F('Cell__CellID'),output_field=CharField())
+        ).values('cell_str').distinct().annotate(
+            max_check1=Max('Check1')).order_by('Cell__CellID')
+    for item in qs:
+        item['isOffLine'] = (currTm - item['max_check1']).total_seconds() > 60 * 5
+    return qs

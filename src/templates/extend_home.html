@@ -73,10 +73,9 @@
                     <div class="card-header">快捷操作</div>
                     <div class="card-body">
                         <a href="/amf/amfui/record/" class="btn btn-block btn-outline-primary" role="button">订单记录查询</a>
-                        <a href="/amf/amfui/recordmanage/" class="btn btn-block btn-outline-success" role="button">工单记录查看</a>
+                        <a href="/amf/amfui/worksheet/" class="btn btn-block btn-outline-success" role="button">工单记录查看</a>
                         <a href="/amf/amfui/cell/" class="btn btn-block btn-outline-danger" role="button">设备管理</a>
-                        <a href="/amf/amfui/livestate/" class="btn btn-block btn-outline-secondary" role="button">设备在线产看</a>
-                        <a href="#" class="btn btn-block btn-outline-warning" role="button">故障码查阅表</a>
+                        <a href="/amf/amfui/stato/" class="btn btn-block btn-outline-secondary" role="button">设备异常记录</a>
                     </div>
                 </div>
             </div>
@@ -137,7 +136,7 @@
 
     async function fetchApiData() {
         try {
-            const response = await fetch('/api/amfui/live_state_manage/live_state_manage/cell_typeList');
+            const response = await fetch('/api/amfui/cell/cncs');
             const result = await response.json();
             initChart(result.data);
           } catch (error) {
@@ -163,14 +162,14 @@
         let values = []
         let backgroundColors = []
         let borderColors = []
-
-        exampleData.cells.forEach(item => {                               
-            labels.push(item.label)
-            values.push(item.value)
-            let color = randomColorArray(item.label)
+        for (const key in exampleData.cells)
+        {
+            labels.push(key)
+            values.push(exampleData.cells[key])
+            let color = randomColorArray(key)
             backgroundColors.push(convertRGBA(color, 0.9))
             borderColors.push(convertRGBA(color, 1))
-        })
+        }
         let data = {
             labels: labels,
             datasets: [{
@@ -195,11 +194,10 @@
         }
         msgsElem.innerHTML = '';
         addAmsgHref('最新异常记录', msgsElem);
-        exampleData.msgs.forEach(item => {
-            if (item.Alarmi__AlarmString !== null && item.Stato>0) {
-                addAmsgHref( item.combined_string + ' ' + item.Cell__Name + '-' + item.Cell__CellID + ' ' + item.Alarmi__AlarmString, msgsElem);
-            }        
-        })
+        
+        for (const key in exampleData.msgs) {
+            addAmsgHref(`${exampleData.msgs[key]}`, msgsElem);
+        }
         let currentChart = new Chart(chartElem, config)
         currentChart.resize(null, 500)
     }

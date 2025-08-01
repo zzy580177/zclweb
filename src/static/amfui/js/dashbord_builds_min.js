@@ -15,7 +15,7 @@ maxLen = 0
 function fetchDashboardData(offset) {
     buildAboutEduList()
     try {
-      fetch(`/api/amfui/live_state_manage/live_state_manage_join?offset=${offset}&itemsPerPage=0`).then(response => response.json()).then(data => {
+      fetch(`/api/amfui/record/daily?offset=${offset}&itemsPerPage=0`).then(response => response.json()).then(data => {
         generateDashboard(data.data, 'dashboard-content');
       });
     } catch (error) {
@@ -105,42 +105,46 @@ function addBtnActionForTuch() {
 
 function perpareCellInfo(cellQ) {
     rate=0
-    if(cellQ.WorkSheet__FinishParts > 0)
+    if(cellQ.worksheet_finish > 0)
     {
-        rate = cellQ.WorkSheet__FinishParts*100/cellQ.TotReq
+        rate = cellQ.worksheet_finish*100/cellQ.worksheet_req
     }
+    estimated = cellQ.worksheet_estimated;
+    if(cellQ.worksheet_estimated == 0 && rate < 100)
+        estimated = "?"
     var result = {
-        "name": cellQ.Cell__Name,
-        "id": cellQ.Cell__CellID,
-        "index": cellQ.Cell__CellID + "-" + cellQ.Cell__Name,
-        "plant": cellQ.Cell__Plant,
-        "alarm": cellQ.Alarmi__AlarmString,
-        "status": cellQ.CellStatus,
-        "daily_online": cellQ.tot_online,
-        "daily_adjust": cellQ.tot_adjustTM,
-        "daily_poweron": cellQ.tot_poweron,
-        "daily_idle": cellQ.tot_idleTM,
-        "daily_work": cellQ.tot_workTM,
-        "daily_finish": cellQ.tot_parts,
-        "order_id": cellQ.WorkSheet__Order_id,
-        "product_id": cellQ.WorkSheet__Order__Product_id, 
-        "ws_id": cellQ.WorkSheet_id,
-        "ws_req": cellQ.TotReq,        
-        "ws_remain": cellQ.TotReq - cellQ.WorkSheet__FinishParts,
-        "ws_finish": cellQ.WorkSheet__FinishParts,
-        "ws_status": cellQ.WorkSheet__Status,
-        "ws_estimate": cellQ.EstimatedSec,
+        "name": cellQ.cell_name,
+        "id": cellQ.cell_id,
+        "index": cellQ.cell_id + "-" + cellQ.cell_name,
+        "plant": cellQ.cell_plant,
+        "alarm": cellQ.cell_alarm,
+        "status": cellQ.cell_status,
+        "daily_online": cellQ.daily_online,
+        "daily_adjust": cellQ.daily_adjust,
+        "daily_poweron": cellQ.daily_poweron,
+        "daily_idle": cellQ.daily_idle,
+        "daily_work": cellQ.daily_job,
+        "daily_finish": cellQ.daily_finish,
+        "order_id": cellQ.worksheet_orderId,
+        "process": cellQ.worksheet_process,
+        "product_id": cellQ.worksheet_productId, 
+        "ws_id": cellQ.worksheet_id,
+        "ws_req": cellQ.worksheet_req,        
+        "ws_remain": cellQ.worksheet_req - cellQ.worksheet_finish,
+        "ws_finish": cellQ.worksheet_finish,
+        "ws_status": cellQ.worksheet_status,
+        "ws_estimate": estimated,
         "ws_finish_rate": rate,
-        "ws_pcsTime": cellQ.AvaPieceTime,
-        "DailyTm": cellQ.DailyTm
+        "ws_pcsTime": cellQ.worksheet_pieceTm,
+        "DailyTm": cellQ.daily_tm
     };
-    if (cellQ.Alarmi__AlarmString == null || cellQ.Alarmi__AlarmString =='')
+    if (cellQ.cell_alarm == null || cellQ.cell_alarm =='')
     {   result.alarm = '无异常';     }
-    if (cellQ.CellStatus == '作业中')
+    if (cellQ.cell_status == '作业中')
     {   result.status_clore = "sra2"; }
-    else if (cellQ.CellStatus == '待机')
+    else if (cellQ.cell_status == '待机')
     {   result.status_clore = "sra1"; }
-    else if (cellQ.CellStatus == '离线')
+    else if (cellQ.cell_status == '离线')
     {   result.status_clore = "sra4"; }
     else{   result.status_clore = "sra3";   }
     return result;
@@ -215,8 +219,8 @@ function createPezzReport(cellQ, type)
     infoContainer.className = 'dingdanshu flex-row justify-between flex-3 pt-5';
     if(type == 'plan')
     {
-        infoContainer.appendChild(createInfoElement('产品款号', cellQ.product_id));
         infoContainer.appendChild(createInfoElement('订单号', cellQ.order_id));
+        infoContainer.appendChild(createInfoElement('工序', cellQ.process));
     }else{
         infoContainer.appendChild(createInfoElement('总数量', cellQ.ws_req));
         infoContainer.appendChild(createInfoElement('已生产', cellQ.ws_finish));

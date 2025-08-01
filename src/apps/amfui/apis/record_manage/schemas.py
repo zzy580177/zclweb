@@ -1,6 +1,7 @@
 from ninja import ModelSchema
 from apps.amfui.models import *
-
+from typing import List, Optional
+from apps.amfui.apis.work_sheet.schemas import WorkSheetOut
 
 class RecordManageIn(ModelSchema):
     
@@ -15,6 +16,7 @@ class RecordManageIn(ModelSchema):
 
 
 class RecordManageOut(ModelSchema):
+    WorkSheet: Optional[WorkSheetOut]
     class Meta:
         model = RecordManage
-        fields = ['id', 'Cell', 'WorkSheet', 'StartTime', 'StopTime', 'Status', 'Mode', 'FinishParts', 'IdleTMSec', 'PowerOnSec', 'WorkingSec', 'EstimatedSec', ]
+        fields = ['id',  'WorkSheet', 'StartTime', 'StopTime', 'Status', 'Mode', 'FinishParts', 'IdleTMSec', 'PowerOnSec', 'WorkingSec', 'EstimatedSec', ]

@@ -1,0 +1,48 @@
+{% extends "admin/change_list.html" %}
+{% block result_list %}
+    <table>
+        <thead>
+            <tr>
+                <th>日期</th>
+                <th>设备名称</th>
+                <th>开机时长</th>
+                <th>在线时长</th>
+                <th>作业时长</th>
+                <th>调机时长</th>
+                <th>闲置时长</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in api_data %}
+            <tr>
+                <td>{{ item.date_only }}</td>
+                <td>{{ item.cell_str }}</td>
+                <td>{{ item.poweron_sum }}</td>
+                <td>{{ item.online_sum }}</td>
+                <td>{{ item.working_sum }}</td>
+                <td>{{ item.adjust_sum }}</td>
+                <td>{{ item.idle_sum }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
+{% block pagination %}
+<div class="pagination">
+    <span class="step-links">
+        {% if page_obj.has_previous %}
+            <a href="?p=1">&laquo; 首页</a>
+            <a href="?p={{ page_obj.previous_page_number }}">上一页</a>
+        {% endif %}
+
+        <span class="current">
+            第 {{ page_obj.number }} / {{ paginator.num_pages }} 页
+        </span>
+
+        {% if page_obj.has_next %}
+            <a href="?p={{ page_obj.next_page_number }}">下一页</a>
+            <a href="?p={{ paginator.num_pages }}">末页 &raquo;</a>
+        {% endif %}
+    </span>
+</div>
+{% endblock %}

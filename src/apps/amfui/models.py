@@ -112,7 +112,7 @@ class Stato(models.Model):
 	"""工作状态切换日志"""
 	Cell = models.ForeignKey('Cell', on_delete=models.CASCADE, null=True,blank=True)
 	WorkSheet = models.ForeignKey('WorkSheet', on_delete=models.CASCADE, null=True,blank=True)
-	DataTime = models.DateTimeField("时间"); 
+	DataTime = models.DateTimeField("开始时间"); 
 	stato_choics =((0, "作业中"),(1, "待机"),(2, "故障"),(3, "离线"))
 	Stato = models.IntegerField("状态切换", choices= stato_choics);
 	Alarmi = models.ForeignKey('Alarmi', on_delete=models.CASCADE, null=True,blank=True);
@@ -122,7 +122,7 @@ class Stato(models.Model):
 	class Meta:
 		db_table = f"[{schema}].[Stato]"
 		app_label = app_name
-		verbose_name = '设备状态切换表'
+		verbose_name = '设备异常记录'
 		verbose_name_plural = verbose_name
 	def Cell__Plant(self):
 		return self.Cell.Plant
@@ -166,7 +166,7 @@ class Cell(models.Model):
 	OnLineStr.short_description = '在线时长'
 	WorkTMStr.short_description = '作业时长'
 	def __str__(self):
-		return self.Name + str(self.CellID) 
+		return self.Name + " " + str(self.CellID) 
 	class Meta:
 		db_table = f"[{schema}].[Cell]"
 		app_label = app_name
@@ -174,12 +174,12 @@ class Cell(models.Model):
 		verbose_name_plural = verbose_name
 	def combined_str(self):
 		return ''.join([str(self.CellID), " ", self.Name])
+	
 
 class Record(models.Model):
-	Cell = models.ForeignKey('Cell', on_delete=models.CASCADE, null=True,blank=True)
-	WorkSheet = models.ForeignKey('WorkSheet', on_delete=models.CASCADE, null=True,blank=True)
-	StartTime = models.DateTimeField("开始时间"); 
-	StopTime = models.DateTimeField("结束时间",null=True, max_length =20);
+	WorkSheet = models.ForeignKey('WorkSheet', on_delete=models.CASCADE, null=True,blank=True, related_name='record_set')
+	StartTime = models.DateTimeField("开始时间", null=True, blank=True);
+	StopTime = models.DateTimeField("结束时间",null=True, blank=True);
 	Status = models.CharField(null=True, max_length =20); 
 	Mode = models.CharField("工作模式",null=True, max_length =20); 
 	FinishParts = models.IntegerField("完成工件数",null=True, blank=True);
@@ -189,7 +189,7 @@ class Record(models.Model):
 	EstimatedSec = models.FloatField(null=True, blank=True);
 
 	def __str__(self):
-		return "Record:" + self.StartTime__date + "-" + self.WorkSheet_id
+		return f"Record:{self.StartTime}-{self.WorkSheet_id}"
 	class Meta:
 		db_table = f"[{schema}].[Record]"
 		app_label = app_name
@@ -211,7 +211,7 @@ class WorkSheet(models.Model):
 	Id = models.CharField("工单号", max_length =50, primary_key=True );	
 	Cell = models.ForeignKey('Cell', on_delete=models.CASCADE, null=True,blank=True)
 	Order = models.ForeignKey('Order', on_delete=models.CASCADE, null=True,blank=True, verbose_name = '订单号', to_field='OrderId')
-	Product_id = models.CharField("款号", max_length =50); 
+	Product_id = models.CharField("款号", max_length =50, null=True, blank=True);
 	Status = models.CharField("工单状态",null=True, max_length =20, editable=False); 
 	ProcessID = models.CharField("工序备注",null=True, max_length =50); 
 	FinishParts = models.IntegerField("完成工件数",null=True, blank=True, editable=False); 
