@@ -77,6 +77,7 @@ def aggregated_records(request):
 			adjust_sum=Coalesce(
 				Sum('WorkingSec', filter=Q(Mode='调机模式')),
 				0, output_field=IntegerField()),
+            
 			estimated_sum=Coalesce(Sum('EstimatedSec'), 0, output_field=IntegerField()),
 			online_sum=Coalesce(Subquery(LiveState.objects.filter(Check1__date=OuterRef('date_only'), Cell=OuterRef('cell_id')
 				).annotate(sum_online=Sum('OnLine')).values('sum_online')[:1], output_field=IntegerField()
@@ -160,7 +161,10 @@ def daily_records(request, offset=0, itemsPerPage=3):
     for item in qs:
         for key in ['worksheet_pieceTm', 'worksheet_estimated', 'daily_idle', 'daily_poweron', 'daily_job', 'daily_adjust', 'daily_online']:
             if item[key] is not None:
-                item[key] = format_seconds(item[key])
+                if key in ['worksheet_pieceTm', 'worksheet_estimated']:
+                    item[key] = format_seconds(item[key]/100)
+                else:
+                    item[key] = format_seconds(item[key])
     result = list(qs)
     result[:] = result[offset:] + result[:offset]
     if itemsPerPage == 0:

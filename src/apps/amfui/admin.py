@@ -39,7 +39,7 @@ def format_api_data(item):
         "poweron_sum": format_seconds(item["poweron_sum"]),
         "working_sum": format_seconds(item["working_sum"]),
         "adjust_sum": format_seconds(item["adjust_sum"]),
-        "estimated_sum": format_seconds(item["estimated_sum"]),
+        "estimated_sum": format_seconds(item["estimated_sum"]/100),
         "online_sum": format_seconds(item["online_sum"])
     }
 
@@ -91,8 +91,8 @@ class StatoAdmin(admin.ModelAdmin):
     list_display = ['name_id','date','start_time','stop_time','alarm_id','alarmi_str',]
 
     def name_id(self, obj):
-        return f"{obj.Cell__Name} {obj.Cell__CellID}"
-    name_id.short_description = '设备名称 ID'
+        return f"{obj.Cell}"
+    name_id.short_description = '设备 ID'
 
     def date(self, obj):
         return obj.DataTime.date() if obj.DataTime else None
@@ -240,6 +240,6 @@ class WorkSheetAdmin(admin.ModelAdmin):
     working_sum.admin_order_field = 'total_work'
 
     def estimated_sum(self, obj):
-        return format_seconds(getattr(obj, 'total_estimate', 0))
+        return format_seconds(getattr(obj, 'total_estimate', 0)/100)
     estimated_sum.short_description = '预估时间'
     estimated_sum.admin_order_field = 'total_estimate'

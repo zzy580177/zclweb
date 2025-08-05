@@ -98,7 +98,10 @@ export function enableTablePaste(table, columncnt = 0) {
         const tableBody = table.querySelector("tbody");
 
         rows.forEach((row, rowIndex) => {
-            const cells = row.split("\t"); // 使用制表符分隔列
+            const pattern = /"([^\t]+)\t"/g; 
+            const cleanedRow = row.replace(pattern, "$1"); // 移除引号但保留制表符
+            const cells = cleanedRow.split("\t");  // Split the cleaned row
+            
             let tableRow = tableBody.children[rowIndex];
 
             // 如果当前行不存在，则创建新行

@@ -68,7 +68,7 @@ class AttributeAdmin(admin.ModelAdmin):
 
     def changelist_view(self, request, extra_context=None):
         # 定义 Description 的选项
-        description_options = ["单位", "获取方式", "工序分类"]
+        description_options = ["单位", "获取方式", "工序分类", "生产状态"]
 
         # 传递到模板的上下文
         extra_context = extra_context or {}
@@ -219,7 +219,7 @@ class MaterialGroupAdmin(admin.ModelAdmin):
 
 @admin.register(Material)
 class MaterialAdmin(admin.ModelAdmin):
-    list_display = ['FId','FName','FGroup','FNumber','FHelpCode', 'FModel', 'FUnit', 'FSource','FDescription']
+    list_display = ['FId','FName','FGroup','FNumber','FHelpCode', 'FModel','FParent', 'FUnit', 'FSource','FDescription']
     list_filter = ['FGroup__FClass', GroupFilter, SubGroupFilter]
     actions = [delete_selected]  # 添加自定义动作
     class Media:
@@ -228,20 +228,20 @@ class MaterialAdmin(admin.ModelAdmin):
     change_list_template = "bmui/material_change_list.html"
 
 
-    tableHead = ['物料序号','物料名称','物料组','物料编号','助记码', '型号', '单位', '来源','备注']
+    tableHead = ['物料序号','物料名称','物料组','物料编号','助记码', '型号','中间件', '单位', '来源','备注']
     tabletype = [
             {'type':'number','name':'FId[]','required': 'required'},{'type':'text','name':'FName[]','required': 'required'},
             {'type':'select','name':'FGroup[]','required': 'required'},     
             {'type':'text','name':'FNumber[]','required': 'required'},
             {'type':'text','name':'FHelpCode[]','required': ''}, {'type':'text','name':'FModel[]','required': ''}, 
-            {'type':'select', 'name':'FUnit[]', 'required': 'required'},           
+            {'type':'text','name':'FParent[]','required': ''}, {'type':'select', 'name':'FUnit[]', 'required': 'required'},           
             {'type':'text','name':'FSource[]','required': ''}, {'type':'text','name':'FDescription[]','required': ''}]
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         extra_context['tableHead'] = self.tableHead        
         extra_context['tabletype'] = self.tabletype
         extra_context['tabletype'][2]['options'] = list(MaterialGroup.objects.values(Id=F('FId'), Name=F('FName')))
-        extra_context['tabletype'][6]['options'] = list(Attribute.objects.filter(Description='单位').values('Id', 'Name'))
+        extra_context['tabletype'][7]['options'] = list(Attribute.objects.filter(Description='单位').values('Id', 'Name'))
         if request.method == "POST":
             return super().changelist_view(request, extra_context=extra_context)
         elif request.method == "GET":
@@ -269,12 +269,12 @@ class MaterialAdmin(admin.ModelAdmin):
                     self.message_user(request, "提交的数据不完整，请检查后重试！", level="error")
                     return self.changelist_view(request)
 
-                for FId, FName, FGroup, FNumber, FHelpCode,  FModel, FUnit, FSource, FDescription in zip(
+                for FId, FName, FGroup, FNumber, FHelpCode,  FModel, FParent, FUnit, FSource, FDescription in zip(
                     result['FId[]'], result['FName[]'], result['FGroup[]'], result['FNumber[]'], result['FHelpCode[]'],
-                    result['FModel[]'], result['FUnit[]'], result['FSource[]'], result['FDescription[]']):
+                    result['FModel[]'],result['FParent[]'], result['FUnit[]'], result['FSource[]'], result['FDescription[]']):
                     if FId.strip():
                         Material.objects.update_or_create(FId=FId, FNumber=FNumber, defaults={
-                            'FName': FName,'FHelpCode': FHelpCode,'FModel': FModel, 'FUnit_id': FUnit,
+                            'FName': FName,'FHelpCode': FHelpCode,'FModel': FModel,'FParent_id':FParent, 'FUnit_id': FUnit,
                             'FSource': FSource, 'FDescription': FDescription, 'FGroup_id': FGroup})
                 # 显示成功消息
                 self.message_user(request, "Attribute 填报成功！", level="success")
@@ -300,7 +300,7 @@ class MaterialAdmin(admin.ModelAdmin):
                 with transaction.atomic():
                     # 提取所有需要的 FGroup 和 FUnit 名称
                     FGroupIds = set(row[2] for row in materials)
-                    FUnits = set(row[6] for row in materials)
+                    FUnits = set(row[7] for row in materials)
 
                     # 批量获取所有相关的 MaterialGroup 和 Attribute
                     group_objs = MaterialGroup.objects.filter(FId__in=FGroupIds)
@@ -322,7 +322,7 @@ class MaterialAdmin(admin.ModelAdmin):
                             unit_map[obj.Name] = obj
 
                     # 批量 upsert Material
-                    for FId, FName, FGroup, FNumber, FHelpCode, FModel, FUnit, FSource, FDescription in materials:
+                    for FId, FName, FGroup, FNumber, FHelpCode, FModel, FParent, FUnit, FSource, FDescription in materials:
                         if FId.strip() and FUnit.strip():
                             group_obj = group_map.get(str(FGroup))
                             unit_obj = unit_map.get(FUnit)
@@ -337,6 +337,7 @@ class MaterialAdmin(admin.ModelAdmin):
                                     'FModel': FModel,
                                     'FGroup': group_obj,
                                     'FUnit': unit_obj,
+                                    'FParent_id': FParent,
                                     'FSource': FSource,
                                     'FDescription': FDescription
                                 }

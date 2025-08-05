@@ -238,7 +238,7 @@ function createInfoElement(label, value) {
     element.appendChild(labelDiv);
 
     const valueDiv = document.createElement('div');
-    valueDiv.className = 'fep-16 font-weight-bold';
+    valueDiv.className = 'fep-12c font-weight-bold';
     valueDiv.textContent = value;
     element.appendChild(valueDiv);
 

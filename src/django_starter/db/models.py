@@ -75,7 +75,7 @@ class MaterialGroup(models.Model):
         verbose_name="父组")
     FNumber = models.CharField("组编号", max_length=50, null=True, blank=True)  
     FLevel = models.IntegerField("层级", null=True, blank=True) 
-    FClass_choics =(("01", "成品机"),("02", "半成品件"),("03", "外购件")) 
+    FClass_choics =(("01", "成品机"),("02", "半成品件"),("03", "外购件"),("04", "中间件")) 
     FClass = models.CharField("分类", max_length=50, null=True, blank=True, choices=FClass_choics)  
     FGroupCode_choics = (
         ("01.01", "成品整机"),
@@ -148,6 +148,12 @@ class Material(AbstractBaseModel):
     );
     FSource = models.CharField("来源", max_length=255, null=True, blank=True);  
     FDescription = models.TextField("描述", null=True, blank=True);  
+    FParent = models.ForeignKey(
+        'self',null=True, blank=True,
+        on_delete=models.CASCADE,
+        verbose_name="中间件",
+        related_name="parents"
+    );
 
     def __str__(self):
         return f"{self.FName} ({self.FNumber})"
