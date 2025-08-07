@@ -8,7 +8,9 @@ from django_starter.http.response import responses
 
 from apps.pmcui.models import *
 from apps.pmcui.apis.parts_order.schemas import *
-from django.db.models import Q
+from apps.bmui.models import Material
+
+from django.db.models import Q, Subquery, OuterRef
 
 router = Router(tags=['parts'])
 
@@ -36,7 +38,21 @@ def list_items(request):
 @router.get('/parts_list_by_order', response=List[PartsOrderOut], url_name='pmcui/parts_order/list_by_orderid')
 @paginate(TenPerPagePagination)
 def list_by_orderid(request, OrderId: str = None, FModel: str = None, FNumber: str = None):
-    qs = PartsOrder.objects.select_related('Part')  # 关联 Material
+    from django.db.models import Prefetch
+    
+    qs = PartsOrder.objects.select_related(
+        'Part',
+        'Part__FParent'
+    ).prefetch_related(
+        Prefetch(
+            'Part__parents',
+            queryset=Material.objects.select_related(
+                'FUnit'
+            ),
+            to_attr='sub_parts'
+        )
+    )
+    
     filters = Q()
     if OrderId:
         filters &= Q(POrder_id=OrderId)

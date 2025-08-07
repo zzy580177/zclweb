@@ -168,6 +168,7 @@ export function addRow(tableBodySelector) {
     });
 
     tableBody.appendChild(newRow); // 添加新行到表格体
+    return newRow; // 返回新创建的行以便后续处理
 }
 
 // 删除行功能
@@ -438,9 +439,142 @@ export function mutationInputChange(input)
     
 }
 
-export function updataInputSelectOptions(input, subInput, subSubInput)
-{
+export function updataInputSelectOptions(input, subInput, subSubInput) {
     mutationInputChange(input);
+}
+
+/**
+ * 设置自动填充功能
+ * @param {HTMLElement} tableBody 表格体元素
+ * @param {string} lookupUrl 数据查询API地址
+ * @param {string} csrfToken CSRF令牌
+ */
+export function setupAutoFill(tableBody, lookupUrl, csrfToken) {
+    if (!tableBody) {
+        console.error("setupAutoFill: 表格体元素未找到");
+        return;
+    }
+
+    // 为现有行设置事件监听
+    const rows = tableBody.querySelectorAll("tr");
+    rows.forEach(row => setupRowAutoFill(row, lookupUrl, csrfToken));
+
+    // 监听新增行事件
+    const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+            mutation.addedNodes.forEach(node => {
+                if (node.nodeName === "TR") {
+                    setupRowAutoFill(node, lookupUrl, csrfToken);
+                }
+            });
+        });
+    });
+
+    observer.observe(tableBody, { childList: true });
+}
+
+/**
+ * 为单行设置自动填充功能
+ * @param {HTMLElement} row 表格行元素
+ * @param {string} lookupUrl 数据查询API地址
+ * @param {string} csrfToken CSRF令牌
+ */
+function setupRowAutoFill(row, lookupUrl, csrfToken) {
+    const triggerField = row.querySelector(".trigger-field");
+    if (!triggerField) return;
+
+    let isQuerying = false;
+    const handleFieldChange = debounce(async () => {
+        const value = triggerField.value.trim();
+        if (!value || isQuerying) return;
+
+        isQuerying = true;
+        try {
+            showLoading();
+            const response = await fetch(lookupUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken
+                },
+                body: JSON.stringify({ value })
+            });
+
+            if (!response.ok) throw new Error("查询失败");
+            
+            const data = await response.json();
+            if (data.success) {
+                fillRowWithData(row, data.result);
+            } else {
+                console.error("自动填充失败:", data.message);
+            }
+        } catch (error) {
+            console.error("自动填充错误:", error);
+        } finally {
+            isQuerying = false;
+            hideLoading();
+        }
+    }, 500);
+
+    // Only trigger on Enter key
+    triggerField.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            handleFieldChange();
+        }
+    });
+}
+
+/**
+ * 用查询结果填充表格行
+ * @param {HTMLElement} row 表格行元素
+ * @param {Object} data 查询结果数据
+ */
+function fillRowWithData(row, data) {
+    const inputs = row.querySelectorAll("input, select");
+    inputs.forEach(input => {
+        const fieldName = input.name;
+        if (fieldName in data && data[fieldName] !== null) {
+            if (input.tagName === "INPUT") {
+                input.value = data[fieldName];
+            } else if (input.tagName === "SELECT") {
+                // First clear any existing selection
+                input.selectedIndex = -1;
+                
+                // Try to find matching option by value
+                let option = Array.from(input.options).find(
+                    opt => opt.value === String(data[fieldName])
+                );
+                
+                // If not found by value, try by text
+                if (!option) {
+                    option = Array.from(input.options).find(
+                        opt => opt.text === String(data[fieldName])
+                    );
+                }
+                
+                if (option) {
+                    option.selected = true;
+                    // Trigger change event for any dependent logic
+                    const event = new Event('change', { bubbles: true });
+                    input.dispatchEvent(event);
+                }
+            }
+        }
+    });
+}
+
+/**
+ * 防抖函数
+ * @param {Function} func 要执行的函数
+ * @param {number} delay 延迟时间(毫秒)
+ */
+function debounce(func, delay) {
+    let timeoutId;
+    return function(...args) {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => func.apply(this, args), delay);
+    };
 }
 
 export function updateInput(source, target) {
@@ -450,4 +584,3 @@ export function updateInput(source, target) {
         targetInput.value = sourceInput.value;
     }
 }
-

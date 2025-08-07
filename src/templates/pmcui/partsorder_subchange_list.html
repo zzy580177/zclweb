@@ -44,7 +44,6 @@
     .step-item:active {
         background-color: #e4e7ed;  /* 点击态背景色 */
     }
-
     .btn-active {
         background-color: #409EFF;
         color: white;
@@ -80,10 +79,7 @@
                 <button id="filter-confirm-btn" class="el-button el-button--primary el-button--small">确认过滤条件</button>
             </div>
         </aside>
-        <!-- 竖线分割，可选：用div更灵活 -->
 
-
-        <!-- 右侧表格 -->
         <main style="flex:1;">
             <div style="margin-bottom:10px;">
                 <span style="font-weight:bold;font-size:16px;">订单零件明细</span>
@@ -149,6 +145,7 @@
             <main class="el-main" style="max-height: 60vh; overflow-y: auto;">
                 <div id="descriptions-order"></div>
                 <div id="descriptions-wuliao"></div>
+                <div id="descriptions-subparts"></div>
                 <div id="descriptions-chanshu"></div>
                 <div id="descriptions-gongyi"></div>
                 <div id="descriptions-cnc-gongyi"></div>
@@ -234,6 +231,7 @@
         addDesignProcessButtonForGongyi,
         loadStepsByGroup,
         LoadDateFromStepDesign,
+        renderOrderPartsParmTable
         } from "{% static 'js/load_data_vi_api.js' %}";
     import {  switchOverlay, toggleMaximizeModal} from "{% static 'js/bmui.js' %}";
     import {
@@ -243,7 +241,9 @@
     } from "{% static 'js/load_data_vi_dom.js' %}";
 
     function renderDetailModalFrame(orderId, FNumber, title){
-        const partsH = ['组别', '物料编码', '物料名称', '规格型号', '生产单位', '生产数量', '零件当前状态', '交付截至'];
+    
+
+        const partsH = ['组别', '物料编码', '物料名称', '规格型号', '生产单位', '生产数量', '零件当前状态', '交付截至' ];
         const partKeys = ['Part.FGroup.FName', 'Part.FNumber', 'Part.FName', 'Part.FModel', 'Part.FUnit.Name', 'Quantity', 'Status', 'DeadLine'];
         const orderH = ['订单', '产品信息', '批次号', '订单状态', '截止日期'];
         const orderKeys = ['OrderId','Product_id','LotId','Status','Deadline'];
@@ -264,19 +264,7 @@
         addSelectProcessButtonForGongyi(FNumber);
     }
 
-    function renderOrderPartsParmTable() {
-        const orderTable = container.querySelector('#descriptions-order .el-descriptions .el-descriptions__table');
-        loadDetTableVIAPI(orderTable);
-        const wuliaoTable = container.querySelector('#descriptions-wuliao .el-descriptions .el-descriptions__table');
-        loadDetTableVIAPI(wuliaoTable);
-        const pamarTable = container.querySelector('#descriptions-chanshu .el-descriptions .el-descriptions__table');
-        loadDetTableVIAPI(pamarTable);    
-        const processTable = container.querySelector('#descriptions-gongyi .el-descriptions .el-descriptions__table');        
-        loadTableVIAPI(processTable)
-        const cncprocessTable = container.querySelector('#descriptions-cnc-gongyi .el-descriptions .el-descriptions__table');        
-        loadTableVIAPI(cncprocessTable)
 
-    }
 
 
 

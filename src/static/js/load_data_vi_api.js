@@ -306,61 +306,67 @@ export function renderDescriptionsFrame(containerId, title, tableHeaders, dataKe
     }
 
 export function loadDetTableVIAPI(table, apiUrlOverride, isClean = true) {
-        if (!table) return;
-        const headers = JSON.parse(table.getAttribute('data-headers'));
-        const keys = JSON.parse(table.getAttribute('data-keys'));
-        let apiUrl = apiUrlOverride || table.getAttribute('data-api') || '';
+    if (!table) return Promise.resolve([]);
+    const headers = JSON.parse(table.getAttribute('data-headers'));
+    const keys = JSON.parse(table.getAttribute('data-keys'));
+    let apiUrl = apiUrlOverride || table.getAttribute('data-api') || '';
 
-        apiUrl = String(apiUrl); 
+    apiUrl = String(apiUrl); 
 
-        // 先生成表头
-        let thead = table.querySelector('thead');
-        if (!thead) {
-            thead = document.createElement('thead');
-            table.insertBefore(thead, table.firstChild);
-        }
-
-        fetch(apiUrl)
-            .then(response => response.json())
-            .then(data => {
-                let tableBody = table.querySelector('tbody');
-                if (!tableBody) {
-                    tableBody = document.createElement('tbody');
-                    table.appendChild(tableBody);
-                }
-                if(isClean)
-                    tableBody.innerHTML = '';
-
-                if (
-                    data.code !== 200 ||
-                    data.success !== true ||
-                    data.message !== "请求成功"
-                ) {
-                    tableBody.innerHTML = `<tr><td colspan="${headers.length}" style="color:red;">${data.message || '接口返回异常'}</td></tr>`;
-                    return;
-                }
-
-                const items = (data.data && data.data.items) ? data.data.items : [];
-                if (items.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="${headers.length}" style="color:#888;">暂无数据</td></tr>`;
-                    return;
-                }
-                for (let i = 0; i < headers.length; i += 3) {
-                    const tr1 = document.createElement('tr');
-                    const tr2 = document.createElement('tr');
-                    let row1 = ``;
-                    let row2 = ``;
-                    for (let j = i; j < i + 3 && j < headers.length; j++) {
-                        row1 = `${row1} <td> <div ><span class="el-descriptions-item__label">${headers[j]}</span></div></td>`;
-                        row2 = `${row2} <td> <div ><span class="el-descriptions-item__content"> ${getValueByPath(items[0], keys[j])}</span></div></td>`;
-                    }
-                    tr1.innerHTML = row1;
-                    tr2.innerHTML = row2;
-                    tableBody.appendChild(tr1);
-                    tableBody.appendChild(tr2);
-                }
-            })
+    // 生成表头
+    let thead = table.querySelector('thead');
+    if (!thead) {
+        thead = document.createElement('thead');
+        table.insertBefore(thead, table.firstChild);
     }
+
+    return fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+            let tableBody = table.querySelector('tbody');
+            if (!tableBody) {
+                tableBody = document.createElement('tbody');
+                table.appendChild(tableBody);
+            }
+            if(isClean) tableBody.innerHTML = '';
+
+            if (data.code !== 200 || data.success !== true || data.message !== "请求成功") {
+                tableBody.innerHTML = `<tr><td colspan="${headers.length}" style="color:red;">${data.message || '接口返回异常'}</td></tr>`;
+                return Promise.resolve([]);
+            }
+
+            const items = (data.data && data.data.items) ? data.data.items : [];
+            if (items.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="${headers.length}" style="color:#888;">暂无数据</td></tr>`;
+                return Promise.resolve([]);
+            }
+            const sub_parts = (items[0].Part && items[0].Part.sub_parts) ? items[0].Part.sub_parts : [];
+            // 原有渲染逻辑
+            for (let i = 0; i < headers.length; i += 3) {
+                const tr1 = document.createElement('tr');
+                const tr2 = document.createElement('tr');
+                let row1 = ``;
+                let row2 = ``;
+                for (let j = i; j < i + 3 && j < headers.length; j++) {
+                    row1 = `${row1} <td> <div ><span class="el-descriptions-item__label">${headers[j]}</span></div></td>`;
+                    row2 = `${row2} <td> <div ><span class="el-descriptions-item__content"> ${getValueByPath(items[0], keys[j])}</span></div></td>`;
+                }
+                tr1.innerHTML = row1;
+                tr2.innerHTML = row2;
+                tableBody.appendChild(tr1);
+                tableBody.appendChild(tr2);
+            }
+            return Promise.resolve(sub_parts);
+        })
+        .catch(err => {
+            console.error('加载失败:', err);
+            const tableBody = table.querySelector('tbody');
+            if (tableBody) {
+                tableBody.innerHTML = `<tr><td colspan="${headers.length}" style="color:red;">加载失败</td></tr>`;
+            }
+            return Promise.resolve([]);
+        });
+}
 
 export function addDesignProcessButtonForGongyi(FNumber) {
         const container = document.getElementById('descriptions-gongyi');
@@ -725,4 +731,59 @@ export function LoadDateFromStepDesign()
         });
         targetTbody.appendChild(row);
 
+    }
+export function renderOrderPartsParmTable() {
+        const subPartsH = ['子件编码', '子件名称', '规格型号', '生产单位'];        
+        const subPartKeys = ['FNumber','FName','FModel','unit'];
+        const orderTable = container.querySelector('#descriptions-order .el-descriptions .el-descriptions__table');
+        loadDetTableVIAPI(orderTable);
+        
+        const wuliaoTable = container.querySelector('#descriptions-wuliao .el-descriptions .el-descriptions__table');
+        loadDetTableVIAPI(wuliaoTable)
+            .then(subParts => {
+                if (subParts && subParts.length > 0) {
+                    renderDescriptionsFrame('descriptions-subparts', '中间件信息', subPartsH, subPartKeys, '');
+                    const subPartsTable = container.querySelector('#descriptions-subparts .el-descriptions .el-descriptions__table');
+                    loadDetTableVIData(subPartsTable, {sub_parts: subParts});
+                }
+            });
+
+        const pamarTable = container.querySelector('#descriptions-chanshu .el-descriptions .el-descriptions__table');
+        loadDetTableVIAPI(pamarTable);    
+        const processTable = container.querySelector('#descriptions-gongyi .el-descriptions .el-descriptions__table');        
+        loadTableVIAPI(processTable);
+        const cncprocessTable = container.querySelector('#descriptions-cnc-gongyi .el-descriptions .el-descriptions__table');        
+        loadTableVIAPI(cncprocessTable);
+    }
+
+    function loadDetTableVIData(table, data, isClean = true) {
+        if (!table) return Promise.resolve([]);
+        const headers = JSON.parse(table.getAttribute('data-headers'));
+        const keys = JSON.parse(table.getAttribute('data-keys'));
+
+
+        let thead = table.querySelector('thead');
+        if (!thead) {
+            thead = document.createElement('thead');
+            table.insertBefore(thead, table.firstChild);
+        }
+        let theadHtml = '<tr> <div style = "font-weight: bold">';
+        headers.forEach(h => {
+            theadHtml += `<td><label><span class="el-descriptions-item__label">${h}</span></label></td>`;
+        });
+        theadHtml += '</div></tr>';
+        thead.innerHTML = theadHtml;
+
+        let tableBody = table.querySelector('tbody');
+        if (!tableBody) {
+            tableBody = document.createElement('tbody');
+            table.appendChild(tableBody);
+        }
+        tableBody.innerHTML = '';
+
+        data.sub_parts.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = keys.map(k => `<td>${getValueByPath(item, k)}</td>`).join('');
+            tableBody.appendChild(tr);
+        });
     }

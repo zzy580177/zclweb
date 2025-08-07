@@ -49,13 +49,13 @@
                     {% for column in tabletype %}                    
                         <td>
                             {% if column.type == "select" %}
-                            <select name="{{ column.name }}" required>
+                            <select name="{{ column.name }}" required {% if forloop.first %}class="trigger-field"{% endif %}>
                                 {% for option in column.options %}
-                                    <option value="{{ option.Id }}">{{ option.Name }}</option>
+                                    <option value="{{ option.Id }}">{{ option.fname }}</option>
                                 {% endfor %}
                             </select>
                             {% else %}
-                                <input type="{{ column.type }}" name="{{ column.name }}" {{ column.required }}>
+                                <input type="{{ column.type }}" name="{{ column.name }}" {{ column.required }} {% if forloop.first %}class="trigger-field"{% endif %}>
                             {% endif %}
                         </td>
                     {% endfor %}
@@ -120,6 +120,7 @@
         styleCell, 
         fetchParentMaterials,
         updataInputSelectOptions,
+        setupAutoFill,
         } from "{% static 'js/bmui.js' %}";
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -171,12 +172,13 @@
             console.error("保存失败回调：", error);
             alert("保存失败，请检查网络或数据！");
         });
+        // Setup auto-fill functionality
+        const tableBody = document.querySelector("#material-details tbody");
+        setupAutoFill(tableBody, "{% url 'admin:bmui_material_lookup' %}", "{{ csrf_token }}");
+
         const input = document.querySelector('input[name="FGroup__FClass__exact"]');
         const subInput = document.querySelector('input[name="FGroup__FGroupCode__exact"]');
         const subSubInput = document.querySelector('input[name="FGroup__FSubGroupCode__exact"]');
-
- 
     });
 </script>
 {% endblock %}
-

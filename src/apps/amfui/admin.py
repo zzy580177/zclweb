@@ -109,12 +109,12 @@ class StatoAdmin(admin.ModelAdmin):
     stop_time.short_description = '结束时间'
 
     def alarm_id(self, obj):
-        return obj.Alarmi__AlarmID if obj.Alarmi else None
+        return obj.Alarmi.AlarmID if obj.Alarmi else None
     alarm_id.short_description = '报警ID'
     alarm_id.admin_order_field = 'Alarmi__AlarmID'
 
     def alarmi_str(self, obj):
-        return obj.Alarmi__AlarmString if obj.Alarmi else None
+        return obj.Alarmi.AlarmString if obj.Alarmi else None
     alarmi_str.short_description = '报警信息'
     alarmi_str.admin_order_field = 'Alarmi__AlarmString'
 

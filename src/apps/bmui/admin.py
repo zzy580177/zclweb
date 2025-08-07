@@ -7,7 +7,8 @@ from django.shortcuts import redirect
 from .models import *
 import json
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Value
+from django.db.models.functions import Concat
 
 from django.contrib.admin import SimpleListFilter
 
@@ -240,8 +241,9 @@ class MaterialAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         extra_context['tableHead'] = self.tableHead        
         extra_context['tabletype'] = self.tabletype
-        extra_context['tabletype'][2]['options'] = list(MaterialGroup.objects.values(Id=F('FId'), Name=F('FName')))
-        extra_context['tabletype'][7]['options'] = list(Attribute.objects.filter(Description='单位').values('Id', 'Name'))
+        extra_context['tabletype'][2]['options'] = list(MaterialGroup.objects.annotate(name = Concat(
+                F('FClass'), Value('-'), F('FName'))).values(Id=F('FId'), Name=F('FName'), fname=F('name')))
+        extra_context['tabletype'][7]['options'] = list(Attribute.objects.filter(Description='单位').values('Id', 'Name', fname=F('Name')))
         if request.method == "POST":
             return super().changelist_view(request, extra_context=extra_context)
         elif request.method == "GET":
@@ -256,6 +258,7 @@ class MaterialAdmin(admin.ModelAdmin):
         custom_urls = [
             path('getgroup/', self.admin_site.admin_view(self.getgroup_view), name='bmui_material_getgroup'),
             path('addlist/', self.admin_site.admin_view(self.addlist_view), name='bmui_material_addlist'),
+            path('lookup/', self.admin_site.admin_view(self.lookup_view), name='bmui_material_lookup'),
         ]
         return custom_urls + urls
     def add_view(self, request, form_url='', extra_context=None):
@@ -357,5 +360,41 @@ class MaterialAdmin(admin.ModelAdmin):
         ).values_list('FNumber', 'FName').distinct()
         return JsonResponse(list(group_codes), safe=False)    
 
+    def lookup_view(self, request):
+        """物料自动填充查询接口"""
+        if request.method != 'POST':
+            return JsonResponse({'success': False, 'message': '仅支持POST请求'}, status=405)
 
+        try:
+            data = json.loads(request.body)
+            material_number = data.get('value', '').strip()
+            
+            if not material_number:
+                return JsonResponse({'success': False, 'message': '请输入物料编号'}, status=400)
 
+            material = Material.objects.filter(FId=material_number).first()
+            if not material:
+                return JsonResponse({'success': False, 'message': '未找到匹配的物料'}, status=404)
+
+            result = {
+                'FName[]': material.FName,
+                'FNumber[]': material.FNumber,
+                'FHelpCode[]': material.FHelpCode,
+                'FModel[]': material.FModel,
+                'FParent[]': material.FParent_id,
+                'FUnit[]': material.FUnit.Name if material.FUnit else None,
+                'FSource[]': material.FSource,
+                'FDescription[]': material.FDescription,
+                'FGroup[]': material.FGroup.FClass + "-" + material.FGroup.FName if material.FGroup else None,
+            }
+
+            return JsonResponse({
+                'success': True,
+                'result': result
+            })
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'查询失败: {str(e)}'
+            }, status=500)
