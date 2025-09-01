@@ -32,7 +32,7 @@ class MaterialSampleOut(ModelSchema):
         orm_mode = True
     class Meta:
         model = Material
-        fields = [ 'IsDelete', 'IsActive', 'FId', 'FNumber', 'FName', 'FHelpCode', 'FModel','FSource', 'FDescription', ]
+        fields = [ 'IsDelete', 'IsActive', 'FId', 'FNumber', 'FName', 'FHelpCode', 'FModel', ]
     
     @staticmethod
     def resolve_unit(obj):
@@ -50,3 +50,20 @@ class MaterialFullOut(ModelSchema):
     class Meta:
         model = Material
         fields = ['CreateTime', 'UpdateTime', 'IsDelete', 'IsActive', 'FId', 'FGroup', 'FNumber', 'FName', 'FHelpCode', 'FModel','FParent', 'FUnit', 'FSource', 'FDescription', ]
+
+class SubMaterialOut(ModelSchema):
+    unit: Optional[str] = None
+    Name: Optional[str] = None
+    Id: Optional[str] = None
+    EqpName: Optional[str] = None
+    class Config:
+        orm_mode = True
+    class Meta:
+        model = Material
+        fields = ['FNumber', 'FName', 'FId']
+    @staticmethod
+    def resolve_unit(obj):
+        if obj.FUnit is None:
+            return None
+        return getattr(obj.FUnit, 'Name', None)
+

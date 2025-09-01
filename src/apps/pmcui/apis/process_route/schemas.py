@@ -3,13 +3,14 @@ from apps.pmcui.models import *
 
 from ninja import Schema
 from typing import List, Optional
-from apps.pmcui.apis.process_step.schemas import ProcessStepOut
-from apps.bmui.apis.material.schemas import MaterialOut
+from apps.pmcui.models import ProcessRoute
+from ninja import ModelSchema
+from apps.bmui.apis.material.schemas import MaterialSampleOut
 
 
 
 class ProcessRouteIn(ModelSchema):
-    
+  
 
     class Meta:
         model = ProcessRoute
@@ -17,20 +18,25 @@ class ProcessRouteIn(ModelSchema):
 
 
 class ProcessRouteOut(ModelSchema):
-    Material: Optional[MaterialOut]
+    Material: Optional[MaterialSampleOut]
     class Meta:
         model = ProcessRoute
         fields = ['Id', 'Product_id', 'Material',  'ApprovalStatus', 'Version', 'StartDay', 'Parameters', 'IsCNC', 'Description', ]
 
 
 class ProcessRouteStepsOut(Schema):
-    Id: int
-    Product_id: str
-    Material: Optional[MaterialOut]
-    ApprovalStatus: str
-    Version: Optional[int]
-    StartDay: Optional[str]
-    Parameters: Optional[dict]
-    IsCNC: Optional[bool]
-    Description: Optional[str]
-    main_steps: List[ProcessStepOut]
+    Material: Optional[MaterialSampleOut]
+    #main_steps: List[ProcessStepSampleOut]
+    class Meta:
+        model = ProcessRoute
+        fields = ['Id', 'Product_id', 'Material',  'ApprovalStatus', 'Version', 'IsCNC', ]
+
+class SampleProcessRouteOut(ModelSchema):
+    Material: Optional[MaterialSampleOut]
+    #main_steps: List[ProcessStepSampleOut]
+    SubMaterials: List[str] = []  # Assuming this is a list of strings
+    class Meta:
+        model = ProcessRoute
+        fields = ['Id', 'Material',  'ApprovalStatus', 'Version', 'IsCNC',]
+
+    

@@ -8,6 +8,7 @@ from django_starter.http.response import responses
 
 from apps.pmcui.models import *
 from apps.pmcui.apis.step.schemas import *
+from django.db.models import Q, F
 
 router = Router(tags=['step'])
 
@@ -24,15 +25,16 @@ def retrieve(request, item_id):
     return item
 
 
-@router.get('/step', response=List[StepOut], url_name='pmcui/step/list')
+@router.get('/step', response=List[StepSampleOut], url_name='pmcui/step/list')
 @paginate
 def list_items(request, EqpType: int = None, EqpName: str = None):
-    qs = Step.objects.select_related('EqpType')  # 关联 Material
+    qs = Step.objects.select_related('EqpType')
+    conditions = Q()
     if EqpName:
-        qs = Step.objects.filter(EqpType__Name=EqpName)
+        conditions |= Q(EqpType__Name=EqpName)
     if EqpType:
-        qs = Step.objects.filter(EqpType_id=EqpType)
-    return qs
+        conditions |= Q(EqpType_id=EqpType)
+    return qs.filter(conditions).annotate(EqpName=F('EqpType__Name'))
 
 
 @router.put('/step/{item_id}', response=StepOut, url_name='pmcui/step/update')

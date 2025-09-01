@@ -6,35 +6,44 @@
 <link rel="stylesheet" href="{% static 'css/bmui.css' %}">
 <div class="container">
 
-    <form id="add-new-part-form" method="post" action="{% url 'admin:bmui_partsorder_add' %}">
+    <div id="add-new-part-form" method="post"  > 
         {% csrf_token %}
-        <input type="hidden" name="POrder" value="{{ POrder }}">
-        <div>
-            <h3>追加零件到订单: {{POrder|safe}}</h3>
-            <table id="porder-details">
+        <input type="hidden"  id="POrder"  name="POrder" value="{{ POrder }}">
+        <h3>追加零件到订单: {{POrder|safe}}</h3>
+        <div id="porder-details">
+            <table data-url='{"POST":"/api/pmcui/parts_order/create"}'>
                 <thead>
                     <tr>
+                        <th hidden>订单号</th>
                         {% for column in partsHead %}
                             <th>{{ column }}</th>
                         {% endfor %}
+                        <th hidden>状态</th>
                         <th>操作</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <td><input type="text" name="Parts[]" required></td>
-                    <td><input type="number" name="Quantity[]" required></td>
-                    <td><input type="text" name="Description[]"></td>
+                <tbody >
+                    <td hidden  data-key="POrder_id">{{POrder|safe}}</td>
+                    <td hidden  data-key="FId"></td>
+                    <td class='field-Input_Part_FNumber' data-key="FNumber"><input type="text" required></td>
+                    <td class='field-Input_Quantity' data-key="Quantity"><input type="number" required></td>
+                    <td class="field-Input_Description" data-key="Description"><input type="text" ></td>
+                    <td hidden  data-key="Status">未就绪</td>
+                    <td hidden  data-key="FName"></td>
+                    <td hidden  data-key="FModel"></td>
+                    <td hidden  data-key="Name"></td>
+                    <td hidden  data-key="Id"></td>
                     <td>
                         <button type="button" id="remove-row" class="el-button el-button--danger el-button--small"  >删除</button>
                     </td>
                 </tbody>
             </table>
+            <div>
+                <button type="submit" id="submit" class="el-button el-button--warning el-button--small">提交</button>
+                <button type="button" class="el-button el-button--warning el-button--small" id="add-row">+ 添加</button>
+            </div>
         </div>
-        <div>
-            <button type="submit" class="el-button el-button--warning el-button--small">提交</button>
-            <button type="button" class="el-button el-button--warning el-button--small" id="add-row">+ 添加</button>
-        </div>
-    </form>
+    </div> 
 
     <div id="execution-result" style="margin-top: 20px; color: red;">
         {% if messages %}
@@ -43,52 +52,28 @@
             {% endfor %}
         {% endif %}
     </div>
-    {{ block.super }}
 
-
-</div>
-
+    <div id="result_list">
+        <h3>订单-{{ POrder }} 零件列表</h3>
+        <table id="product-parts-table" class='data-table'
+            data-headers='["零件编码","零件名称","规格型号","生产单位","数量", "状态", "备注", "操作"]'
+            data-keys='["POrder_id","Part.FId","Part.FNumber","Part.FName","Part.FModel","Part.FUnit.Name","Quantity","Status", "Description", "Id", "变更"]'
+            data-hidkeys='["Part.FId","POrder_id", "Id"]' 
+            data-buttons = '["变更"]'
+            data-inputs = '["Quantity","Description"]'
+            data-url='{"GET":"/api/pmcui/parts_order/parts_list_by_order", 
+            "PUT":"/api/pmcui/parts_order/update"}'  data-page=1 data-limit=20>
+        </table>
+        <div class="table-pager" style="margin: 10px 0px; text-align: center;"></div>
+    </div>
 <script type="module">
-    import {addRow, enableRowDeletion} from "{% static 'js/bmui.js' %}";
+    import {renderTableAndLoadData, handleTableEvent} from "{% static 'js/eventAction.js' %}";
     document.addEventListener("DOMContentLoaded", function () {
-        const addRowButton = document.getElementById("add-row");
-        const tableBodySelector = "#porder-details tbody";
-        if(addRowButton){
-            addRowButton.addEventListener("click", function () {
-                addRow(tableBodySelector);
-            });
-        }
-        enableRowDeletion(tableBodySelector);
+        const partstable = document.getElementById('product-parts-table');
+        partstable.dataset.url_params = `{"POrder_id": "{{ POrder }}"}`;
+        renderTableAndLoadData(partstable);
+        handleTableEvent(document.querySelector('#porder-details'));
+        handleTableEvent(document.querySelector('#result_list'));
     });
-</script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('#part-change').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            var tr = btn.closest('tr');
-            var oid = tr.querySelector('.part-quantity-input').getAttribute('data-oid');
-            var quantity = tr.querySelector('.part-quantity-input').value;
-            var description = tr.querySelector('.part-description-input').value;
-            var porder = document.querySelector('input[name="POrder"]').value;
-            fetch("{% url 'admin:bmui_partsorder_change' %}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                },
-                body: JSON.stringify({
-                    oid: oid,
-                    quantity: quantity,
-                    description: description,
-                    POrder: porder
-                })
-            }).then(resp => resp.json()).then(data => {
-                alert(data.message || (data.success ? "保存成功" : "保存失败"));
-                if(data.success) location.reload();
-            });
-        });
-    });
-});
 </script>
 {% endblock %}

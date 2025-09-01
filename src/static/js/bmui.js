@@ -1,30 +1,6 @@
+import { loadingOverlay } from "./utils.js";
 const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
 
-// 显示加载中动画
-export function showLoading() {
-    const loadingOverlay = document.createElement("div");
-    loadingOverlay.id = "loading-overlay";
-    loadingOverlay.style.position = "fixed";
-    loadingOverlay.style.top = "0";
-    loadingOverlay.style.left = "0";
-    loadingOverlay.style.width = "100%";
-    loadingOverlay.style.height = "100%";
-    loadingOverlay.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
-    loadingOverlay.style.zIndex = "2000";
-    loadingOverlay.style.display = "flex";
-    loadingOverlay.style.justifyContent = "center";
-    loadingOverlay.style.alignItems = "center";
-    loadingOverlay.innerHTML = `<div style="color: white; font-size: 18px;">加载中...</div>`;
-    document.body.appendChild(loadingOverlay);
-}
-
-// 隐藏加载中动画
-export function hideLoading() {
-    const loadingOverlay = document.getElementById("loading-overlay");
-    if (loadingOverlay) {
-        loadingOverlay.remove();
-    }
-}
 
 // 初始化表格行数
 export function initializeTableRows(tableElement, rowCount, columnHeaders = [], ptable = null, importModal=null) {
@@ -202,7 +178,7 @@ export function bindQuickFillSave(button, url, csrfToken, getDataCallback, onSuc
             return;
         }
 
-        showLoading();
+        loadingOverlay.show();
         fetch(url, {
             method: "POST",
             headers: {
@@ -218,7 +194,7 @@ export function bindQuickFillSave(button, url, csrfToken, getDataCallback, onSuc
                 return response.json();
             })
             .then(result => {
-                hideLoading(); // 隐藏加载中动画
+                loadingOverlay.hide(); // 隐藏加载中动画
                 if (result.success) {
                     if (onSuccess) onSuccess(result); // 调用成功回调
                 } else {
@@ -227,7 +203,7 @@ export function bindQuickFillSave(button, url, csrfToken, getDataCallback, onSuc
                 }
             })
             .catch(error => {
-                hideLoading(); // 隐藏加载中动画
+                loadingOverlay.hide(); // 隐藏加载中动画
                 console.error("保存失败：", error);
                 alert("保存失败：" + error.message);
                 if (onError) onError(error); // 调用失败回调
@@ -490,7 +466,7 @@ function setupRowAutoFill(row, lookupUrl, csrfToken) {
 
         isQuerying = true;
         try {
-            showLoading();
+            loadingOverlay.show();
             const response = await fetch(lookupUrl, {
                 method: "POST",
                 headers: {
@@ -512,7 +488,7 @@ function setupRowAutoFill(row, lookupUrl, csrfToken) {
             console.error("自动填充错误:", error);
         } finally {
             isQuerying = false;
-            hideLoading();
+            loadingOverlay.hide();
         }
     }, 500);
 

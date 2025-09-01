@@ -27,19 +27,8 @@ def retrieve(request, item_id):
 
 @router.get('/material_parm', response=List[MaterialParmOut], url_name='pmcui/material_parm/list')
 @paginate
-def list_items(request, FName: str = None, FModel: str = None, FNumber: str = None):
-    qs = MaterialParm.objects.select_related('Material')  # 关联 Material
-    filters = Q()
-    if FName:
-        filters &= Q(Material__FName=FName)
-    if FModel:
-        filters &= Q(Material__FModel=FModel)
-    if FNumber:
-        filters &= Q(Material__FNumber=FNumber)
-    if filters:
-        qs = qs.filter(filters)
-    return qs
-    qs = qs.objects.all()
+def list_items(request, FId: int = None):
+    qs = MaterialParm.objects.filter(Material_id = FId).select_related('Material').all()
     return qs
 
 

@@ -15,6 +15,9 @@ from django.utils.html import format_html
 from .models import *
 from apps.bmui.models import Attribute
 from django.contrib import messages
+from django_starter.lib.common import *
+
+from django.core.exceptions import ValidationError
 
 from decimal import Decimal
 
@@ -166,82 +169,10 @@ class PartFilter(admin.SimpleListFilter):
 
 @admin.register(PartsOrder)
 class PartsOrderAdmin(admin.ModelAdmin):
+    list_display = ['Part', 'Status']
     list_filter = ['POrder', PartFilter]
     partsHead = ['物料编号','数量','备注']
-    ordering = ['Idex'] 
     change_list_template = "pmcui/partsorder_change_list.html"
-    def getPartName(self, obj):
-        """获取物料名称"""
-        return obj.Part.FName if obj.Part else None
-    def getPartNumber(self, obj):
-        """获取物料名称"""      
-        return format_html(
-            '<a href="javascript:void(0);" class="part-number-link" data-oid="{}">{}</a>',
-            obj.pk, obj.Part.FNumber)
-    def getPartModel(self, obj):
-        """获取物料名称"""
-        return obj.Part.FModel if obj.Part else None
-    def getPartUnit(self, obj):
-        """获取物料名称"""
-        return obj.Part.FUnit.Name if obj.Part and obj.Part.FUnit else None
-    def getQuantity(self, obj):
-        """渲染为input"""
-        value = to_decimal(obj.Quantity) if obj.Quantity else None
-        return format_html(
-            '<input  type="text" class="part-quantity-input" data-oid="{}" value="{}" style="width:120px;" />',
-            obj.pk, value)
-    def getDescription(self, obj):
-        """渲染为input"""
-        value = obj.Description
-        return format_html(
-            '<input  type="text" class="part-description-input" data-oid="{}" value="{}" style="width:120px;" />',
-            obj.pk, value)
-    def subAction(self, obj):
-        result = format_html(
-            f'<button type="button" id="part-change" class="el-button el-button--warning el-button--small" style="color: #ffffff;">变更保存</button>'
-        )
-        return result
-
-    def get_urls(self):
-        urls = super().get_urls()
-        custom_urls = [
-            path('add/', self.admin_site.admin_view(self.add_view), name='bmui_partsorder_add'),
-            path('change/', self.admin_site.admin_view(self.change_part_view), name='bmui_partsorder_change'),
-            path('saveProcess/', self.admin_site.admin_view(self.saveProcess), name='pmcui_partsorder_saveProcess'),
-            
-        ]
-        return custom_urls + urls
-
-    def get_list_display(self, request):
-        # 例如：根据用户权限或请求参数动态返回不同的列
-        OrderId = request.POST.get('POrder') or request.GET.get('POrder')
-        if OrderId:
-            return ['Idex', 'POrder', 'getPartNumber', 'getPartName','getPartModel','getPartUnit', 'getQuantity', 'Status', 'getDescription', 'subAction']
-
-        else:
-            return ['Idex', 'getPartNumber', 'getPartName','getPartModel', 'Status']
-
-    def change_part_view(self, request):
-        if request.method == "POST":
-            try:
-                data = json.loads(request.body)
-                oid = data.get("oid")
-                quantity = data.get("quantity")
-                description = data.get("description")
-                obj = PartsOrder.objects.get(pk=oid)
-                OrderId = data.get('POrder')
-                if quantity in [None, '', 'None']:
-                    obj.Quantity = 0
-                else:
-                    obj.Quantity = Decimal(str(quantity))
-                if description is not None:
-                    obj.Description = description
-                obj.save()
-                POrder.objects.filter(OrderId=OrderId).update(Status="已变更")
-                return JsonResponse({"success": True, "message": "保存成功"})
-            except Exception as e:
-                return JsonResponse({"success": False, "message": str(e)}, status=500)
-        return JsonResponse({"success": False, "message": "无效请求"}, status=400)
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}        
@@ -253,191 +184,10 @@ class PartsOrderAdmin(admin.ModelAdmin):
         if request.method == "POST":
             return super().changelist_view(request, extra_context=extra_context)
         elif request.method == "GET":
+            if (request.GET.get('p')):
+                p =  request.GET.get('p')
             return super().changelist_view(request, extra_context=extra_context)
-
-    def add_view(self, request, form_url = ..., extra_context =None):
-        extra_context = extra_context or {}        
-        extra_context['partsHead'] = self.partsHead
-        extra_context['POrder'] = ''
-        if request.method == "POST":
-            try:
-                result = {}
-                parts = request.POST.getlist('Parts[]')
-                descriptions = request.POST.getlist('Description[]')
-                quantitys = request.POST.getlist('Quantity[]')
-                OrderId = request.POST.get('POrder')
-                extra_context['POrder'] = OrderId
-                index = PartsOrder.objects.filter(POrder_id=OrderId).count() + 1
-                for part, quantity, description in zip(parts, quantitys, descriptions):
-                    if part.strip() and quantity.strip():
-                        partObj = Material.objects.filter(FNumber=part).first()
-                        if not partObj:
-                            msg = (f"/r/n未找到物料: {part}, 请先添加物料")
-                            self.message_user(request,  f"发生错误：{msg}", level="error")
-                            return super().changelist_view(request, extra_context = extra_context)
-                        PartsOrder.objects.update_or_create(POrder_id = OrderId, Part_id=partObj.FId, defaults={
-                            'Status': "未就绪", 'Quantity': quantity, 'Description': description, 'Idex': index})
-                        index += 1
-                POrder.objects.filter(OrderId=OrderId).update(Status="已变更")
-                self.message_user(request, " 零件追加成功！", level="success")
-            except Exception as e:
-                self.message_user(request, f"发生错误：{str(e)}", level="error")
-
-            return super().changelist_view(request, extra_context = extra_context)
-
-        return super().add_view(request, form_url, extra_context)
-
-    def parse_custom_params(self, param_str):
-        """Parse custom parameter string into dictionary"""
-        if not param_str:
-            return {}
-            
-        params = []
-        pairs = param_str.split(';')
-        for pair in pairs:
-            param = {}
-            if ':' in pair:
-                key, value = pair.split(':', 1)
-                param['Name'] = key.strip()
-                param['Value'] = value.strip()
-                if value.lower() == 'null':
-                    param['Value'] = ''
-                params.append(param)
-        return params
-
-    def find_duplicate_process_route(self, partObj, processSteps):
-        """
-        检查指定物料下是否存在与 processSteps 完全一致的工艺路线。
-        :param partObj: Material 实例
-        :param processSteps: 前端提交的步骤列表
-        :return: 已存在的 route.Id 或 None
-        """
-        exist_routes = (ProcessRoute.objects.filter(Material_id=partObj.FId))
-        for route in exist_routes:
-            exist_steps = list(ProcessStep.objects.filter(Route=route).order_by('SeqNum'))
-            if len(exist_steps) != len(processSteps):
-                continue
-
-            match = True
-            for exist_step, new_step in zip(exist_steps, processSteps):
-                if (exist_step.Description or '') != (new_step.get('description') or '') or \
-                str(exist_step.SeqNum or 0) != (new_step.get('seqNum') or 0):
-                    match = False
-                    break
-
-                exist_step_items = list(
-                    ProcessStepSteps.objects.filter(processstep=exist_step)
-                    .select_related('step')
-                    .order_by('step__Name')
-                    .values_list('step__Name', 'parameters')
-                )
-                new_step_params = self.parse_custom_params(new_step.get('params', ''))
-                new_step_items = sorted([(p['Name'], p['Value']) for p in new_step_params])
-
-                if exist_step_items != new_step_items:
-                    match = False
-                    break
-
-            if match:
-                return route.Id
-        return None
-    
-    def saveProcess(self, request, form_url='', extra_context=None):
-        if request.method != "POST":
-            return JsonResponse({
-                "success": False, 
-                "message": "Method not allowed"
-            }, status=405)
-            
-        try:
-            payload = json.loads(request.body)
-            orderId = payload.get("order")
-            FNumber = payload.get("number")
-            processSteps = payload.get("steps")
-
-            partObj = Material.objects.filter(FNumber=FNumber).first()
-            if not partObj:
-                return JsonResponse({"success": False, "message": "物料不存在"}, status=400)
-
-            # 获取最后一个ProcessRoute的Id并自增1
-            last_route = ProcessRoute.objects.order_by('-Id').first()
-            new_route_id = last_route.Id + 1 if last_route else 1
-
-            # 使用事务确保数据一致性
-            with transaction.atomic():
-                # 先处理步骤数据但不保存关联
-                process_steps = []
-                step_relations = []
-                
-                for step in processSteps:      
-                    # 创建ProcessStep实例（不保存）
-                    process_step = ProcessStep(
-                        Description=step['description'],
-                        SeqNum=step['seqNum'],
-                    )
-                    
-                    # 收集步骤对象和关联关系
-                    process_steps.append(process_step)
-                    
-                    # 收集多对多关系               
-                    step_params =  self.parse_custom_params(step.get('params', ''))
-                    step_objs = []
-                    for step_param in step_params:
-                        eqp_type = Attribute.objects.filter(Name=step['eqpName']).first()
-                        step_obj = Step.objects.filter(Name=step_param['Name'], EqpType=eqp_type).first()
-                        if not step_obj:
-                            step_obj = Step.objects.create(Name=step_param['Name'], EqpType=eqp_type)
-                        step_objs.append((step_obj, step_param['Value'] if step_param['Value'] else None))
-                    step_relations.append(step_objs)
-                if len(process_steps) == 0:
-                    return JsonResponse({
-                        "success": False,
-                        "message": "工艺路线不能为空"
-                    }, status=400)
-                duplicate_route_id = self.find_duplicate_process_route(partObj, processSteps)
-                if duplicate_route_id:
-                    return JsonResponse({
-                        "success": True,
-                        "message": "已存在完全相同的工艺路线",
-                        "route_id": duplicate_route_id
-                    })
-
-                # 创建工艺路线
-                routeObj = ProcessRoute.objects.create(
-                    Material_id=partObj.FId, 
-                    ApprovalStatus="未就绪"
-                )
-                
-                # 关联并保存所有步骤
-                try:
-                    for process_step, step_objs in zip(process_steps, step_relations):
-                        process_step.Route = routeObj
-                        process_step.save()
-                        for step_obj, param in step_objs:
-                            ProcessStepSteps.objects.create(
-                                processstep=process_step,
-                                step=step_obj,
-                                parameters= param if param else ''
-                            )
-                except Exception as e:
-                    print(f"Error in saveProcess: {str(e)}")
-                    ProcessRoute.objects.delete(id=routeObj.id)
-                    return JsonResponse({"success": False, "message": "保存失败"}, status=400)
-            
-                return JsonResponse({"success": True, "message": "保存成功", "route_id": new_route_id})
-        
-        except Exception as e:
-            print(f"Error in saveProcess: {str(e)}")
-            return JsonResponse({"success": False, "message": "无效请求"}, status=400)
-
-    getPartNumber.short_description = '物料编号'
-    getPartModel.short_description = '物料型号'
-    getPartUnit.short_description = '单位'
-    getPartName.short_description = '物料名称'
-    getQuantity.short_description = '数量'
-    getDescription.short_description = '备注'
-    subAction.short_description = '操作'
-
+ 
 @admin.register(MaterialParm)
 class MaterialParmAdmin(admin.ModelAdmin):
     list_display = ['Material', 'Size', 'Stuff', 'Surface', 'Cost', 'Description']

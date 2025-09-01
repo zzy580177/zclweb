@@ -18,4 +18,11 @@ class StepOut(ModelSchema):
     EqpType:Optional[AttributeOut]
     class Meta:
         model = Step
-        fields = ['Id', 'Name', 'EqpType', 'UCost', 'HCost', 'Description', ]
+        fields = ['Id', 'Name', 'EqpType','UCost', 'HCost', 'Description']
+
+class StepSampleOut(ModelSchema):
+    EqpName:Optional[str]
+    class Meta:
+        model = Step
+        fields = ['Id', 'Name', 'UCost', 'HCost', 'Description']
+

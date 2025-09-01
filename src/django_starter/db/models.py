@@ -56,6 +56,7 @@ class Attribute(models.Model):
         return self.Name
 
     class Meta:
+        unique_together = ('Name', 'Description')
         abstract = True
         db_table = "[%s].[ProcessRoute]"% bmuiAppName
         app_label = bmuiAppName
@@ -240,6 +241,7 @@ class ProcessStep(models.Model):
         return str(self.PFId)  # Updated to use PFId since Id doesn't exist
     
     class Meta:
+        unique_together = ('Route', 'SeqNum')
         abstract = True
 
 # Add explicit through model for Steps relationship
@@ -267,6 +269,7 @@ class ProcessRoute(models.Model):
     def __str__(self):
         return self.Material + "工艺流程 V" + self.Version
     class Meta:
+        unique_together = ('Material', 'Version', 'IsCNC')
         abstract = True
 
 class POrder(AbstractBaseModel):
@@ -285,6 +288,7 @@ class POrder(AbstractBaseModel):
     def __str__(self):
         return self.OrderId
     class Meta:
+        unique_together = ('Product_id', 'LotId')
         abstract = True
         db_table = f"[{scgAppName}].[POrder]"
         app_label = scgAppName
@@ -297,7 +301,6 @@ class PartsOrder(AbstractBaseModel):
         null=True, blank=True, verbose_name="订单号");
     Part = models.ForeignKey(Material, on_delete=models.SET_NULL,
         null=True, blank=True, verbose_name="物料编号");
-    Idex = models.IntegerField("零件序列号");
     Status = models.CharField("状态",max_length=50, null=True, blank=True);
     DeadLine = models.DateTimeField("交货日期",null=True, blank=True);
     Cost = models.DecimalField("成本", max_digits=10, decimal_places=2, null=True, blank=True);
@@ -307,6 +310,7 @@ class PartsOrder(AbstractBaseModel):
     def __str__(self):
         return self.POrder.OrderId +" " + self.Part.FName
     class Meta:
+        unique_together = ('POrder', 'Part')
         abstract = True
 
 class MaterialParm(models.Model):

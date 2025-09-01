@@ -5,12 +5,17 @@
 <link rel="stylesheet" href="{% static 'css/bmui.css' %}">
 <script src="{% static 'admin/simpleui-x/elementui/index.js' %}"></script>
 <style>
-    .el-descriptions__table,
-    .el-descriptions__table td,
-    .el-descriptions__table th {
+    .el-descriptions__card,
+    .el-descriptions__card td,
+    .el-descriptions__card th {
         border: none !important;
         box-shadow: none !important;
     }
+    .el-descriptions__table {
+        table-layout: auto !important;
+        width: 100% !important;
+    }
+
     .el-descriptions-item__label { font-weight: bold;}
     .el-descriptions__title { color: #2f7deb !important; }
 
@@ -54,33 +59,33 @@
     <div class="product-list-page" style="display: flex;">
         {% csrf_token %}
         <!-- 左侧筛选栏 -->
-        <aside style="width:280px; margin-right:30px; border-right:1px solid #ddd; padding-right:20px; box-sizing:border-box;">
+        <aside id="main-filter" style="width:280px; margin-right:30px; border-right:1px solid #ddd; padding-right:20px; box-sizing:border-box;">
             <div class="filter-block" style="margin-bottom:24px;">
                 <h4>选择产品订单</h4>
-                <table id="product-order-table" 
+                <table id="product-order-table" class="table_pagination"
                     data-headers='["订单号","产品","批次"]'
                     data-keys='["OrderId","Product_id","LotId"]'
-                    data-api="/api/jihua/order/order" >
+                    data-url='{"GET":"/api/jihua/order/order"}' >
                 </table>
             </div>
             <div class="filter-block">
                 <h4>零件编码</h4>
-                <input type="text" name="FNumber" placeholder="搜索零件编码" style="width:90%;">
+                <input type="text" id="FNumber" name="FNumber" placeholder="搜索零件编码" style="width:90%;">
             </div>
             <div class="filter-block">
                 <h4>零件型号</h4>
-                <input type="text" name="FModel" placeholder="搜索零件型号" style="width:90%;">
+                <input type="text" id="FModel" name="FModel" placeholder="搜索零件型号" style="width:90%;">
             </div>
             <div class="filter-block">
                 <h4>状态</h4>
-                <input type="text" name="Status" placeholder="搜索零件订单状态" style="width:90%;">
+                <input type="text" id="Status" name="Status" placeholder="搜索零件订单状态" style="width:90%;">
             </div>
             <div style="text-align:right;margin-top:16px;">
                 <button id="filter-confirm-btn" class="el-button el-button--primary el-button--small">确认过滤条件</button>
             </div>
         </aside>
 
-        <main style="flex:1;">
+        <main style="flex:1;" id="order-filter-result">
             <div style="margin-bottom:10px;">
                 <span style="font-weight:bold;font-size:16px;">订单零件明细</span>
             </div>
@@ -88,10 +93,11 @@
                 当前过滤条件：
                 <span id="filter-detail-content">无</span>
             </div>
-            <table id="product-parts-table" 
+            <table id="product-parts-table" class='data-table'
                     data-headers='["零件编码","零件名称","规格型号","生产单位","数量", "状态"]'
-                    data-keys='["Part.FNumber","Part.FName","Part.FModel","Part.FUnit.Name","Quantity","Status"]'
-                    data-api="/api/pmcui/parts_order/parts_list_by_order?OrderId=">
+                    data-keys='["POrder_id","Part.FId", "Part.FNumber","Part.FName","Part.FModel","Part.FUnit.Name","Quantity","Status"]'                    
+                    data-hidkeys='["Part.FId","Part_id", "POrder_id"]'
+                    data-url='{"GET":"/api/pmcui/parts_order/parts_list_by_order"}'  data-page=1 data-limit=20>
             </table>
 
         </main>
@@ -99,68 +105,62 @@
 
     <!-- 零件详情查询框 -->
     <div id="parts-detail-modal" class="modal">
-        <section class="el-container is-vertical">
-            <header class="el-header" style="height: 60px;">
-                <div class="fx-modal-header" style="display: flex; align-items: center; justify-content: space-between;">
-                    <div class="header-title" style="margin-right: 16px;">
-                    <div class="title-text" id="parts-detail-modal-title" title="title-text" style="font-size: 20px; font-weight: bold;"></div>
-                </div>
-                <div class="modal-controls" style="display: flex; align-items: center; gap: 8px;">
-                    <div class="el-button-group btn-group" size="small">
-                        <button type="button" id="maximize-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
-                            <span class="el-icon-full-screen"></span>
-                        </button>
-                        <button type="button" id="switch-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
-                            <span class="el-icon-switch-button"></span>
-                        </button>
-                    </div>
+        <header class="el-header" style="height: 60px;">
+            <div class="fx-modal-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <div class="header-title" style="margin-right: 16px;">
+                <div class="title-text" id="parts-detail-modal-title" title="title-text" style="font-size: 20px; font-weight: bold;"></div>
+            </div>
+            <div class="modal-controls" style="display: flex; align-items: center; gap: 8px;">
+                <div class="el-button-group btn-group" size="small">
+                    <button type="button" id="maximize-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
+                        ⛶</button>
+                    <button type="button" id="switch-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
+                        <span class="el-icon-switch-button"></span>
+                    </button>
                 </div>
             </div>
+        </div>
 
-            </header> 
-            <footer class="el-footer" style="height: 60px;">
-                <hr style="border-bottom:1px solid #e4e7ed; margin: 12px 0; height: 0;" aria-hidden="true">
-                <div class="fx-data-menu" style="display: flex; align-items: center; gap: 24px; justify-content: space-between;">
-                    <div class="button-pane">
-                        <div class="el-button-group btn-group" size="small">
-                            <button type="button" id="modal_printer" class="el-button el-button--default el-button--small" style="cursor: pointer">
-                                <span class="el-icon-printer"></span>
-                            </button>
-                            <button type="button" id="modal_edit" class="el-button el-button--default el-button--small" style="cursor: pointer">
-                                <span class="el-icon-edit"></span>
-                            </button>
-                            <button type="button" id="modal_delete" class="el-button el-button--default el-button--small" style="cursor: pointer">
-                                <span class="el-icon-delete"></span>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="switch-pane fx-data-switch" style="display: flex; align-items: center; gap: 8px;">
-                        <button class="switch-btn active" aria-label="Previous"></button>
-                        <div class="switch-index">2/6</div>
-                        <button class="switch-btn active" aria-label="Next"></button>
+        </header> 
+        <footer class="el-footer" style="height: 60px;">
+            <hr style="border-bottom:1px solid #e4e7ed; margin: 12px 0; height: 0;" aria-hidden="true">
+            <div class="fx-data-menu" style="display: flex; align-items: center; gap: 24px; justify-content: space-between;">
+                <div class="button-pane">
+                    <div class="el-button-group btn-group" size="small">
+                        <button type="button" id="modal_printer" class="el-icon-printer" style="cursor: pointer">
+                        </button>
+                        <button type="button" id="modal_edit" class="el-icon-edit" style="cursor: pointer">
+                        </button>
+                        <button type="button" id="modal_delete" class="el-icon-delete" style="cursor: pointer">
+                        </button>
                     </div>
                 </div>
-                <hr style="border-bottom:1px solid #e4e7ed; margin: 12px 0; height: 0;" aria-hidden="true">
-            </footer>
-            <main class="el-main" style="max-height: 60vh; overflow-y: auto;">
-                <div id="descriptions-order"></div>
-                <div id="descriptions-wuliao"></div>
-                <div id="descriptions-subparts"></div>
-                <div id="descriptions-chanshu"></div>
-                <div id="descriptions-gongyi"></div>
-                <div id="descriptions-cnc-gongyi"></div>
-            </main> 
-        </section>
+                <div class="switch-pane fx-data-switch" style="display: flex; align-items: center; gap: 8px;">
+                    <button class="switch-btn active" aria-label="Previous"></button>
+                    <div class="switch-index">2/6</div>
+                    <button class="switch-btn active" aria-label="Next"></button>
+                </div>
+            </div>
+            <hr style="border-bottom:1px solid #e4e7ed; margin: 12px 0; height: 0;" aria-hidden="true">
+        </footer>
+        <main class="el-main" style="max-height: 60vh; overflow-y: auto;">
+            <div id="parts-descriptions-order" class='el-descriptions' data-title="订单信息"></div>
+            <div id="parts-descriptions-wuliao" class='el-descriptions' data-title="零件信息"></div>
+            <div id="parts-descriptions-subparts" class='el-descriptions' data-title="中间件信息"></div>
+            <div id="parts-descriptions-chanshu" class='el-descriptions' data-title="规格参数"></div>
+            <div id="parts-descriptions-gongyi" class='el-descriptions' data-title="工艺线路"></div>
+            <div id="parts-descriptions-subgongyi" class='el-descriptions' data-title=""></div>
+            <div id="parts-descriptions-cnc-gongyi" class='el-descriptions' data-title="CNC工艺设计"></div>
+        </main> 
     </div>
-    <!-- 模态框遮罩层 -->
-    <div id="detail-modal-overlay" class="modal-overlay"></div>
+    <div id="parts-detail-modal-overlay" class="modal-overlay"></div>
 
     <die id="process-design-modal" class="modal">
         <div class="el-dialog__header" style="height: 60px;">
         <span class="el-dialog__title">工序设计</span>
         </div>
         <hr style="border-bottom:1px solid #e4e7ed; margin: 12px 0; height: 0;" aria-hidden="true">
-        <div class="el-dialog__body" style="max-height: 80vh; overflow-y: auto;">
+        <div class="el-dialog__body" style="max-height: 90vh; overflow-y: auto;">
             <!-- 1.工序组选择 -->
             <div style="margin-bottom: 15px;">
             <label>工序组：</label>
@@ -174,31 +174,24 @@
 
             <!-- 2.工序选择与排序 -->
             <div class="transfer-container"  style="display: flex; align-items: center; ">
-                <div class="transfer-panel">                    
+                <div class="transfer-panel" id="step-before-select">                    
                     <div class="el-transfer-panel__header">可选工序</div>
-                    <div id="available-steps" class="el-transfer-panel__body" style="border:1px solid #ddd; overflow-y: auto;" 
-                        data_api = "/api/pmcui/step/step?EqpName="></div>
+                    <div id="available-steps" class="el-transfer-panel__body" style="border:1px solid #ddd; overflow-y: auto;"></div>
                 </div>
                 <div class="sort-buttons"></div>
-                <div class="transfer-panel">
+                <div class="transfer-panel" id="step-after-select">
                     <div class="el-transfer-panel__header">已选工序</div>
                     <div id="selected-steps" class="el-transfer-panel__body" style="border:1px solid #ddd; overflow-y: auto;" ></div>
                 </div>
             </div>
 
             <!-- 3.工艺参数设置 -->
-            <div style="margin: 20px 0;">
-            <div class="el-table__header-wrapper" id="param-table" >
-                <table class="el-table__header" width="100%">
-                    <thead>
-                        <tr>
-                        <th>工序名称</th>
-                        <th>工艺参数</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>            
+            <div style="margin: 20px 0;" id="step-params-set">
+            <table class="el-table" >
+                <table class="el-table__header" width="100%" id="param-table"
+                    data-headers='["工序名称","工艺参数"]' data-keys='["Name","params"]' data-inputs='["params"]'>        
                 </table>
-            </div>
+            </table>
             <div class="el-table__body-wrapper"></div>
             </div>
 
@@ -211,148 +204,40 @@
             <!-- 5.确认按钮 -->
             <div style="text-align: right;">
             <button class="el-button" id="close-step-design-modal">取消</button>
-            <button class="el-button el-button--primary" id="load-step-design"">确认</button>
+            <button class="el-button el-button--primary" id="load-step-design">确认</button>
             </div>
         </div>
     </div>
-    <!-- 模态框遮罩层 -->
     <div id="process-design-modal-overlay" class="modal-overlay"></div>
 </div>
 
-
-
 <script type="module">
-    import { 
-        loadTableVIAPI,
-        loadDetTableVIAPI,
-        loadTreeTableVIAPI,
-        renderDescriptionsFrame, 
-        addSelectProcessButtonForGongyi,
-        addDesignProcessButtonForGongyi,
-        loadStepsByGroup,
-        LoadDateFromStepDesign,
-        renderOrderPartsParmTable
-        } from "{% static 'js/load_data_vi_api.js' %}";
-    import {  switchOverlay, toggleMaximizeModal} from "{% static 'js/bmui.js' %}";
     import {
-        renderTitleDiv,
-        bindInputsForFilter,
-        getSelectedCellValue,
-    } from "{% static 'js/load_data_vi_dom.js' %}";
+        handleProcessEditModalEvent,
+        handlePartDetailModalEvent,
+        handlePartsTableSelectEvent,
+        handleOrderPartFilterEvent,
+    } from "{% static 'js/ui_pmcui.js' %}";
 
-    function renderDetailModalFrame(orderId, FNumber, title){
-    
+    import{
+        renderTableAndLoadData,
+        handleTableEvent,
+    } from "{% static 'js/eventAction.js' %}";
 
-        const partsH = ['组别', '物料编码', '物料名称', '规格型号', '生产单位', '生产数量', '零件当前状态', '交付截至' ];
-        const partKeys = ['Part.FGroup.FName', 'Part.FNumber', 'Part.FName', 'Part.FModel', 'Part.FUnit.Name', 'Quantity', 'Status', 'DeadLine'];
-        const orderH = ['订单', '产品信息', '批次号', '订单状态', '截止日期'];
-        const orderKeys = ['OrderId','Product_id','LotId','Status','Deadline'];
-        const parmH = ['材料', '加工尺寸', '毛料尺寸', '镀层要求', '备注']
-        const parmKey = ['Stuff', 'Size', 'Cost', 'Surface', 'Description']
-        const stepH = ['工序序号', '设备', '工序列表', '加工参数', '备注']
-        const stepKey = ['Index', 'Group', 'Steps', 'parmeters', 'Description']
-
-        const parts_url = `/api/pmcui/parts_order/parts_list_by_order?OrderId=${encodeURIComponent(orderId)}&FNumber=${encodeURIComponent(FNumber)}`;
-        const order_url = `/api/jihua/order/order?OrderId=${encodeURIComponent(orderId)}`;
-        const parm_url = `/api/pmcui/material_parm/material_parm?FNumber=${encodeURIComponent(FNumber)}`;
-        renderTitleDiv( '#parts-detail-modal-title', title)
-        renderDescriptionsFrame('descriptions-order', '订单信息', orderH, orderKeys, order_url);
-        renderDescriptionsFrame('descriptions-wuliao', '零件信息', partsH, partKeys, parts_url);
-        renderDescriptionsFrame('descriptions-chanshu', '规格参数', parmH, parmKey, parm_url);
-        renderDescriptionsFrame('descriptions-gongyi', '工艺线路', stepH, stepKey, '');
-        renderDescriptionsFrame('descriptions-cnc-gongyi', 'CNC工艺设计', stepH, stepKey, '');
-        addSelectProcessButtonForGongyi(FNumber);
-    }
-
-
-
-
+    // 全局变量
 
     document.addEventListener('DOMContentLoaded', function() {
-        const ordertable = document.getElementById('product-order-table');
+        renderTableAndLoadData(document.getElementById('product-order-table'));
         const partstable = document.getElementById('product-parts-table');
-        const apiBase = partstable.getAttribute('data-api');
-        const stepDesignModal = document.getElementById("process-design-modal");
-        const stepDesignoverlay = document.getElementById("process-design-modal-overlay");
-        // 这里orderId可根据你的业务逻辑获取
-        let orderId = '';
-        let isTreeMode = false;
-        let FNumber = null;
-        loadTableVIAPI(ordertable);
+        const parts_detail_modal = document.getElementById('parts-detail-modal');
+        handleOrderPartFilterEvent(document.getElementById('main-filter'), partstable);
+        handleTableEvent(document.getElementById('order-filter-result'))
 
-        ordertable.addEventListener('click', function(e) 
-        {
-            let v= getSelectedCellValue([0],e)
-            if (!v[0]) return;
-            orderId = v[0];
-            let params = bindInputsForFilter(orderId,["FNumber","FModel","Status"]);
-            let apiUrl = apiBase.split('?')[0] + '?' + params.join('&');
-            loadTableVIAPI(partstable, apiUrl, 1, 20);
-        });
+        handlePartsTableSelectEvent(partstable, parts_detail_modal);
+        handlePartDetailModalEvent(parts_detail_modal);
 
-        document.getElementById('filter-confirm-btn').onclick = function() {
-            let params = bindInputsForFilter(orderId,["FNumber","FModel","Status"]);
-            let apiUrl = apiBase.split('?')[0] + '?' + params.join('&');
-            if (orderId)
-            {   loadTableVIAPI(partstable, apiUrl, 1, 20);}
-            else{
-                loadTreeTableVIAPI(partstable, apiUrl,'POrder', 1, 20);
-                isTreeMode = true;
-            }
-        };
-
-        partstable.addEventListener('click', function(e) {
-            let v= getSelectedCellValue([0,1,2],e)
-            if (!v[0]) return;
-            FNumber = v[0];
-            switchOverlay(detailOverlay, detailModal, true);
-
-            renderDetailModalFrame(orderId, FNumber, `${v[2]}  ${v[1]}`);
-            renderOrderPartsParmTable();
-        });
-
-
-        // 零件详情查询框
-        const detailModal = document.getElementById("parts-detail-modal");
-        const detailOverlay = document.getElementById("detail-modal-overlay");
-    
-        const closeModalButton = document.getElementById("switch-modal");
-        closeModalButton.addEventListener("click", function () {
-            switchOverlay(detailOverlay, detailModal, false);
-        });
-
-        toggleMaximizeModal(detailModal, document.getElementById("maximize-modal"), null);
+        handleProcessEditModalEvent(document.getElementById('process-design-modal'))
         
-        document.getElementById('select-step-group').addEventListener('change', function() {
-            const group = document.getElementById('select-step-group').value
-            let url = `/api/pmcui/step/step?EqpName=`+ group;
-            loadStepsByGroup('select-step-group', url);
-        });
-
-        let isGongyiEditing = false;
-        document.getElementById('modal_edit').addEventListener('click', function() {
-            isGongyiEditing = !isGongyiEditing;
-            if (isGongyiEditing) {
-                this.classList.toggle('btn-active');
-                addDesignProcessButtonForGongyi(FNumber);
-                const orderTable = container.querySelector('#descriptions-gongyi .el-descriptions .el-descriptions__table tbody');
-                orderTable.innerHTML = '';
-            }else{
-                this.classList.remove('btn-active');
-                const div = container.querySelector('#descriptions-gongyi .el-descriptions .el-descriptions__footer');
-                div.innerHTML = '';
-            }
-        });
-
-        
-        // 工艺设计模态框
-        document.getElementById("close-step-design-modal").addEventListener("click", function () {
-            switchOverlay(stepDesignoverlay, stepDesignModal, false);
-        });
-        document.getElementById("load-step-design").addEventListener("click", function () {            
-            LoadDateFromStepDesign();
-            switchOverlay(stepDesignoverlay, stepDesignModal, false);
-        });
     });
 </script>
 {% endblock %}

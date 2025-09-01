@@ -8,8 +8,9 @@ from django_starter.http.response import responses
 
 from apps.bmui.models import *
 from apps.bmui.apis.material.schemas import *
+from apps.pmcui.models import Step
 
-from django.db.models import Q
+from django.db.models import  F, Q, Value 
 router = Router(tags=['material'])
 
 
@@ -63,3 +64,17 @@ def destroy(request, item_id):
     item = get_object_or_404(Material, FId=item_id)
     item.delete()
     return responses.ok('已删除')
+
+@router.get('/submaterial', response= List[SubMaterialOut], url_name='bmui/material/getSubMaterial')
+def getSubMaterial(request, FId: int = None, FModel: str = None, FNumber: str = None):
+    filters = Q()
+    if FId:
+        filters &= Q(FId=FId)
+    if FModel:
+        filters &= Q(FModel__icontains=FModel)
+    if FNumber:
+        filters &= Q(FNumber__icontains=FNumber)
+
+    step = Step.objects.select_related('EqpType').filter(Q(Name = '中间件')).first()
+    qs = Material.objects.filter(FParent_id=FId).annotate(Name=F('FModel'), Id=Value(step.Id), EqpName=Value(step.EqpType.Name))
+    return qs

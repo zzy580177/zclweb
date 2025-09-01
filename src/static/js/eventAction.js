@@ -1,0 +1,258 @@
+import {tableRenderer, selecterRenderer } from './renderFrame.js';
+import {loadingOverlay} from './utils.js'
+
+const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
+
+
+export class ApiHandler {
+    constructor(baseURL) {
+        this.baseURL = baseURL.endsWith('/') ? baseURL.slice(0, -1) : baseURL;
+        this.pendingRequests = new Set();
+    }
+
+    async request({
+        method = 'GET',
+        endpoint = '',
+        params = {},
+        data = null,
+        renderSelector = null,
+        onSuccess = null,
+        onError = null,
+        toggleLoad = null
+    }) {
+        const queryString = this.buildQueryString(params);
+        const url = endpoint? `${this.baseURL}/${endpoint.replace(/^\//, '')}${queryString}`: 
+            `${this.baseURL}${queryString}`;
+        const requestId = `${method}_${url}`;
+
+        try {
+            this.toggleLoading(toggleLoad, true);
+            this.pendingRequests.add(requestId);
+
+            const response = await fetch(url, { method,
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                ...(data && { body: JSON.stringify(data) })
+            });
+
+            let result = await this.parseResponse(response);
+            result = await this.parseResponseData(result)
+            
+            if (renderSelector && document.querySelector(renderSelector)) {
+                this.renderResult(renderSelector, result);
+            }
+            if (!result.success) {
+                onError?.(result.data)
+            }else{
+                onSuccess?.(result.data);
+                return result;
+            }
+        } catch (error) {
+            this.showDefaultError(error);
+            throw error;
+        } finally {
+            this.pendingRequests.delete(requestId);
+            this.toggleLoading(toggleLoad, false);
+        }
+    }
+
+    buildQueryString(params) {
+        const entries = Object.entries(params).filter(([_, value]) => value !== undefined && value !== null)
+            .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+        return entries.length ? `?${entries.join('&')}` : '';
+    }
+
+    renderResult(selector, data) {
+        const container = document.querySelector(selector);
+        if (!container) return;        
+        container.innerHTML = typeof data === 'object' 
+            ? JSON.stringify(data, null, 2) 
+            : String(data);
+    }
+
+    toggleLoading(element, state) {
+        if (!element) return;        
+        if (state)
+            loadingOverlay.show()
+        else
+            loadingOverlay.hide()
+    }
+
+    parseResponse(response) {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    }
+
+    parseResponseData(data)
+    {
+        const success = data?.data?.success ?? data?.success ?? true;
+        const mainData = data?.data?.data ?? data?.data ?? data;                    
+        return {
+            success: success, 
+            data: mainData, 
+            message: data?.data?.message ?? data?.message};
+    }
+
+    showDefaultError(error) {
+        console.error('API Error:', error);
+        alert(`操作失败: ${error.message}`);
+    }
+}
+
+export async function fetchDataRenderFrame(frameRenderer, method = 'GET', data = null) {  
+    const url = frameRenderer?.url?.[method]??''
+    const endpoint = frameRenderer.endpoint === undefined? '' : frameRenderer.endpoint;
+    const params = frameRenderer.url_params === undefined? {} : frameRenderer.url_params
+    if(url === '' || url === null || (url.endsWith('/') && !endpoint)) {
+        console.info('url 为空');
+        frameRenderer.render();
+        return;
+    }
+    
+    const api = new ApiHandler(url);
+    try {
+        await api.request({
+            method : method,
+            data : data,
+            endpoint : endpoint,
+            params: params,
+            toggleLoad: frameRenderer.toggleLoad,
+            onSuccess: (response) => {
+               frameRenderer.render(response);
+            },
+            onError: (error) => {
+               frameRenderer.renderError(error);
+            }});
+    } catch (error) {
+        console.error('Unexpected error:', error);
+        alert('API获取失败，请稍后重试');
+    }
+}
+
+export class TablerHandler {
+    constructor(table, method = 'GET'){
+        this.table = table;
+        this.url = JSON.parse(table.dataset.url || '{}');
+        this.data = null;
+        this.orderPart = JSON.parse(table.dataset.orderPart || '{}')
+        this.method = method;
+        this.result = 'ok';
+        this.toggleLoad = true;
+    }
+    _validateFormInputs(target) {
+        const requiredInputs = target.querySelectorAll('input[required]');
+        return Array.from(requiredInputs).every(input => input.checkValidity());
+    }
+
+    async update(target = this.target) {
+        if (!this.table) return console.error('Table not found') || false;
+        this.result = this._getData(target);
+        if(target.nodeName == 'TR') this.table.dataset.endpoint = this.result.Id
+        return this.result === 'ok' 
+            ? await renderTableAndLoadData(this.table, this.method, this.data, this.toggleLoad) || true
+            : this.result;
+    }
+
+    _getData(target){        
+        if(!this._validateFormInputs(target))             
+            return 'checkValidityFailed';
+        if(target.nodeName == 'TR'){
+            this.data = this._getTrData(target);
+            this.endpoint = this.data.Id
+        }else{
+            this.data = []
+            const rows =  target.querySelectorAll('tr');
+            rows.forEach( row => this.data.push(this._getTrData(row)))
+        }
+        if(this.data.length == 0) return 'checkDataEmpty';
+        return 'ok'
+    }
+    _getTrData(row){
+        const rawData = Object.assign({}, this.orderPart)
+        const tds = row.getElementsByTagName('td');
+        Array.from(tds).forEach(td => {
+            if(!td.querySelector('button')) {
+                const divs = td.querySelectorAll('div');
+                const key = td.dataset.key;                
+                if(divs.length > 0) {
+                    rawData[key] = Array.from(divs).map(div => div.textContent.trim());
+                } else {
+                    rawData[key] = td.firstChild ? 
+                        (td.firstChild.value || td.firstChild.textContent.trim()) : 
+                        td.textContent.trim();
+                }
+            }
+        });
+        return rawData;
+    }
+    async pageLoad(target){
+        if(!this.table) {
+            console.error('Table not found');
+            return false;
+        }
+        this.table.dataset.page = target.dataset.page||1
+        await renderTableAndLoadData(this.table);
+    }
+    addRow(){
+        const tableBody = this.table.querySelector('tbody');
+        const firstRow = tableBody.querySelector("tr");
+        if (!firstRow) {
+            console.error("addRow: 表格体中没有找到任何行");
+            return;
+        }
+        const newRow = firstRow.cloneNode(true);
+        const inputs = newRow.querySelectorAll("input, select");
+        inputs.forEach(input => {
+            if (input.tagName === "INPUT") input.value = "";
+            else if (input.tagName === "SELECT") input.selectedIndex = 0;
+        });
+        tableBody.appendChild(newRow);
+        return newRow;
+    }
+    deleteRow(target){
+        const tableBody = this.table.querySelector('tbody');
+        const minLen = target?1:0
+        if (tableBody?.children?.length >minLen) {
+            if(target) target.remove();
+            else {
+                const row = tableBody.rows[tableBody.rows.length - 1];
+                row.remove();
+            }
+        } else {
+            alert("至少保留一行！");
+        }
+    }
+}
+
+export async function renderTableAndLoadData(container, method='GET', data=null, isToggleLoad = true, renderer = tableRenderer) {
+    const tableRender = new renderer(container)    
+    tableRender.toggleLoad = isToggleLoad;
+    tableRender.method = method;
+    await fetchDataRenderFrame(tableRender, method, data);
+}
+
+export function handleTableEvent(container)
+{
+    container.addEventListener('click', e => {
+        if (e.target.matches('a.pager-btn')) {
+            const table = e.target.parentNode.previousElementSibling;
+            new TablerHandler(table).pageLoad(e.target);
+            e.preventDefault(); 
+        }
+        if (e.target.matches('#add-row')) {
+            const table = e.target.parentNode.previousElementSibling;
+            new TablerHandler(table).addRow()}
+        if (e.target.matches('#remove-row')) {
+            new TablerHandler(container.querySelector('table')).deleteRow(e.target.closest("tr"))}
+        if (e.target.matches('#submit')) {
+            const table = e.target.parentNode.previousElementSibling;
+            const tableHandler = new TablerHandler(table, 'POST');
+            tableHandler.update(table.querySelector("tbody"));
+        }
+        if (e.target.matches('#updata')) {
+            new TablerHandler(container.querySelector('table'), 'PUT').update(e.target.closest("tr"))}
+    });
+}
+
+
