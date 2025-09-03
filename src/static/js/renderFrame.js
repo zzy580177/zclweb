@@ -54,7 +54,8 @@ export class partDescriptions
             'keys': JSON.stringify(K_ENDPOINTS['pmcui-porder'][title]||[]),
             'url': JSON.stringify(API_CONFIG['pmcui-porder'][title].path),
             'url_params': JSON.stringify(URLConfig.buildApiParams('pmcui-porder',title, this.orderPart)),
-            'orderPart': JSON.stringify(this.orderPart)
+            'orderPart': JSON.stringify(this.orderPart),
+            'buttons': this.title.includes('工艺线路')? JSON.stringify(['编辑']): '[]'
         } 
         utils.setDataset(this.tableDiv, params)
         const tableRender = ['工艺线路','中间件信息','CNC工艺设计'].includes(title)? 
@@ -134,8 +135,13 @@ export class partDescriptions
         extraDiv.style.marginTop = '20px';
         extraDiv.style.display = 'flex';
         extraDiv.style.gap = '10px';
-        this.selecter = document.createElement('select')
+        this.selecter = document.createElement('select')         
+        this.selecter.style.display ='inline-flex'       
+        this.selectedContext = document.createElement('div')         
+        this.selectedContext.id = 'selected_route_note'
+        this.selectedContext.style.display ='inline-flex'     
         extraDiv.appendChild(this.selecter);
+        extraDiv.appendChild(this.selectedContext);   
         this.extraDiv = extraDiv;
         this.container.appendChild(extraDiv);
     }
@@ -163,7 +169,7 @@ export class partDescriptions
     {
         if (!this.footerDiv || !this.extraDiv) return;
         const isEditActive = this.modal.querySelector('#modal_edit').classList.contains('btn-active');
-        const display = isEditActive ? 'flex' : 'none';
+        const display = isEditActive ? 'inline-flex' : 'none';
         this.footerDiv.innerHTML = ''; // 清空现有内容
         const buttonContainer = document.createElement('div');
         buttonContainer.style.marginTop = '10px';
@@ -203,9 +209,10 @@ export class partDescriptions
         const select_button = document.createElement('button');            
         select_button.id = 'selecter-save'
         select_button.className = 'el-button el-button--primary    el-button--small';
-        select_button.textContent = '确认选择';
+        select_button.textContent = '确认';
         select_button.dataset.edit = isEditActive;
         select_button.style.display = display;
+        select_button.style.float = 'right';
 
         this.extraDiv.appendChild(select_button);
     }
@@ -272,6 +279,8 @@ export class tableRenderer{
         this.keys = JSON.parse(this.params?.keys || '[]');
         this.hidkeys = JSON.parse(this.params?.hidkeys || '[]');
         this.inputs = JSON.parse(this.params?.inputs || '[]');
+        this.require = JSON.parse(this.params?.require || '[]');        
+        this.selects = JSON.parse(this.params?.selects || '[]');
         this.buttons = JSON.parse(this.params?.buttons || '[]');
         this.limit = JSON.parse(this.params?.limit || 0);
         this.page = JSON.parse(this.params?.page || 1);;
@@ -327,7 +336,11 @@ export class tableRenderer{
             });  
         }  
     }
-
+    renderEmptyTable() {
+        BaseRenderer.clearContainer(this.table);
+        this.createHeader();
+        this.createBody();
+    }
     render(result) {
         if(this.method !== 'GET') return this.postRender(result)
         BaseRenderer.clearContainer(this.table);
@@ -361,20 +374,51 @@ export class tableRenderer{
         this.table.appendChild(this.thead);
     }
     setTdtype(key, val){
-        if(this.buttons.length == 0 && this.inputs.length ==0) 
-            return Array.isArray(val)? 'div':'td';
+        const request = this.require.includes(key)
         if(this.buttons.includes(key)) {
-            return 'button';
+            return {type: 'button', required: request};
         }
         if(this.inputs.includes(key)) {
-            return 'input';
+            return {type: 'input', required: request};
         }
+        if(this.selects[key]!== undefined) {
+            return {type: 'select', required: request};
+        }
+        return Array.isArray(val)? {type: 'div', required: request}:{type: 'td', required: request};
     }
+
     getValueByPath(obj, path, fallback = '-') {
         return utils.getValueByPath(obj, path, fallback);
     }
+    createButtonForCell(key)
+    {
+        const button = document.createElement('button');
+        button.textContent = key;
+        button.id = BUTTON_NAME2ID[key];
+        button.className = 'el-button el-button--warning el-button--small';
+        return button
+    }    
+    createInputForCell(cell, val, request)
+    {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = val;
+        input.required = request;        
+        cell.appendChild(input);
+    }
+    renderRow(data, rowIdx){
+        if (this.tbody.rows && this.tbody.rows.length > rowIdx-1) {
+            const tr = this.tbody.rows[rowIdx-1];
+            const inputs = tr.querySelectorAll('input')
+            for (let i = 0; i < inputs.length; i++) {
+                inputs[i].value=data.items[0][this.keys[i]]
+            }
+        }
+    }
     createCell(val, key) {
-        const cellType = this.setTdtype(key, val);
+        const tdType = this.setTdtype(key, val);
+        const cellType = tdType.type;
+        const request = tdType.required;
         const cell = document.createElement('td');
         cell.setAttribute('data-key', key.split('.').at(-1));
         if (this.hidkeys.includes(key)) {
@@ -382,17 +426,21 @@ export class tableRenderer{
         }
         switch (cellType) {
             case 'input':
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.value = val;
-                cell.appendChild(input);
+                //cell.contentEditable  = true;
+                //cell.textContent = val;
+                this.createInputForCell(cell, val, request)
+                break;
+            case 'select':
+                const select = document.createElement('select');  
+                select.required = request;
+                select.dataset.url = JSON.stringify(this.selects[key].path || {})
+                select.dataset.endpoint = this.selects[key].endpoint||''
+                select.dataset.key = this.selects[key].key
+                select.dataset.textK = this.selects[key].textK
+                cell.appendChild(select);
                 break;
             case 'button':
-                const button = document.createElement('button');
-                button.textContent = key;
-                button.id = BUTTON_NAME2ID[key];
-                button.className = 'el-button el-button--warning el-button--small';
-                cell.appendChild(button);
+                cell.appendChild(this.createButtonForCell(key));
                 break;
             case 'div':
                 cell.style.whiteSpace = 'nowrap';
@@ -410,21 +458,35 @@ export class tableRenderer{
             }
         return cell;
     }
+
     createRow(item) {
         if (!this.table || !this.keys || this.keys.length === 0) return null;
         const row = document.createElement('tr');
+        if(item){
+            this.keys.forEach(key => {
+                const val = item[key] ? item[key] : this.getValueByPath(item, key, '-');
+                row.appendChild(this.createCell(val,key));});
+        }else{
+            this.keys.forEach(key => {row.appendChild(this.createCell('',key));});
+        }
+        return row;
+    }    
+    updateRow(row, item){
+        if (!row ||!this.table || !this.keys || this.keys.length === 0) return null;
+        row.innerHTML = ''
         this.keys.forEach(key => {
             const val = item[key] ? item[key] : this.getValueByPath(item, key, '-');
             row.appendChild(this.createCell(val,key));
         });
-        return row;
-    }    
+    }
     createBody(){
         if (!this.table || !this.keys || this.keys.length === 0) return;
         this.tbody = document.createElement('tbody');
-        this.data.forEach(item => {
-            this.tbody.appendChild(this.createRow(item));
-        });
+        if(Array.isArray(this.data)&&(this.data.length > 0)){             
+            this.data.forEach(item => {this.tbody.appendChild(this.createRow(item));});
+        }else{
+            this.tbody.appendChild(this.createRow())
+        }
         this.table.appendChild(this.tbody);
     }
     createTreeBody(parentKey='POrder_id') {
@@ -519,6 +581,9 @@ export class descriptionsTable extends tableRenderer {
             this.table.style.borderCollapse = 'collapse';
             this.id = this.table.id;
         }
+        
+        this.isEditActive = document.querySelector('#modal_edit')?.classList?.contains('btn-active') || false;
+        this.display = this.isEditActive ? 'flex' : 'none';
     }
     postRender(response){
         if(!response) return
@@ -539,6 +604,16 @@ export class descriptionsTable extends tableRenderer {
             Array.isArray(response?.Error) ? response.Error.join('\n') : ''
         ].filter(Boolean).join('\n\n') || '发生未知错误';
         alert(errorMessage);
+    }
+    createButtonForCell(key)
+    {
+        const button = document.createElement('button');
+        button.textContent = key;
+        button.id = 'process_edit';
+        button.className = 'el-button el-button--warning el-button--small';
+        button.dataset.edit = this.isEditActive;
+        button.style.display = this.display;
+        return button
     }
 }
 class descriptionsCard extends descriptionsTable {
@@ -588,7 +663,8 @@ export class selecterRenderer{
         this.default.textContent = this.params?.defaultText || '请选择';
         this.selectedValue = this.selecter?.value || '';
         this.url_params = this.params?.url_params ? JSON.parse(this.params.url_params) : {};
-        this.url = JSON.parse(this.params?.url ||'{}') 
+        this.url = JSON.parse(this.params?.url ||'{}')         
+        this.endpoint = this.params?.endpoint ||''
         this.isBefore = this.selecter?.classList.contains('before') || false;
         this.isAfter = this.selecter?.classList.contains('after') || false;
     }
@@ -609,7 +685,8 @@ export class selecterRenderer{
             data.forEach(item => {
                 const option = document.createElement('option');
                 option.value = utils.getValueByPath(item, this.params.key );
-                option.textContent = `${this.params.optionText} ${option.value}`;
+                option.textContent = this.params.textK? utils.getValueByPath(item, this.params.textK ) 
+                : `${this.params.optionText} ${option.value}`;
                 this.options.push(option);
             });
             this.selecter.classList.toggle('before', true);

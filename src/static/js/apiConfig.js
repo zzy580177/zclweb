@@ -40,7 +40,22 @@ export const API_CONFIG = {
         },
         route_get: {GET:'/api/pmcui/process_route/process_route_steps'},
         subPatrsMaterialLoad: {GET:'/api/pmcui/process_step_steps/route_subMaterial/'},
-        step_transfer:{'中间件':{GET:'/api/bmui/material/submaterial'}, 'Other':{GET:'/api/pmcui/step/step'}},
+        step_transfer:{
+            '中间件':{GET:'/api/bmui/material/submaterial'}, 
+            'Other':{GET:'/api/pmcui/step/step'}},
+        listPorderParts: {
+            GET:'/api/pmcui/parts_order/parts_list_by_order', 
+            PUT:'/api/pmcui/parts_order/update/',
+            POST:'/api/pmcui/parts_order/create'
+        }
+    },
+    'jihua':{
+        order:{GET:'/api/jihua/order/order'}
+    },
+    'bmui':{
+        material:{POST:'/api/bmui/material/material', GET:'/api/bmui/material/material'},
+        material_group:{path:{GET:'/api/bmui/material_group/material_group'}, key:'FId', textK:'FName'},
+        attribute:{path:{GET:'/api/bmui/attribute/list/'}, endpoint:'单位', key:'Id', textK:'Name'}
     }
 };
 
@@ -50,7 +65,7 @@ export const H_ENDPOINTS = {
         '零件信息': ['组别', '物料编码', '物料名称', '规格型号', '生产单位', '生产数量', '零件当前状态', '交付截至'],
         '中间件信息': ['子件编码', '子件名称', '规格型号', '生产单位'],
         '规格参数': ['材料', '加工尺寸', '毛料尺寸', '镀层要求', '备注'],
-        '工艺线路': ['工序序号', '类别', '工序ID列表', '工序列表', '加工参数', '备注'],
+        '工艺线路': ['工序序号', '类别', '工序ID列表', '工序列表', '加工参数', '备注','操作'],
         '子件工艺线路': ['工序序号', '类别', '工序ID列表', '工序列表', '加工参数', '备注'],
         'CNC工艺设计': [],
         'main-filter': ['订单号','产品','批次']
@@ -63,7 +78,7 @@ export const K_ENDPOINTS = {
         '零件信息': ['Part.FGroup.FName', 'Part.FNumber', 'Part.FName', 'Part.FModel', 'Part.FUnit.Name', 'Quantity', 'Status', 'DeadLine'],
         '中间件信息': ['FNumber', 'FName', 'Name', 'unit'],
         '规格参数': ['Stuff', 'Size', 'Cost', 'Surface', 'Description'],
-        '工艺线路': ['SeqNum', 'Steps_Step_EqpType_Name', 'Steps_Step_Id', 'Steps_Step_Name', 'Process_Steps_Parm', 'Description'],
+        '工艺线路': ['SeqNum', 'Steps_Step_EqpType_Name', 'Steps_Step_Id', 'Steps_Step_Name', 'Process_Steps_Parm', 'Description', '编辑'],
         //['Route_id','Route_Material_FNumber','Route_Material_FModel','POrder_OrderId']
         '子件工艺线路': ['SeqNum', 'Steps_Step_EqpType_Name', 'Steps_Step_Id', 'Steps_Step_Name', 'Process_Steps_Parm', 'Description'],
         'CNC工艺设计': [],
@@ -84,7 +99,8 @@ export const K_HIDDENS ={
     }
 };
 export const BUTTON_NAME2ID ={
-    '变更':'updata'
+    '变更':'updata',
+    '删除':'remove-row'
 }
 
 

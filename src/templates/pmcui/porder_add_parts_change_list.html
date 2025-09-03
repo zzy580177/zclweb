@@ -11,7 +11,7 @@
         <input type="hidden"  id="POrder"  name="POrder" value="{{ POrder }}">
         <h3>追加零件到订单: {{POrder|safe}}</h3>
         <div id="porder-details">
-            <table data-url='{"POST":"/api/pmcui/parts_order/create"}'>
+            <table>
                 <thead>
                     <tr>
                         <th hidden>订单号</th>
@@ -60,17 +60,20 @@
             data-keys='["POrder_id","Part.FId","Part.FNumber","Part.FName","Part.FModel","Part.FUnit.Name","Quantity","Status", "Description", "Id", "变更"]'
             data-hidkeys='["Part.FId","POrder_id", "Id"]' 
             data-buttons = '["变更"]'
-            data-inputs = '["Quantity","Description"]'
-            data-url='{"GET":"/api/pmcui/parts_order/parts_list_by_order", 
-            "PUT":"/api/pmcui/parts_order/update"}'  data-page=1 data-limit=20>
+            data-inputs = '["Quantity","Description"]' data-page=1 data-limit=20>
         </table>
         <div class="table-pager" style="margin: 10px 0px; text-align: center;"></div>
     </div>
 <script type="module">
     import {renderTableAndLoadData, handleTableEvent} from "{% static 'js/eventAction.js' %}";
+    import {API_CONFIG} from "{% static 'js/apiConfig.js' %}";
+
     document.addEventListener("DOMContentLoaded", function () {
+        const editTable = document.querySelector('#porder-details table')
+        editTable.dataset.url = JSON.stringify(API_CONFIG['pmcui-porder'].listPorderParts)
         const partstable = document.getElementById('product-parts-table');
         partstable.dataset.url_params = `{"POrder_id": "{{ POrder }}"}`;
+        partstable.dataset.url = JSON.stringify(API_CONFIG['pmcui-porder'].listPorderParts)
         renderTableAndLoadData(partstable);
         handleTableEvent(document.querySelector('#porder-details'));
         handleTableEvent(document.querySelector('#result_list'));

@@ -100,7 +100,8 @@ export class ApiHandler {
     }
 }
 
-export async function fetchDataRenderFrame(frameRenderer, method = 'GET', data = null) {  
+export async function fetchDataRenderFrame(frameRenderer, method = 'GET', data = null,
+     onSuccess = null, onError = null) {  
     const url = frameRenderer?.url?.[method]??''
     const endpoint = frameRenderer.endpoint === undefined? '' : frameRenderer.endpoint;
     const params = frameRenderer.url_params === undefined? {} : frameRenderer.url_params
@@ -119,10 +120,39 @@ export async function fetchDataRenderFrame(frameRenderer, method = 'GET', data =
             params: params,
             toggleLoad: frameRenderer.toggleLoad,
             onSuccess: (response) => {
-               frameRenderer.render(response);
+               !onSuccess? frameRenderer.render(response): onSuccess(response);
             },
             onError: (error) => {
-               frameRenderer.renderError(error);
+               !onError? frameRenderer.renderError(error): onError(response);
+            }});
+    } catch (error) {
+        console.error('Unexpected error:', error);
+        alert('API获取失败，请稍后重试');
+    }
+}
+
+export async function fetchDataForTableRow(renderer, rowIdx) {  
+    const url = renderer?.url?.GET??''
+    const endpoint = renderer.endpoint === undefined? '' : renderer.endpoint;
+    const params = renderer.url_params === undefined? {} : renderer.url_params
+    if(url === '' || url === null || (url.endsWith('/') && !endpoint)) {
+        console.info('url 为空');
+        frameRenderer.render();
+        return;
+    }
+    
+    const api = new ApiHandler(url);
+    try {
+        await api.request({
+            method : 'GET',
+            endpoint : endpoint,
+            params: params,
+            toggleLoad: renderer.toggleLoad,
+            onSuccess: (response) => {
+               renderer.renderRow(response, rowIdx);
+            },
+            onError: (error) => {
+               renderer.doNonThing(error);
             }});
     } catch (error) {
         console.error('Unexpected error:', error);
@@ -144,13 +174,30 @@ export class TablerHandler {
         const requiredInputs = target.querySelectorAll('input[required]');
         return Array.from(requiredInputs).every(input => input.checkValidity());
     }
+    async getDataByUniqKey(input){
+        const uniqKeys = JSON.parse(this.table.dataset.uniqKeys || '[]');
+        this.target = input.closest('tr')
+        const data = this._getTrData(this.target); 
+        let hasUniqK = false 
+        let url_params = {}      
+        for (const key of uniqKeys) {
+            if (data[key]) {
+                url_params = { [key]: data[key] };
+                hasUniqK = true
+                break;}
+        }
+        if (hasUniqK){
+            const tableRender = new tableRenderer(this.table)
+            tableRender.url_params = url_params;
+            await fetchDataForTableRow(tableRender, this.target.rowIndex); }         
+    }
 
     async update(target = this.target) {
         if (!this.table) return console.error('Table not found') || false;
         this.result = this._getData(target);
         if(target.nodeName == 'TR') this.table.dataset.endpoint = this.result.Id
         return this.result === 'ok' 
-            ? await renderTableAndLoadData(this.table, this.method, this.data, this.toggleLoad) || true
+            ? await renderTableAndLoadData(this.table, this.method,  this.data, this.toggleLoad) || true
             : this.result;
     }
 
@@ -169,6 +216,7 @@ export class TablerHandler {
         return 'ok'
     }
     _getTrData(row){
+        if(!row) return {}
         const rawData = Object.assign({}, this.orderPart)
         const tds = row.getElementsByTagName('td');
         Array.from(tds).forEach(td => {
@@ -232,6 +280,11 @@ export async function renderTableAndLoadData(container, method='GET', data=null,
     await fetchDataRenderFrame(tableRender, method, data);
 }
 
+export function randerInputTable(table){
+    const renderer = new tableRenderer(table)
+    renderer.renderEmptyTable()
+}
+
 export function handleTableEvent(container)
 {
     container.addEventListener('click', e => {
@@ -246,13 +299,20 @@ export function handleTableEvent(container)
         if (e.target.matches('#remove-row')) {
             new TablerHandler(container.querySelector('table')).deleteRow(e.target.closest("tr"))}
         if (e.target.matches('#submit')) {
-            const table = e.target.parentNode.previousElementSibling;
+            let table = e.target.parentNode.previousElementSibling;
+            table = table.nodeName =='TABLE'? table: table.querySelector('table')
             const tableHandler = new TablerHandler(table, 'POST');
             tableHandler.update(table.querySelector("tbody"));
         }
         if (e.target.matches('#updata')) {
             new TablerHandler(container.querySelector('table'), 'PUT').update(e.target.closest("tr"))}
-    });
+        if (e.target.matches('select')) {
+            const selecterRender = new selecterRenderer(e.target)
+            fetchDataRenderFrame(selecterRender)} 
+        if (e.target.matches('input')) {            
+            let table = e.target.closest('table')
+            new TablerHandler(table, 'GET').getDataByUniqKey(e.target)} 
+        });
 }
 
 

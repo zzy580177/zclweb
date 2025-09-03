@@ -13,14 +13,18 @@ export class ProcRouteEditer extends TablerHandler{
         super(container.querySelector('.el-descriptions__body table'), method);
         this.container = container;
         this.selecter = container.querySelector('.el-descriptions__extra select')
+        this.selectHelp = container.querySelector('#selected_route_note')
         this.target = this.table.querySelector('tbody')
+        this.partInfo = JSON.parse(this.table.dataset.orderPart||'{}')
+        this.selectHelpText = `订单: ${this.partInfo.POrder_id||''}  零件: ${this.partInfo.FModel||''} 选择加工工艺流程编号: `
     }
 
     async update(target = this.target) {
         if (!this.table) return console.error('Table not found') || false;
         this.result = this._getData(target);
         return this.result === 'ok' 
-            ? await renderTableAndLoadData(this.table, this.method, this.data, this.toggleLoad, descriptionsTable) || true
+            ? await renderTableAndLoadData(this.table, this.method, this.data, 
+                this.toggleLoad, descriptionsTable)
             : this.result;
     }
 
@@ -29,6 +33,7 @@ export class ProcRouteEditer extends TablerHandler{
     deleteProcess(){
         this.deleteRow()
         this.table.dataset.endpoint = ''
+        this.selectHelp.textContent = this.selectHelpText
         updateSelecterSaveButtonState(this.container, this.table.dataset.endpoint)
     }
     newProcess(data){
@@ -44,9 +49,20 @@ export class ProcRouteEditer extends TablerHandler{
             this.target.appendChild(tr);
         }
         this.table.dataset.endpoint = ''
+        this.selectHelp.textContent = this.selectHelpText
         updateSelecterSaveButtonState(this.container, this.table.dataset.endpoint)
     }
-
+    editProcess(data, rowIdx){
+        const routeRender = new descriptionsTable(this.table);
+        const rows = this.table.querySelectorAll('tbody tr');
+        if(rowIdx !== undefined && rowIdx >= 1 && rowIdx < rows.length) {
+            const targetRow = rows[rowIdx-1];
+            routeRender.updateRow(targetRow, data);
+        }
+        this.table.dataset.endpoint = ''
+        this.selectHelp.textContent = this.selectHelpText
+        updateSelecterSaveButtonState(this.container, this.table.dataset.endpoint)
+    }
     async selectOptionLoad()
     {
         const selecterRender = new selecterRenderer(this.selecter)
@@ -57,6 +73,7 @@ export class ProcRouteEditer extends TablerHandler{
         const routeId = this.selecter.value;
         if (!routeId) return;
         this.table.dataset.endpoint = routeId;
+        this.selectHelp.textContent = `${this.selectHelpText}${routeId} `
         updateSelecterSaveButtonState(this.container, this.table.dataset.endpoint)
         const tableRender = new descriptionsTable(this.table);
         await fetchDataRenderFrame(tableRender); 
@@ -66,14 +83,15 @@ export class ProcRouteEditer extends TablerHandler{
         if(isSubPart) return
         renderSubgongyiFrame(document.querySelector('#parts-descriptions-subgongyi'), this.selecter);
     }
-    static processEditTriger(table)
+    static processEditTriger(table, row)
     {
         const tbody = table.querySelector('tbody');
         const modal = document.getElementById('process-design-modal');
         utils.switchOverlay(modal, true);        
         modal.dataset.url = table.dataset.orderPart;
         modal.dataset.orderPart = table.dataset.orderPart;
-        modal.dataset.SeqNum = tbody?.rows?.length + 1 || 1;
+        modal.dataset.SeqNum = row? row.rowIndex : tbody?.rows?.length + 1 || 1;
+        modal.dataset.mode = row? 'edit' : 'create';
         new ProcessEditer(modal).initModel();  
     }
     static async routeEditTriger(modal, button) {    
@@ -133,7 +151,7 @@ export class ProcessEditer{
         const tableId = `process-${this.orderPart["FModel"]||''}`;   
         this.partDesc = document.querySelector(`#${tableId}`).closest(".el-descriptions")
         this.group = this.selecter.value;
-        this.paramRender = new tableRenderer(this.paramTable)    
+        this.paramRender = new tableRenderer(this.paramTable)   
     }
 
     initModel()
@@ -200,9 +218,11 @@ export class ProcessEditer{
             Process_Steps_Parm: [...this.paramTbody.querySelectorAll('input')]
             .map(input => input.value || input.textContent)
         }; 
+        const isCreate = this.modal.dataset.mode == 'create' ? true : false;
         const result = !this.partDesc? alert(`页面丢失重新点击添加工序`)||true : 
         data.Steps_Step_Id.length == 0? alert(`请选择适合工序`)||false :
-            new ProcRouteEditer(this.partDesc).newProcess(data)|| true
+            isCreate? new ProcRouteEditer(this.partDesc).newProcess(data)||true :
+            new ProcRouteEditer(this.partDesc).editProcess(data, this.SeqNum)|| true
         return result
     }
 }
@@ -306,6 +326,9 @@ export function handlePartDetailModalEvent(modal) {
             new ProcRouteEditer(e.target.closest(".el-descriptions")).deleteProcess();}
         if (e.target.matches('#new-process')){
             ProcRouteEditer.processEditTriger(e.target.closest(".el-descriptions").querySelector('.el-descriptions__body table'));}
+        if (e.target.matches('#process_edit')){
+            ProcRouteEditer.processEditTriger(
+                e.target.closest(".el-descriptions").querySelector('.el-descriptions__body table'), e.target.closest("tr"));}
         if (e.target.matches('#table-save')) 
             new ProcRouteEditer(e.target.closest(".el-descriptions"), 'POST').update();
         if (e.target.matches('#selecter-save')) 
