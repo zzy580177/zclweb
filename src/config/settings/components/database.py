@@ -9,7 +9,7 @@ DATABASES = {
         'NAME':'amfAuth',
         'PORT':'1433',
         'USER':'amfAuth1234',
-        'PASSWORD':'Zclamfdb123',
+        'PASSWORD':'Zclamfdb1234',
         "SCHEMA": "CNC700Cutting",
         'OPTIONS':{
             'DRIVER':'SQL server Native Client 11.0',
@@ -86,6 +86,7 @@ SCHEMA_MAPPING = {
     'OKIAVN': 'CNC700Cutting',
     'pmcui': 'base',
     'bmui': 'base',
+    'a_wuliao': 'base'
 }
 
 # Default primary key field type

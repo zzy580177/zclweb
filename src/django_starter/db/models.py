@@ -58,7 +58,7 @@ class Attribute(models.Model):
     class Meta:
         unique_together = ('Name', 'Description')
         abstract = True
-        db_table = "[%s].[ProcessRoute]"% bmuiAppName
+        db_table = "[%s].[Attribute]"% bmuiAppName
         app_label = bmuiAppName
         verbose_name = '属性表'
         verbose_name_plural = verbose_name

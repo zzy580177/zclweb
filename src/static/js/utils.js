@@ -2,17 +2,16 @@ import { API_CONFIG} from './apiConfig.js'
 
 export class utils
 {
-    static switchOverlay(modal, active) {
-        const overlay = modal.nextElementSibling;
-        if (active) {
-            modal.style.display = "block";
-            if(overlay) overlay.style.display = "block";
-        } else {
-            modal.style.display = "none";
-            if(overlay) overlay.style.display = "none";
-        }
-    }
 
+    static switchOverlay(modal, active) {
+        if (!modal) return; // 提前终止无效调用
+        
+        const overlay = modal.nextElementSibling;
+        const displayValue = active ? "block" : "none";
+        
+        modal.style.display = displayValue;
+        if (overlay) overlay.style.display = displayValue;
+    }
     static maximizeModal(modal, mainID_context) {
         const maximizeButton = modal.querySelector("#maximize-modal");
         if (!maximizeButton) {
@@ -67,9 +66,12 @@ export class utils
             return null;
         }
     }
-    static getValueByPath(obj, path, fallback = '') {
+    static getValueByPath(obj, path, fallback) {
+        if (typeof obj !== 'object' || obj === null) {
+            return fallback || obj;
+        }        
         return path?.split('.').reduce((acc, key) => 
-            (acc && acc[key] !== undefined) ? acc[key] : fallback, obj);
+            (acc && acc[key] !== undefined) ? acc[key] : fallback||'', obj);
     }
 }
 export class loadingOverlay {

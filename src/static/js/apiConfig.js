@@ -56,6 +56,14 @@ export const API_CONFIG = {
         material:{POST:'/api/bmui/material/material', GET:'/api/bmui/material/material'},
         material_group:{path:{GET:'/api/bmui/material_group/material_group'}, key:'FId', textK:'FName'},
         attribute:{path:{GET:'/api/bmui/attribute/list/'}, endpoint:'单位', key:'Id', textK:'Name'}
+    },
+    'a_wuliao':{
+        attribute:{POST:'/api/a_wuliao/attribute/attribute'},
+        group:{POST:'/api/a_wuliao/material_group/material_group'},
+        material:{POST:'/api/a_wuliao/material/material'},
+        version:{
+            POST:'/api/a_wuliao/bom_version/bom_version', 
+            GET:'/api/a_wuliao/bom_version/bom_version'},
     }
 };
 

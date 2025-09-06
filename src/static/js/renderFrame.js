@@ -20,6 +20,8 @@ class BaseRenderer {
     }
 }
 
+
+
 export class partDescriptions
 {
     renderSubRoute(data) {
@@ -58,7 +60,7 @@ export class partDescriptions
             'buttons': this.title.includes('工艺线路')? JSON.stringify(['编辑']): '[]'
         } 
         utils.setDataset(this.tableDiv, params)
-        const tableRender = ['工艺线路','中间件信息','CNC工艺设计'].includes(title)? 
+        const tableRender = this.bodyType === 'table'? 
             new descriptionsTable(this.tableDiv) : new descriptionsCard(this.tableDiv);
         tableRender.render(result);   
     }
@@ -84,11 +86,8 @@ export class partDescriptions
         this.title = container.getAttribute('data-title') || '';
         this.issubPart = container.dataset['isSubPart'] === 'true';
         this.orderPart = part_data? part_data : JSON.parse(this.params.orderPart||'{}')
-
-        if(this.title === '工艺线路') {
-            //this.container.dataset.FModel = this.orderPart['FModel'];
-            this.container.dataset.isSubPart = false;
-        }
+        this.bodyType = this.container.dataset.body?? 'card'
+        this.hasSelecter = this.container.dataset.select?? 'none'
         this.extraDiv = container.querySelector('.el-descriptions__extra');
         this.selecter = container.querySelector('.el-descriptions__extra select');
         this.footerDiv = container.querySelector('.el-descriptions__footer');
@@ -128,7 +127,7 @@ export class partDescriptions
     }
     createExtra()
     {
-        if(!this.title.includes('工艺线路')) return null;
+        if(this.hasSelecter === 'none' ) return null;
         const extraDiv = document.createElement('div');
         extraDiv.className = 'el-descriptions__extra';
         extraDiv.style.marginBottom = '20px';
@@ -136,10 +135,10 @@ export class partDescriptions
         extraDiv.style.display = 'flex';
         extraDiv.style.gap = '10px';
         this.selecter = document.createElement('select')         
-        this.selecter.style.display ='inline-flex'       
+        //this.selecter.style.display ='inline-flex'       
         this.selectedContext = document.createElement('div')         
-        this.selectedContext.id = 'selected_route_note'
-        this.selectedContext.style.display ='inline-flex'     
+        this.selectedContext.id = this.hasSelecter
+        //this.selectedContext.style.display ='inline-flex'     
         extraDiv.appendChild(this.selecter);
         extraDiv.appendChild(this.selectedContext);   
         this.extraDiv = extraDiv;
@@ -224,6 +223,7 @@ export class partDescriptions
         })
     }
 }
+
 export function updateSelecterSaveButtonState(container, routeEndPoint) {
     const button = container.querySelector('#selecter-save');
     if (!button) return;
@@ -264,13 +264,16 @@ export class subgongyiGroup{
             const subContainer = document.createElement('div');
             subContainer.id = `subgongyi-${index}`;
             subContainer.className = 'el-descriptions el-descriptions--sub';
-            const param = {isSubPart : true, title : `${dataItem.FModel} 工艺线路`};      
+            const param = {isSubPart : true, title : `${dataItem.FModel} 工艺线路`, 
+                body:'table', select:'process'};     
             utils.setDataset(subContainer, param);                
             this.container.appendChild(subContainer);
             new partDescriptions(subContainer, dataItem).renderSubRoute();
         })
     }
 }
+
+
 export class tableRenderer{
     constructor(table, params=null) {
         this.table = table;
@@ -279,12 +282,13 @@ export class tableRenderer{
         this.keys = JSON.parse(this.params?.keys || '[]');
         this.hidkeys = JSON.parse(this.params?.hidkeys || '[]');
         this.inputs = JSON.parse(this.params?.inputs || '[]');
+        this.uniqKeys = JSON.parse(this.params?.uniqKeys || '[]');
         this.require = JSON.parse(this.params?.require || '[]');        
         this.selects = JSON.parse(this.params?.selects || '[]');
         this.buttons = JSON.parse(this.params?.buttons || '[]');
         this.limit = JSON.parse(this.params?.limit || 0);
-        this.page = JSON.parse(this.params?.page || 1);;
-        this.url = JSON.parse(this.params?.url ||'{}')
+        this.page = JSON.parse(this.params?.page || 1);
+        this.url = JSON.parse(this.params?.url || '{}')
         this.endpoint = this.params?.endpoint || '';
         this.url_params = JSON.parse(this.params?.url_params || '{}');
         this.data = [];
@@ -336,11 +340,7 @@ export class tableRenderer{
             });  
         }  
     }
-    renderEmptyTable() {
-        BaseRenderer.clearContainer(this.table);
-        this.createHeader();
-        this.createBody();
-    }
+
     render(result) {
         if(this.method !== 'GET') return this.postRender(result)
         BaseRenderer.clearContainer(this.table);
@@ -398,21 +398,55 @@ export class tableRenderer{
         button.className = 'el-button el-button--warning el-button--small';
         return button
     }    
-    createInputForCell(cell, val, request)
+    createInputForCell(cell, val, request, key)
     {
         const input = document.createElement('input');
+        input.id = this.uniqKeys.includes(key)? 'uniq_input':'';
+        input.className = 'optimized-width';
         input.type = 'text';
         input.value = val;
         input.required = request;        
         cell.appendChild(input);
     }
+
+    createSelectForCell(cell, request, key)
+    {
+        const select = document.createElement('select');  
+        select.className = 'optimized-width';
+        select.required = request;
+        if (Array.isArray(this.selects[key].datas) && this.selects[key].datas.length > 0){
+            new selecterRenderer(select).render(this.selects[key].datas)
+            select.dataset.datas = JSON.stringify(this.selects[key].datas)
+        }    
+        select.dataset.url = JSON.stringify(this.selects[key].path || {})
+        select.dataset.endpoint = this.selects[key].endpoint||''
+        select.dataset.key = this.selects[key].key
+        select.dataset.textK = this.selects[key].textK
+        cell.appendChild(select)
+    }
     renderRow(data, rowIdx){
         if (this.tbody.rows && this.tbody.rows.length > rowIdx-1) {
             const tr = this.tbody.rows[rowIdx-1];
-            const inputs = tr.querySelectorAll('input')
-            for (let i = 0; i < inputs.length; i++) {
-                inputs[i].value=data.items[0][this.keys[i]]
-            }
+            const cells = tr.querySelectorAll('td')
+            cells.forEach(cell =>{
+                let key = cell.dataset.key
+                if(key){
+                    const cell_child = cell.firstChild
+                    if(cell_child.nodeName  == 'INPUT')
+                    {
+                        cell_child.value = data.items[0][key]||''
+                    }
+                    if(cell_child.nodeName  == 'SELECT')
+                    {
+                        key = cell_child.dataset.key
+                        const val = data.items[0][key]
+                        if(key && val && Array.isArray(val)){
+                            new selecterRenderer(cell_child).render(val)
+                            cell_child.dataset.datas = JSON.stringify(val)
+                        }
+                    }
+                }
+            })
         }
     }
     createCell(val, key) {
@@ -428,16 +462,10 @@ export class tableRenderer{
             case 'input':
                 //cell.contentEditable  = true;
                 //cell.textContent = val;
-                this.createInputForCell(cell, val, request)
+                this.createInputForCell(cell, val, request, key);
                 break;
             case 'select':
-                const select = document.createElement('select');  
-                select.required = request;
-                select.dataset.url = JSON.stringify(this.selects[key].path || {})
-                select.dataset.endpoint = this.selects[key].endpoint||''
-                select.dataset.key = this.selects[key].key
-                select.dataset.textK = this.selects[key].textK
-                cell.appendChild(select);
+                this.createSelectForCell(cell, request, key);
                 break;
             case 'button':
                 cell.appendChild(this.createButtonForCell(key));
@@ -685,8 +713,8 @@ export class selecterRenderer{
             data.forEach(item => {
                 const option = document.createElement('option');
                 option.value = utils.getValueByPath(item, this.params.key );
-                option.textContent = this.params.textK? utils.getValueByPath(item, this.params.textK ) 
-                : `${this.params.optionText} ${option.value}`;
+                option.textContent = this.params.textK? utils.getValueByPath(item, this.params.textK, '' ) 
+                : `${this.params.optionText ||''} ${option.value}`;
                 this.options.push(option);
             });
             this.selecter.classList.toggle('before', true);
@@ -741,7 +769,164 @@ export class transferRenderer{
         });
     }
 }
+export class postTableRenderer extends tableRenderer{
+    constructor(table, rowCount = 6){
+        super(table);
+        this.baseData = JSON.parse(table.dataset.baseData??'{}');
+        this.numbers = JSON.parse(table.dataset.numbers??'[]');
+        this.rowCount = rowCount
+    }
+    initiTable(rowCount = this.rowCount){
+        this.rowCount = rowCount;
+        BaseRenderer.clearContainer(this.table);
+        this.createHeader();
+        this.createBody(rowCount);
+    }
+    createBody(){
+        if (!this.table || !this.rowCount || !this.keys || this.keys.length === 0) return;
+        this.tbody = this.tbody? this.table.querySelector('tbody') : document.createElement('tbody');
+        this.tbody.innerHTML = ''
+        for(let i = 0; i < this.rowCount; i ++ )
+        {
+            this.tbody.appendChild(this.createRow())
+        }
+        this.table.appendChild(this.tbody);
+    }
+    pastedRow(item) {
+        if (!this.table || !this.keys || this.keys.length === 0) return null;
+        const row = document.createElement('tr');
+        for(let i = 0; i < this.keys.length; i++){
+            row.appendChild(this.createCell(item[i]||'',this.keys[i]));
+        }
+        return row;
+    } 
+    pastedData(data){
+        this.inputs = this.keys
+        this.tbody.innerHTML = '';
+        data.forEach(row => {
+            if (!row.trim()) return;
+            const cells = row.split('\t');
+            this.tbody.appendChild(this.pastedRow(cells))
+        })
+    }
+    getData(){
+        this.data = []
+        const rows =  this.tbody.querySelectorAll('tr');
+        rows.forEach( row => this.data.push(this.getTrData(row)))
+        return this.data
+    }
+    getTrData(row){
+        if(!row) return
+        const rawData = Object.assign({}, this.baseData)
+        const tds = row.getElementsByTagName('td');
+        Array.from(tds).forEach(td => {
+            if(!td.querySelector('button')) {
+                const divs = td.querySelectorAll('div');
+                const key = td.dataset.key;                
+                if(divs.length > 0) {
+                    rawData[key] = Array.from(divs).map(div => div.textContent.trim());
+                } else {
+                    rawData[key] = td.firstChild ? 
+                        (td.firstChild.value || td.firstChild.textContent.trim()) : 
+                        td.textContent.trim();
+                }
+                if(this.numbers.includes(key))
+                    rawData[key] = parseInt(rawData[key])
+            }
+        });
+        return rawData;
+    }
+    postRender(result){
+        if(!result) return
+        alert(result.message || '数据上传成功!');        
+        this.createBody(this.rowCount);
+        return
+    }
 
+}
+export class fastFillModelRenderer extends partDescriptions
+{
+    constructor(container, select_params, table_params)
+    {
+        super(container)
+        this.select_params = select_params || {}
+        this.table_parmer = table_params || {}
+    }
+    render(result) {
+        this.container.innerHTML = '';
+        this.createLine();
+        this.createExtra();
+        this.renderHelpNotes();
+        this.createHiddenTextarea()
+        this.createBody();
+        this.createFooter();
+        this.renderButtonGroupForEdit();
+        this.randerSelecter();
+        this.randerTableData(result?.items || result);
+        this.textarea.focus()
+    }
 
+    createFooter()
+    {
+        const footerDiv = document.createElement('div');
+        footerDiv.className = 'el-descriptions__footer';
+        footerDiv.style.marginBottom = '20px';
+        footerDiv.style.marginTop = '20px';
 
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.marginTop = '10px';
+        buttonContainer.style.textAlign = 'right';
+        buttonContainer.style.display = 'flex';
+        const removeBtn = document.createElement('button');
+        removeBtn.id = 'submit';
+        removeBtn.className = 'el-button el-button--warning el-button--small';
+        removeBtn.textContent = '确认';
+        buttonContainer.appendChild(removeBtn);
+        footerDiv.appendChild(buttonContainer);
+        this.container.appendChild(footerDiv);
+    }
+   
+    renderHelpNotes() {
+        const notediv = document.createElement('div')
+        const notep = document.createElement('p')
+        notediv.className = 'modal-description'
+        notep.style.display = 'block'
+        notep.style.width = '100%'
+        notep.style.margin = '10px 0'
+        notep.style.whiteSpace = 'pre-line'
+        notep.textContent = '可将 Excel 内容粘贴到表格中，也可直接编辑表格内容，支持使用复制、粘贴、撤销、删除快捷键。'
+        notediv.appendChild(notep)
+        this.container.appendChild(notediv)
+    }
 
+    createHiddenTextarea(id = 'hidden-paste-area') {
+        let textarea = document.createElement('textarea');
+        textarea.id = id;
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        textarea.style.top = '0';
+        textarea.style.width = '1px';
+        textarea.style.height = '1px';
+        textarea.style.opacity = '0';
+        textarea.setAttribute('tabindex', '-1');
+        this.textarea = textarea;
+        this.container.appendChild(textarea)
+    }
+
+    randerSelecter()
+    {
+        if(this.selecter){
+            if (this.select_params && this.select_params.key)
+                this.selecter.required = true
+            utils.setDataset(this.selecter, this.select_params)
+            const selecterRender = new selecterRenderer(this.selecter)
+            selecterRender.render(); 
+        }  
+    }
+    randerTableData()
+    {
+        utils.setDataset(this.tableDiv, this.table_parmer)
+        new postTableRenderer(this.tableDiv).initiTable();   
+    }
+    renderButtonGroupForEdit(){}
+}

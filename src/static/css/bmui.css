@@ -76,11 +76,86 @@ button#childs-fill{
     left: 50%;
     transform: translate(-50%, -50%);
     width: 80%;
+    max-height: 80vh; /* 设置最大纵向尺寸为视口高度的80% */
     background: white;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     z-index: 1000;
     padding: 20px;
+    overflow: hidden; /* 隐藏内部溢出 */
+}
+
+/* 快速填报浮窗内容容器 */
+.modal-content {
+    display: flex;
+    height: 100%;
+    position: relative;
+}
+
+/* 表格容器带滚动条 */
+.modal-table-scroll-container {
+    flex: 1;
+    overflow-y: auto;
+    max-height: calc(80vh - 120px); /* 减去标题和按钮的高度 */
+    position: relative;
+}
+
+/* 自定义滚动条 */
+.modal-table-scroll-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-table-scroll-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.modal-table-scroll-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.modal-table-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* 右侧滑块控制 */
+.modal-scroll-control {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 100px;
+    background: #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 1002;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-scroll-control:hover {
+    background: #d0d0d0;
+}
+
+.modal-scroll-control::before {
+    content: '↕';
+    font-size: 12px;
+    color: #666;
+}
+
+.modal-scroll-control.up {
+    top: 20px;
+    height: 30px;
+}
+
+.modal-scroll-control.down {
+    top: auto;
+    bottom: 20px;
+    height: 30px;
 }
 
 .modal-overlay {

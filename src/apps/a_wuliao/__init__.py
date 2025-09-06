@@ -1,0 +1,1 @@
+default_app_config = 'apps.a_wuliao.apps.AWuliaoConfig'
