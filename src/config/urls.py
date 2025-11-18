@@ -10,7 +10,6 @@ urlpatterns = [
     #path('', views.index),
     path('api/', api.urls),
     path('amfui/', include('apps.amfui.urls')),
-    path('bmui/', include('apps.bmui.urls')),
     # DjangoStarter, django-starter/
     #path('', include('django_starter.urls')),
 

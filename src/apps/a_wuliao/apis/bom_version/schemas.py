@@ -8,6 +8,7 @@ class BomVersionIn(ModelSchema):
     material_name: str
     material_number: str
     material_model: str    
+    p_material: Optional[str] = None
 
     class Meta:
         model = BomVersion
@@ -21,7 +22,7 @@ class BomVersionOut(ModelSchema):
     
     class Meta:
         model = BomVersion
-        fields = ['version_id', 'version', 'base', 'change_reason', 'status', ]
+        fields = ['version', 'base', 'change_reason', 'status', ]
     @staticmethod
     def resolve_material_name(obj):
         if obj.material is None:
@@ -40,7 +41,6 @@ class BomVersionOut(ModelSchema):
 
 class BomVersionListOut(ModelSchema):
     history_versions: List[str] = None   
-    history_versionIds: List[str] = None   
     material_name: str
     material_number: str
     material_model: str

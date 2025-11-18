@@ -19,4 +19,4 @@ class MaterialGroupOut(ModelSchema):
 
     class Meta:
         model = MaterialGroup
-        fields = ['createTime', 'updateTime', 'is_deleted', 'deleted_at', 'deleted_by', 'group_id', 'name', 'parent', 'number', 'level', 'group', 'sub_group', 'min_group', ]
+        fields = ['is_deleted', 'deleted_at', 'deleted_by', 'group_id', 'name', 'parent', 'number', 'level', 'group', 'sub_group', 'min_group', ]

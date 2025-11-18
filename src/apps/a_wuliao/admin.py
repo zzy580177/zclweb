@@ -164,9 +164,9 @@ class MaterialAdmin(admin.ModelAdmin):
   
 @admin.register(BomVersion)
 class BomVersionAdmin(admin.ModelAdmin):
-    list_display = ['version_id','material_name','material_number','version','base','change_reason','status','creator',]
-    list_display_links = ['version_id','version','change_reason','status','creator',]
-    ordering = ['material','version_id']
+    list_display = ['material_name','material_number','version','base','change_reason','status','creator',]
+    list_display_links = ['version','change_reason','status','creator',]
+    ordering = ['material']
     list_filter = [BGroupFilter, SubBGroupFilter, MinBGroupFilter]   
     change_list_template = "a_wuliao/03_version_change_list.html"
     def material_name(self, obj):
@@ -180,7 +180,6 @@ class BomVersionAdmin(admin.ModelAdmin):
 
 @admin.register(Bom)
 class BomAdmin(admin.ModelAdmin):
-    list_display = ['bom_id','version','p_material','c_material','quantity','level','remark',]
-    list_display_links = ['bom_id','quantity','level','remark',]    
+    list_display = ['version','p_material','c_material','quantity','level','remark',]
     change_list_template = "a_wuliao/04_bom_change_list.html"
 

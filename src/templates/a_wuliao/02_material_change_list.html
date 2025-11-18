@@ -8,7 +8,7 @@
 <div class="container">
     <form class='el_table-container'>
         {% csrf_token %}
-        <h3>新增/修改物料</h3>
+        <h3>新增物料</h3>
         <table class='el_input_details_table' id="material-details">
         </table>
         <div>
@@ -60,8 +60,8 @@
     document.addEventListener("DOMContentLoaded", function () {
         const select_url = {datas: ["快速填报", "快速编辑"]}   
         const table_url = API_CONFIG['a_wuliao'].material
-        const table_headers = ['ID','名称','型号','编号','助记码','单位','获取方式','备注']
-        const table_keys = ['material_id','name','model','number','helpcode','unit','source','description']
+        const table_headers = ['ID','名称','型号','编号','助记码','单位','获取方式','备注', '上级物料']
+        const table_keys = ['material_id','name','model','number','helpcode','unit','source','description', 'p_material']
         const require_keys = ['material_id','name','number','unit',]
         const table_numbers = ['material_id',]
         const table_baseData = {}

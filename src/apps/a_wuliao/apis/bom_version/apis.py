@@ -8,6 +8,8 @@ from django_starter.http.response import responses
 
 from django.db.models import Q, F, Value, CharField, Count
 from django.db.models.functions import Concat
+from django.db import transaction, IntegrityError, connection
+import re
 
 from apps.a_wuliao.models import *
 from apps.a_wuliao.apis.bom_version.schemas import *
@@ -21,22 +23,21 @@ def create(request, payload: list[BomVersionIn]):
     faileds = []
     errors = []
     existCnt = 0
-    try:        
+    try:
         existing_materials = {material.number: material for material in Material.objects.all()}
-        new_versionsId = {}
-        for v in BomVersion.objects.values('material').annotate(cnt=Count('version_id')):
-            new_versionsId[v['material']] = f"BOM_M{v['material']}_{int(v['cnt']+1):05d}"
-        existing_vers = {f"{v.material_id} {v.version}": v for v in BomVersion.objects.all()}
+        existing_materials_pk = {material.pk: material for material in Material.objects.all()}
+        existing_vers = {f"{bv.material_id} {bv.version}": bv for bv in BomVersion.objects.all()}
     except Exception as e:
         errors.append(f"批量查询失败: {str(e)} ")
         return {'success': False, 'data': {'faileds': [], 'success': [], 'Error': errors}}
 
     to_create = []
+    p_material_map ={}
     for idx, item in enumerate(payload):
         try:
             item_dic = {}
             for key, value in item.dict().items():
-                if 'material_' not in key:
+                if 'material' not in key:
                     item_dic[key] = dict(value) if hasattr(value, '__dict__') else value
 
             material_obj = existing_materials.get(item.material_number)
@@ -44,7 +45,26 @@ def create(request, payload: list[BomVersionIn]):
                 errors.append(f"{idx+1}: 未找到物料: {item.material_number} {item.material_model} {item.material_name} 请先添加后重试")
                 faileds.append({'id': idx, 'status': False})
                 continue
-
+            p_material_obj = None
+            p_material_raw = item.p_material
+            if p_material_raw is not None and p_material_raw != "":
+                p_raw_str = str(p_material_raw)
+                if '.' in p_raw_str:
+                    p_material_obj = existing_materials.get(p_raw_str)
+                    if not p_material_obj:
+                        errors.append(f"{idx+1}: 未找到上级物料编号:{p_raw_str} 请先添加后重试")
+                        faileds.append({'id': idx, 'status': False})
+                        continue
+                elif p_raw_str.isdigit():
+                    p_material_obj = existing_materials_pk.get(p_raw_str)
+                    if not p_material_obj:
+                        errors.append(f"{idx+1}: 未找到上级物料ID:{p_raw_str} 请先添加后重试")
+                        faileds.append({'id': idx, 'status': False})
+                        continue
+                else:
+                    errors.append(f"{idx+1}: 上级物料:{p_raw_str} 格式错误，请使用物料编号或ID")
+                    faileds.append({'id': idx, 'status': False})
+                    continue
             existV_obj = existing_vers.get(f"{material_obj.material_id} {item.version}")
             if existV_obj is not None:
                 existCnt += 1
@@ -52,7 +72,7 @@ def create(request, payload: list[BomVersionIn]):
 
             base_obj = None
             if item.base:
-                base_obj = BomVersion.objects.filter(material=material_obj, version=item.base).first()
+                base_obj = existing_vers.get(f"{material_obj.material_id} {item.base}")
                 if not base_obj:
                     errors.append(f"{idx+1}: 未找到{material_obj.material_id} {item.base}历史版本")
                     faileds.append({'id': idx, 'status': False})
@@ -60,25 +80,47 @@ def create(request, payload: list[BomVersionIn]):
 
             item_dic['base'] = base_obj
             item_dic['material'] = material_obj
-            item_dic['version_id'] = new_versionsId.get(material_obj.material_id, f"BOM_M{material_obj.material_id}_00001")
-
-            to_create.append((idx, item_dic, item_dic['version_id']))
-
+            to_create.append((idx, item_dic, material_obj.material_id, str(item.version)))
+            p_material_map[material_obj.pk] = p_material_obj
         except Exception as e:
             errors.append(f"{idx+1}: 批量查询失败: {str(e)} ")
             faileds.append({'id': idx, 'status': False})
 
     if to_create:
         try:
-            bomVersions = [BomVersion(**item_dic) for idx, item_dic, versionId in to_create]
-            created_objects = BomVersion.objects.bulk_create(bomVersions)
-            for i, obj in enumerate(created_objects):
-                idx, item_dic, version_id = to_create[i]
-                success.append({'id': idx, 'created': True, 'version_id': obj.version_id})
+            with transaction.atomic():
+                bomVersions = [BomVersion(**item_dic) for idx, item_dic, _, _ in to_create]
+                created_objects = BomVersion.objects.bulk_create(bomVersions)
+
+                material_ids = [mid for _, _, mid, _ in to_create]
+                versions = [ver for _, _, _, ver in to_create]
+                saved_qs = BomVersion.objects.filter(material_id__in=material_ids, version__in=versions)
+                saved_map = {(bv.material_id, str(bv.version)): bv for bv in saved_qs}
+
+                boms_to_create = []
+                for j, (idx, _, mid, ver) in enumerate(to_create, start=1):
+                    bv = saved_map.get((mid, ver))
+                    if bv is None or getattr(bv, 'pk', None) is None:
+                        errors.append(f"{idx+1}: 创建失败，无法确认保存的 BomVersion (material={mid}, version={ver})")
+                        faileds.append({'id': idx, 'status': False})
+                        continue
+                    boms_to_create.append(Bom(version=bv, p_material=p_material_map.get(mid)))
+
+                if boms_to_create:
+                    Bom.objects.bulk_create(boms_to_create)
+
+                for i, (idx, _, mid, ver) in enumerate(to_create):
+                    bv_obj = saved_map.get((mid, ver))
+                    if bv_obj and getattr(bv_obj, 'pk', None):
+                        success.append({'id': idx, 'created': True, 'version': bv_obj.version, 'material_id': bv_obj.material_id})
+
+        except IntegrityError as e:
+            errors.append(f"批量创建失败: 唯一性约束冲突或并发插入: {str(e)}")
+            for idx, _, _, _ in to_create:
+                faileds.append({'id': idx, 'status': False})
         except Exception as e:
-            for item in to_create:
-                idx, item_dic, version_id = item
-                errors.append(f"{idx+1}: 批量创建失败: {str(e)} ")
+            errors.append(f"批量创建失败: {str(e)}")
+            for idx, _, _, _ in to_create:
                 faileds.append({'id': idx, 'status': False})
 
     data = {'faileds': faileds, 'success': success, 'Error': errors}
@@ -103,19 +145,17 @@ def list_items(request, material_model: str = None, material_number: str = None)
     if filters:
         qs = BomVersion.objects.select_related('material').filter(filters)
         material_ids = set(qs.values_list('material_id', flat=True))
-        all_versions = BomVersion.objects.filter(material_id__in=material_ids).values('material_id', 'version', 'version_id')
+        all_versions = BomVersion.objects.filter(material_id__in=material_ids).values('material_id', 'version')
 
         material_history = {}
         for row in all_versions:
             mid = row['material_id']
-            material_history.setdefault(mid, {'versions': [], 'version_ids': []})
+            material_history.setdefault(mid, {'versions': []})
             material_history[mid]['versions'].append(row['version'])
-            material_history[mid]['version_ids'].append(row['version_id'])
 
         for obj in qs:
             mid = obj.material_id
             obj.history_versions = material_history.get(mid, {}).get('versions', [])
-            obj.history_versionIds = material_history.get(mid, {}).get('version_ids', [])
 
     else:
         qs = BomVersion.objects.all()
@@ -125,7 +165,8 @@ def list_items(request, material_model: str = None, material_number: str = None)
 def update(request, item_id, payload: BomVersionIn):
     item = get_object_or_404(BomVersion, id=item_id)
     for attr, value in payload.dict().items():
-        setattr(item, attr, value)
+        if attr != 'p_material':
+            setattr(item, attr, value)
     item.save()
     return item
 
@@ -134,7 +175,8 @@ def update(request, item_id, payload: BomVersionIn):
 def partial_update(request, item_id, payload: BomVersionIn):
     item = get_object_or_404(BomVersion, id=item_id)
     for attr, value in payload.dict(exclude_unset=True).items():
-        setattr(item, attr, value)
+        if attr != 'p_material':
+            setattr(item, attr, value)
     item.save()
     return item
 

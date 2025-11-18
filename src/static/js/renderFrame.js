@@ -479,6 +479,7 @@ export class tableRenderer{
                 });
                 break;
             case 'td':
+                cell.contentEditable  = true;
             default:
                 cell.textContent = val;
                 cell.className = 'el-table__cell';

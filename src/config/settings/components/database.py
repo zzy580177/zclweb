@@ -9,7 +9,7 @@ DATABASES = {
         'NAME':'amfAuth',
         'PORT':'1433',
         'USER':'amfAuth1234',
-        'PASSWORD':'Zclamfdb1234',
+        'PASSWORD':'Zclamfdb1234!',
         "SCHEMA": "CNC700Cutting",
         'OPTIONS':{
             'DRIVER':'SQL server Native Client 11.0',

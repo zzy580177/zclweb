@@ -1,9 +1,11 @@
 from ninja import ModelSchema
 from apps.a_wuliao.models import *
+from typing import Optional
 
 
 class MaterialIn(ModelSchema): 
-    unit: str    
+    unit: str  
+    p_material: Optional[str] = None
 
     class Meta:
         model = Material

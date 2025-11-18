@@ -8,7 +8,7 @@
 <div class="container">
     <form class='el_table-container'>
         {% csrf_token %}
-        <h3>新增物料版本</h3>
+        <h3>新增BOM</h3>
         <table class='el_input_details_table' id="version-details">
         </table>
         <div>
@@ -59,10 +59,10 @@
 
     document.addEventListener("DOMContentLoaded", function () {
         const select_url = {datas: ["快速填报", "快速编辑"]}   
-        const table_url = API_CONFIG['a_wuliao'].version
-        const table_headers = ['编号','型号','名称','版本','基础版本','变更原因','状态', '上级物料']
-        const table_keys = ['material_number','material_model','material_name','version','base','change_reason','status','p_material']
-        const require_keys = ['material_name','material_model','material_number','version','base','change_reason',]
+        const table_url = API_CONFIG['a_wuliao'].bom
+        const table_headers = ['编号','型号','名称','版本','上级物料','数量']
+        const table_keys = ['material_number','material_model','material_name','version','p_material','quantity']
+        const require_keys = ['material_name','material_model','material_number','version','quantity']
         
         const table_baseData = {}
         
@@ -71,8 +71,8 @@
         mdTable.dataset.headers = JSON.stringify(table_headers.concat('操作'))
         mdTable.dataset.keys = JSON.stringify(table_keys.concat('删除'))
         mdTable.dataset.buttons = JSON.stringify(['删除'])
-        mdTable.dataset.selects = JSON.stringify({base:{key:'history_versions'}})
-        mdTable.dataset.inputs = JSON.stringify(['material_name','material_model','material_number','version','change_reason','status', 'p_material'])
+        mdTable.dataset.selects = JSON.stringify({version:{key:'history_versions'}})
+        mdTable.dataset.inputs = JSON.stringify(['material_name','material_model','material_number','p_material','quantity'])
         mdTable.dataset.url = JSON.stringify(table_url)
         mdTable.dataset.require = JSON.stringify(require_keys)
         

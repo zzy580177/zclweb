@@ -52,9 +52,6 @@ INSTALLED_APPS: Tuple[str, ...] = (
     # 我们自己的应用
     'apps.account',
     'apps.amfui',
-    'apps.bmui',
-    'apps.jihuaManagerUI',
-    'apps.pmcui',
     'apps.a_wuliao'
 )
 

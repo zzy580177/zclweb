@@ -64,6 +64,9 @@ export const API_CONFIG = {
         version:{
             POST:'/api/a_wuliao/bom_version/bom_version', 
             GET:'/api/a_wuliao/bom_version/bom_version'},
+        bom:{
+            POST:'/api/a_wuliao/bom/bom', 
+            GET:'/api/a_wuliao/bom_version/bom_version'},
     }
 };
 
