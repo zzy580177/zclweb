@@ -1,5 +1,6 @@
 from django.utils.html import format_html
 
+content2id_dic = {'变更': 'change', '添加': 'add', '删除': 'delete'}
 
 def el_tag(color_type, content):
     """
@@ -29,13 +30,15 @@ def el_button(type, content, plain=False, round=False, circle=False):
     :param circle: 是否圆形按钮
     :return: HTML 字符串
     """
+    id_attr = content2id_dic.get(content, 'button')
+    id_attr = f' id={id_attr}' if id_attr else ''
     type_class = f'el-button--{type}' if type else ''
     plain_class = 'is-plain' if plain else ''
     round_class = 'is-round' if round else ''
     circle_class = 'is-circle' if circle else ''
     return format_html(
-        '<button class="el-button {} {} {} {}">{}</button>',
-        type_class, plain_class, round_class, circle_class, content
+        '<button {} class="el-button {} {} {} {} el-button--small">{}</button>',
+        id_attr, type_class, plain_class, round_class, circle_class, content
     )
 
 

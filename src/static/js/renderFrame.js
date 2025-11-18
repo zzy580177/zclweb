@@ -284,7 +284,8 @@ export class tableRenderer{
         this.inputs = JSON.parse(this.params?.inputs || '[]');
         this.uniqKeys = JSON.parse(this.params?.uniqKeys || '[]');
         this.require = JSON.parse(this.params?.require || '[]');        
-        this.selects = JSON.parse(this.params?.selects || '[]');
+        this.selects = JSON.parse(this.params?.selects || '[]');     
+        this.inputdates= JSON.parse(this.params?.dates || '[]');     
         this.buttons = JSON.parse(this.params?.buttons || '[]');
         this.limit = JSON.parse(this.params?.limit || 0);
         this.page = JSON.parse(this.params?.page || 1);
@@ -384,6 +385,9 @@ export class tableRenderer{
         if(this.selects[key]!== undefined) {
             return {type: 'select', required: request};
         }
+        if(this.inputdates.includes(key)) {
+            return {type: 'inputdate', required: request};
+        }
         return Array.isArray(val)? {type: 'div', required: request}:{type: 'td', required: request};
     }
 
@@ -405,6 +409,20 @@ export class tableRenderer{
         input.className = 'optimized-width';
         input.type = 'text';
         input.value = val;
+        input.required = request;        
+        cell.appendChild(input);
+    }
+    createDateInput(cell, val, request, key)
+    {
+        const input = document.createElement('input');
+        input.className = 'optimized-width';
+        input.type = 'date';
+        if(val && !isNaN(Date.parse(val))){
+            const date = new Date(val);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            input.value = `${year}-${month}`;
+        }
         input.required = request;        
         cell.appendChild(input);
     }
@@ -459,6 +477,9 @@ export class tableRenderer{
             cell.style.display = 'none';
         }
         switch (cellType) {
+            case 'inputdate':
+                this.createDateInput(cell, val, request, key);
+                break;
             case 'input':
                 //cell.contentEditable  = true;
                 //cell.textContent = val;
@@ -770,6 +791,7 @@ export class transferRenderer{
         });
     }
 }
+
 export class postTableRenderer extends tableRenderer{
     constructor(table, rowCount = 6){
         super(table);
@@ -843,7 +865,6 @@ export class postTableRenderer extends tableRenderer{
         this.createBody(this.rowCount);
         return
     }
-
 }
 export class fastFillModelRenderer extends partDescriptions
 {

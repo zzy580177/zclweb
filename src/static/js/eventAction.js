@@ -162,7 +162,7 @@ export async function fetchDataForTableRow(renderer, rowIdx) {
 }
 
 export class TablerHandler {
-    constructor(table, method = 'GET'){
+    constructor(table, method = 'GET', isResultList=false) {
         this.table = table;
         this.url = JSON.parse(table.dataset.url || '{}');
         this.data = null;
@@ -170,6 +170,8 @@ export class TablerHandler {
         this.method = method;
         this.result = 'ok';
         this.toggleLoad = true;
+        this.tableRender = postTableRenderer;
+        this.isResultList = isResultList;
     }
     validateFormInputs(target) {
         const requiredInputs = target.querySelectorAll('input[required]');
@@ -199,13 +201,14 @@ export class TablerHandler {
     async submitDataAndPost()
     {
         if(!this.validateFormInputs(this.table)) return;
-        await renderTableAndLoadData(this.table, this.method,  null, this.toggleLoad, postTableRenderer)
+        await renderTableAndLoadData(this.table, this.method,  null, this.toggleLoad, this.tableRender);
     }
 
     async update(target = this.target) {
         if (!this.table) return console.error('Table not found') || false;
         this.result = this._getData(target);
-        if(target.nodeName == 'TR') this.table.dataset.endpoint = this.result.Id
+        if(target.nodeName == 'TR') 
+            this.table.dataset.endpoint = this.endpoint;
         return this.result === 'ok' 
             ? await renderTableAndLoadData(this.table, this.method,  this.data, this.toggleLoad) || true
             : this.result;
@@ -215,18 +218,20 @@ export class TablerHandler {
         if(!this.validateFormInputs(target))             
             return 'checkValidityFailed';
         if(target.nodeName == 'TR'){
-            this.data = this._getTrData(target);
-            this.endpoint = this.data.Id
+            const result = this._getTrData(target);
+            this.data = result.data;
+            this.endpoint = result.endpoint;
         }else{
             this.data = []
             const rows =  target.querySelectorAll('tr');
-            rows.forEach( row => this.data.push(this._getTrData(row)))
+            rows.forEach( row => this.data.push(this._getTrData(row).data))
         }
         if(this.data.length == 0) return 'checkDataEmpty';
         return 'ok'
     }
     _getTrData(row){
-        if(!row) return {}
+        if(!row) return { data: {}, endpoint: '' };
+        if(this.isResultList) return this._getTrData_ResultList(row)
         const rawData = Object.assign({}, this.orderPart)
         const tds = row.getElementsByTagName('td');
         Array.from(tds).forEach(td => {
@@ -242,8 +247,29 @@ export class TablerHandler {
                 }
             }
         });
-        return rawData;
+        return { data: rawData, endpoint: rawData.Id || '' };
     }
+
+    _getTrData_ResultList(row){
+        const rawData = {}
+        let endpoint = '';
+        const th= row.getElementsByTagName('th')[0];
+        if(th){
+            endpoint = th.firstChild?.value|| th.firstChild?.textContent.trim()|| th.textContent.trim()
+        }
+        // 处理td元素
+        const tds = row.getElementsByTagName('td');
+        Array.from(tds).forEach(td => {
+            let className = td.className;
+            if (className.includes('field') & !className.includes('action')) {
+                let key = className.split(' ')[0].replace(/^field-|_option$/g, '');
+                let val = td.firstChild?.value|| td.firstChild?.textContent.trim()|| td.textContent.trim()
+                rawData[key] = val.replace(/-/g, '');
+            }
+        });
+        return { data: rawData, endpoint: endpoint };
+    }
+
     async pageLoad(target){
         if(!this.table) {
             console.error('Table not found');
@@ -416,5 +442,16 @@ export function handlePostTableEvent(container)
         else if (e.target.matches('select')) {
             const selecterRender = new selecterRenderer(e.target)
             fetchDataRenderFrame(selecterRender)}
+    });
+}
+
+export function handleResultListEvent(table)
+{
+    table.addEventListener('click', e => {
+        if (e.target.matches('#change')) {
+            const tbHander = new TablerHandler(container.querySelector('table'), 'PUT', true);
+            tbHander.update(e.target.closest("tr"))
+        }
+
     });
 }

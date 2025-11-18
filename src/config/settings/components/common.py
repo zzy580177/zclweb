@@ -52,7 +52,8 @@ INSTALLED_APPS: Tuple[str, ...] = (
     # 我们自己的应用
     'apps.account',
     'apps.amfui',
-    'apps.a_wuliao'
+    'apps.a_wuliao',
+    'apps.b_jihua',
 )
 
 MIDDLEWARE: Tuple[str, ...] = (

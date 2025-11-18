@@ -67,6 +67,13 @@ export const API_CONFIG = {
         bom:{
             POST:'/api/a_wuliao/bom/bom', 
             GET:'/api/a_wuliao/bom_version/bom_version'},
+    },
+    'b_jihua':{
+        order:{GET:'/api/b_jihua/order/order', POST:'/api/b_jihua/order/order', PUT:'/api/b_jihua/order/order'} ,
+        order_parts:{
+            GET:'/api/b_jihua/order_parts/order_parts',
+            POST:'/api/b_jihua/order_parts/order_parts', 
+            PUT:'/api/b_jihua/order_parts/order_parts'}
     }
 };
 
