@@ -50,7 +50,7 @@ class OrderAdmin(admin.ModelAdmin):
 @admin.register(OrderParts)
 class OrderPartsAdmin(admin.ModelAdmin):
     list_display = ['id', 'order','material','status_option','deadline_option','plan_delivery_option','quantity_option',
-                    'defectives','deliveries','cost','description_option', 'sub_actions']
+                    'description_option', 'sub_actions']
     list_filter = ['order','material','status',]
     actions = [delete_selected]
     change_list_template = "b_jihua/01_orderparts_change_list.html"

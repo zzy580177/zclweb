@@ -1,0 +1,89 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/bmui.css' %}">
+<link rel="stylesheet" href="{% static 'css/table.css' %}">
+<style>
+    /* 标记 required 的 input 项底色为橙色 */
+    input[required] {
+        background-color: #ffe6cc; /* 橙色背景 */
+    }
+
+    /* 如果用户未填写，添加 invalid 类时的样式 */
+    .invalid {
+        border: 2px solid red; /* 红色边框提示 */
+        background-color: #ffcccc; /* 浅红色背景 */
+    }
+    #attribute-details {
+        width: 100%; /* 设置表格宽度为容器的 100% */
+        border-collapse: collapse; /* 合并边框 */
+    }
+
+    #attribute-detailss th,     #attribute-details td {
+        padding: 8px; /* 设置单元格内边距 */
+        text-align: left; /* 左对齐内容 */
+        border: 1px solid #ddd; /* 添加边框 */
+        word-wrap: break-word; /* 自动换行 */
+    }
+
+    #attribute-details th {
+        background-color: #f4f4f4; /* 设置表头背景色 */
+    }
+
+    #attribute-details tbody tr:hover {
+        background-color: #f9f9f9; /* 鼠标悬停时高亮行 */
+    }
+
+    #attribute-details input {
+        width: 100%; /* 输入框宽度占满单元格 */
+        box-sizing: border-box; /* 包括内边距和边框在宽度内 */
+    }
+</style>
+
+<div class="container">
+    <form class='el_table-container'>
+        {% csrf_token %}
+        <h3>新增订单</h3>
+        <table class='el_input_details_table' id="attribute-details">
+        </table>
+        <div>
+            <button type="submit" id="submit">提交</button>
+            <button type="button" id="add-row">+ 添加</button>
+        </div>
+    </form>
+
+    {{ block.super }}
+</div>
+
+
+<script type="module">
+    import {handlePostTableEvent, handleFastFillModelEvent, handleResultListEvent} from "{% static 'js/eventAction.js' %}";
+    import {API_CONFIG} from "{% static 'js/apiConfig.js' %}";
+    import {renderFastFillModel} from "{% static 'js/a_wuliao.js' %}";
+    import {postTableRenderer} from "{% static 'js/renderFrame.js' %}";
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const select_url = {datas: {{orders_options| safe}}};
+        const table_url = API_CONFIG['b_jihua'].order_parts
+
+        const mdTable = document.querySelector('.el_table-container table')
+        mdTable.dataset.headers = JSON.stringify(['订单号','物料编号','物料名称', '物料型号','数量','计划交付日期','备注','操作'])
+        mdTable.dataset.keys = JSON.stringify(['order_id','material_number','material_name','material_model','quantity','plan_delivery', 'description','删除'])
+        mdTable.dataset.inputs = JSON.stringify(['material_number','material_name','material_model','quantity','description'])
+        mdTable.dataset.selects = JSON.stringify({order_id: select_url})
+        mdTable.dataset.buttons = JSON.stringify(['删除'])
+        mdTable.dataset.dates = JSON.stringify(['plan_delivery'])
+        mdTable.dataset.require = JSON.stringify(['order_id','material_number','plan_delivery'])
+        mdTable.dataset.url = JSON.stringify(table_url)
+        new postTableRenderer(mdTable,1).initiTable();
+        handlePostTableEvent(document.querySelector('.el_table-container'));
+
+        const container = document.querySelector('#result_list');
+        container.dataset.url = JSON.stringify(table_url);
+        handleResultListEvent(container);
+    });
+        
+</script>
+
+{% endblock %}
