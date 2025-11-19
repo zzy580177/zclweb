@@ -1,0 +1,129 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/bmui.css' %}">
+<style>
+    /* 标记 required 的 input 项底色为橙色 */
+    input[required] {
+        background-color: #ffe6cc; /* 橙色背景 */
+    }
+    select[required] {
+        background-color: #ffe6cc; /* 橙色背景 */
+    }
+    /* 如果用户未填写，添加 invalid 类时的样式 */
+    .invalid {
+        border: 2px solid red; /* 红色边框提示 */
+        background-color: #ffcccc; /* 浅红色背景 */
+    }
+    #porder-details {
+        width: 100%; /* 设置表格宽度为容器的 100% */
+        border-collapse: collapse; /* 合并边框 */
+    }
+
+    #porder-details th, #porder-details td {
+        padding: 8px; /* 设置单元格内边距 */
+        text-align: left; /* 左对齐内容 */
+        border: 1px solid #ddd; /* 添加边框 */
+        word-wrap: break-word; /* 自动换行 */
+    }
+
+    #porder-details th {
+        background-color: #f4f4f4; /* 设置表头背景色 */
+    }
+
+    #porder-details tbody tr:hover {
+        background-color: #f9f9f9; /* 鼠标悬停时高亮行 */
+    }
+
+    #porder-details input {
+        width: 100%; /* 输入框宽度占满单元格 */
+        box-sizing: border-box; /* 包括内边距和边框在宽度内 */
+    }
+</style>
+
+<div class="container">
+    <form class='el_table-container'>
+        {% csrf_token %}
+        <h3>新增属性</h3>
+        <table id="step-details">
+        </table>
+        <div>
+            <button type="submit" id="submit">提交</button>
+            <button type="button" id="add-row">+ 添加</button>
+            <button type="button" id="quick-fill">⛶ 快速填报</button>
+        </div>
+    </form>
+
+    <!-- 快速填报浮窗 -->
+    <div id="quick-fill-modal" class="modal" style="display: none;">
+        <header class="el-header" style="height: 60px;">
+            <div class="fx-modal-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <div class="header-title" style="margin-right: 16px;">
+                <div class="title-text" id="parts-detail-modal-title" title="title-text" style="font-size: 20px; font-weight: bold;">
+                    快速填报
+                </div>
+            </div>
+            <div class="modal-controls" style="display: flex; align-items: center; gap: 8px;">
+                <div class="el-button-group btn-group" size="small">
+                    <button type="button" id="maximize-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
+                        ⛶</button>
+                    <button type="button" id="switch-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
+                        <span class="el-icon-switch-button"></span>
+                    </button>
+                </div>
+            </div>
+        </header>
+        <main class="el-main" >
+            <div id="fast-descriptions-attribute" class='el-descriptions' 
+                data-body="table" data-select='description', style="max-height: 60vh; overflow-y: auto;">
+            </div>
+        </main>
+    </div>
+
+    <!-- 模态框遮罩层 -->
+    <div id="quick-fill-modal-overlay" class="modal-overlay", style=""></div>
+
+    {{ block.super }}
+</div>
+
+
+<script type="module">
+    import {handlePostTableEvent, handleFastFillModelEvent} from "{% static 'js/eventAction.js' %}";
+    import {API_CONFIG} from "{% static 'js/apiConfig.js' %}";
+    import {renderFastFillModel} from "{% static 'js/a_wuliao.js' %}";
+    import {postTableRenderer} from "{% static 'js/renderFrame.js' %}";
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const select_url = { datas: {{ eqpType|safe }} };
+        const table_url = API_CONFIG['c_gongyi'].step
+
+        const mdTable = document.querySelector('.el_table-container table')
+        mdTable.dataset.headers = JSON.stringify(['工序名','工序类别', '工序计时单价/元','工序计件单价/元','备注', '操作'])
+        mdTable.dataset.keys = JSON.stringify([ 'name', 'type_name', 'hcost','ucost','description', '删除'])
+        mdTable.dataset.inputs = JSON.stringify(['name', 'hcost','ucost','description',])
+        mdTable.dataset.selects = JSON.stringify({type_name: select_url})
+        mdTable.dataset.buttons = JSON.stringify(['删除'])
+        mdTable.dataset.require = JSON.stringify(['name', 'type_name', ])
+        mdTable.dataset.url = JSON.stringify(table_url)
+        
+        new postTableRenderer(mdTable,1).initiTable();
+        handlePostTableEvent(document.querySelector('.el_table-container'));
+
+        const fastContain = document.querySelector('.el-descriptions')
+        const table_params = {
+            url: JSON.stringify(table_url),
+            headers: JSON.stringify(['工序名','工序类别', '工序计时单价/元','工序计件单价/元','备注',]),
+            keys: JSON.stringify([ 'name', 'type_name', 'hcost','ucost','description',]),
+        }
+
+        renderFastFillModel(fastContain, null, table_params)
+        handleFastFillModelEvent(document.querySelector('#quick-fill-modal'));
+
+        const result_list_tab = document.getElementById('result_list');
+        result_list_tab.dataset.url = JSON.stringify(table_url)   
+        handleAdminTableEvent(result_list_tab);
+    });
+        
+</script>
+{% endblock %}
