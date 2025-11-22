@@ -74,6 +74,16 @@ export const API_CONFIG = {
             GET:'/api/b_jihua/order_parts/order_parts',
             POST:'/api/b_jihua/order_parts/order_parts', 
             PUT:'/api/b_jihua/order_parts/order_parts'}
+    },
+    'c_gongyi':{
+        materialParm:{
+            GET:'/api/c_gongyi/material_parm/material_parm', 
+            POST:'/api/c_gongyi/material_parm/material_parm', 
+            PUT:'/api/c_gongyi/order/order'} ,        
+        step:{
+            GET:'/api/c_gongyi/step/step', POST:'/api/c_gongyi/step/step', 
+            PUT:'/api/c_gongyi/step/step'} ,
+
     }
 };
 

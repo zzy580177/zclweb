@@ -1,0 +1,1 @@
+default_app_config = 'apps.c_gongyi.apps.CGongyiConfig'
