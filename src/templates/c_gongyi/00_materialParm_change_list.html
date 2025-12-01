@@ -57,21 +57,23 @@
     import {renderFastFillModel} from "{% static 'js/a_wuliao.js' %}";
     import {postTableRenderer} from "{% static 'js/renderFrame.js' %}";
 
+
     document.addEventListener("DOMContentLoaded", function () {
         const select_url = {datas: ["快速填报", "快速编辑"]}   
         const table_url = API_CONFIG['c_gongyi'].materialParm
         const table_headers = ['物料编号','版本','加工尺寸','材质','成本','表面处理','特殊要求']
-        const table_keys =['material_number','bom_version','size', 'stuff', 'cost', 'surface', 'description', ]
-        const table_numbers = ['cost']
+        const table_keys =['material_number','version','size', 'stuff', 'cost', 'surface', 'description', ]
 
         const mdTable = document.querySelector('.el_table-container table')
         mdTable.dataset.headers = JSON.stringify(table_headers.concat('操作'))
         mdTable.dataset.keys = JSON.stringify(table_keys.concat('删除'))
-        mdTable.dataset.inputs = JSON.stringify(table_keys)
+        mdTable.dataset.selects = JSON.stringify({version:{key:'history_versions'}})
+        mdTable.dataset.inputs = JSON.stringify(['material_number','size', 'stuff', 'cost', 'surface', 'description', ])
         mdTable.dataset.buttons = JSON.stringify(['删除'])
         mdTable.dataset.require = JSON.stringify(['物料编号','版本','加工尺寸','材质','成本','表面处理'])
         mdTable.dataset.url = JSON.stringify(table_url)
-        mdTable.dataset.numbers = JSON.stringify(table_numbers)
+        mdTable.dataset.uniqKeys = JSON.stringify(['material_number'])      
+
         new postTableRenderer(mdTable,1).initiTable();
         handlePostTableEvent(document.querySelector('.el_table-container'));
 
@@ -80,10 +82,9 @@
             url: JSON.stringify(table_url),
             headers: JSON.stringify(table_headers),
             keys: JSON.stringify(table_keys),
-            numbers : JSON.stringify(table_numbers),
         }
 
-        renderFastFillModel(fastContain, select_params, table_params)
+        renderFastFillModel(fastContain, null, table_params)
         handleFastFillModelEvent(document.querySelector('#quick-fill-modal'));
     });
         

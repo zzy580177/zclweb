@@ -1,0 +1,35 @@
+
+.el_table-container {
+    width: 95%;
+    margin: 0 auto;
+}
+table {
+    width: 100%;
+    table-layout: fixed;
+}
+
+td input.auto-width {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 4px;
+    border: 1px solid #ccc;
+}
+
+td input.optimized-width {
+    width: 97%;
+    height: 100%;
+    box-sizing: content-box;
+}
+td select.auto-width {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 4px;
+    border: 1px solid #ccc;
+}
+
+td select.optimized-width {
+    width: 97%;
+    height: 100%;
+    box-sizing: content-box;
+}
+

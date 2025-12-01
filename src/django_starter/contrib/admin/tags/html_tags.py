@@ -42,9 +42,14 @@ def input_tag(date_value,type='text',format_str='%Y-%m-%d', ):
     try:
         if type == 'date':
             date_value = date_value.strftime(format_str) if date_value else ''
-        return format_html('<input type="{}" value="{}">',type, date_value)
+        # 根据内容长度自适应宽度，设置最小/最大宽度
+        value_length = len(str(date_value)) if date_value else 12
+        value_length = 13 if type == 'date' else value_length
+        width_px = max(60, min(200, value_length * 8))  # 粗略字符像素估计
+        return format_html('<input type="{}" value="{}" style="width: {}px; max-width: 200px; box-sizing: border-box;">', 
+                          type, date_value, width_px)
     except (AttributeError, ValueError):
-        return format_html('<span>-</span>')
+        return format_html('<span style="padding: 4px;">-</span>')
 
 def select_tag(value, options=None, default_text='-'):
     """格式化选择标签，使用 select 元素"""
@@ -60,6 +65,9 @@ def select_tag(value, options=None, default_text='-'):
         for option_value, option_text in options.items():
             selected = ' selected' if option_value == value else ''
             option_html += f'<option value="{option_value}"{selected}>{option_text}</option>'
+    
+    if value not in options:
+        option_html = f'<option value="">{default_text}</option>' + option_html
     
     from django.utils.safestring import mark_safe
     return mark_safe(f'<select >{option_html}</select>')

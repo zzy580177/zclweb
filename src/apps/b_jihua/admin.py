@@ -2,6 +2,7 @@ from django.contrib import admin
 from django_starter.contrib.admin.tags import html_tags, elementui_tags
 
 from .models import *
+from apps.a_wuliao.models import BomVersion
 
 def delete_selected(modeladmin, request, queryset):
     count = queryset.count()
@@ -12,17 +13,17 @@ statusOptions = ['新建', '已就绪', '已变更', '已审核', '已完成', '
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['order_id','product_id','lot_id', 'plan_delivery_option','deadline_option','description_option','status_option','sub_actions']
+    list_display = ['order_id','product_id','lot_id', 'deadline_option','delivery_day_option','description_option','status_option','sub_actions']
     list_filter = ['status']
     actions = [delete_selected]  
     change_list_template = "b_jihua/00_order_change_list.html"
-    def plan_delivery_option(self, obj):
-        return html_tags.input_tag(obj.plan_delivery, 'date')
-    plan_delivery_option.short_description = '计划交付日期'
+    def delivery_day_option(self, obj):
+        return html_tags.input_tag(obj.delivery_day, 'date')
+    delivery_day_option.short_description = '交货日期'
 
     def deadline_option(self, obj):
         return html_tags.input_tag(obj.deadline, 'date')
-    deadline_option.short_description = '交货日期'
+    deadline_option.short_description = '计划交付日期'
 
     def description_option(self, obj):
         return html_tags.input_tag(obj.description)
@@ -49,31 +50,40 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(OrderParts)
 class OrderPartsAdmin(admin.ModelAdmin):
-    list_display = ['id', 'order','material','status_option','deadline_option','plan_delivery_option','quantity_option',
+    list_display = ['id', 'order','material_number','material_name','version_option','deadline_option','quantity_option','status',
                     'description_option', 'sub_actions']
     list_filter = ['order','material','status',]
+    ordering = ['-id']
     actions = [delete_selected]
     change_list_template = "b_jihua/01_orderparts_change_list.html"
 
-    def plan_delivery_option(self, obj):
-        return html_tags.input_tag(obj.plan_delivery, 'date')
-    plan_delivery_option.short_description = '计划交付日期'
+    def material_number(self, obj):
+        return obj.material.number
+    material_number.short_description = '物料编号'
+
+    def material_name(self, obj):
+        return obj.material.name
+    material_name.short_description = '物料名称'
+
+    def version_option(self, obj):
+        history_versions = list(BomVersion.objects.filter(
+            material=obj.material).values_list('version', flat=True).order_by('-create_time'))
+        return html_tags.select_tag(obj.version ,history_versions)
+    version_option.short_description = '物料版本'
 
     def deadline_option(self, obj):
         return html_tags.input_tag(obj.deadline, 'date')
-    deadline_option.short_description = '交货日期'
-
-    def description_option(self, obj):
-        return html_tags.input_tag(obj.description)
-    description_option.short_description = '备注'
+    deadline_option.short_description = '计划交付日期'
 
     def quantity_option(self, obj):
         return html_tags.input_tag(obj.quantity, 'number')
     quantity_option.short_description = '数量'
 
-    def status_option(self, obj):
-        return html_tags.select_tag(obj.status, statusOptions)
-    status_option.short_description = '状态'
+    def description_option(self, obj):
+        return html_tags.input_tag(obj.description)
+    description_option.short_description = '备注'
+
+
 
     def sub_actions(self, obj):
         return elementui_tags.el_button('primary','变更')

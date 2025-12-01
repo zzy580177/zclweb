@@ -24,6 +24,7 @@ def create(request, payload: list[BomVersionIn]):
     errors = []
     existCnt = 0
     try:
+        taret_material_numbers = {item.material_number for item in payload} 
         existing_materials = {material.number: material for material in Material.objects.all()}
         existing_materials_pk = {material.pk: material for material in Material.objects.all()}
         existing_vers = {f"{bv.material_id} {bv.version}": bv for bv in BomVersion.objects.all()}
@@ -144,19 +145,6 @@ def list_items(request, material_model: str = None, material_number: str = None)
         filters &= Q(material__number=material_number)
     if filters:
         qs = BomVersion.objects.select_related('material').filter(filters)
-        material_ids = set(qs.values_list('material_id', flat=True))
-        all_versions = BomVersion.objects.filter(material_id__in=material_ids).values('material_id', 'version')
-
-        material_history = {}
-        for row in all_versions:
-            mid = row['material_id']
-            material_history.setdefault(mid, {'versions': []})
-            material_history[mid]['versions'].append(row['version'])
-
-        for obj in qs:
-            mid = obj.material_id
-            obj.history_versions = material_history.get(mid, {}).get('versions', [])
-
     else:
         qs = BomVersion.objects.all()
     return qs

@@ -1,7 +1,9 @@
 import {utils, URLConfig} from './utils.js';
 import {H_ENDPOINTS, K_ENDPOINTS, T_ENDPOINTS, BUTTON_NAME2ID, API_CONFIG} from './apiConfig.js';
 
-class BaseRenderer {
+const MIDPART_INFO = {id:'207', name:'中间件'}
+
+export class BaseRenderer {
     static clearContainer(container) {
         container.innerHTML = '';
     }
@@ -20,259 +22,59 @@ class BaseRenderer {
     }
 }
 
-
-
-export class partDescriptions
-{
-    renderSubRoute(data) {
-        this.container.innerHTML = '';
-        this.createLine('#0d47a1');
-        this.createHeader()
-        this.createExtra();
-        this.createBody();
-        this.createFooter();
-        this.renderButtonGroupForEdit();
-        this.randerEmptySelecter();
-        this.randerTableData(data);
-    }
-
-    render(result) {
-        this.container.innerHTML = '';
-        this.createHeader();
-        this.createLine();
-        this.createExtra();
-        this.createBody();
-        this.createFooter();
-        this.renderButtonGroupForEdit();
-        this.randerEmptySelecter();
-        this.randerTableData(result?.items || result);
-    }
-
-    randerTableData(result)
-    {
-        const title = this.title.includes('工艺线路')? '工艺线路': this.title;
-        const params = {
-            'headers': JSON.stringify(H_ENDPOINTS['pmcui-porder'][title]||[]),
-            'keys': JSON.stringify(K_ENDPOINTS['pmcui-porder'][title]||[]),
-            'url': JSON.stringify(API_CONFIG['pmcui-porder'][title].path),
-            'url_params': JSON.stringify(URLConfig.buildApiParams('pmcui-porder',title, this.orderPart)),
-            'orderPart': JSON.stringify(this.orderPart),
-            'buttons': this.title.includes('工艺线路')? JSON.stringify(['编辑']): '[]'
-        } 
-        utils.setDataset(this.tableDiv, params)
-        const tableRender = this.bodyType === 'table'? 
-            new descriptionsTable(this.tableDiv) : new descriptionsCard(this.tableDiv);
-        tableRender.render(result);   
-    }
-    randerEmptySelecter()
-    {
-        if(this.selecter){
-            const params = {
-                optionText: '工艺线路',
-                defaultText: '请选择历史工艺线路设计',
-                key: 'Id',
-                url: JSON.stringify(API_CONFIG['pmcui-porder'].route_get), 
-                url_params: JSON.stringify({'FId': this.orderPart['FId']})}
-            utils.setDataset(this.selecter, params)
-            const selecterRender = new selecterRenderer(this.selecter)
-            selecterRender.render(); 
-        }  
-    }
-
-    constructor(container, part_data) {
-        this.modal = document.getElementById('parts-detail-modal');
-        this.params = utils.datasetToObj(this.modal); // Fixed reference
-        this.container = container;
-        this.title = container.getAttribute('data-title') || '';
-        this.issubPart = container.dataset['isSubPart'] === 'true';
-        this.orderPart = part_data? part_data : JSON.parse(this.params.orderPart||'{}')
-        this.bodyType = this.container.dataset.body?? 'card'
-        this.hasSelecter = this.container.dataset.select?? 'none'
-        this.extraDiv = container.querySelector('.el-descriptions__extra');
-        this.selecter = container.querySelector('.el-descriptions__extra select');
-        this.footerDiv = container.querySelector('.el-descriptions__footer');
-        this.tableDiv = container.querySelector('.el-descriptions__body table');
-    }
-    
-    createHeader()
-    {
-        const header = document.createElement('div');
-        header.className = 'el-descriptions__header';
-        const titleDiv = document.createElement('div');
-        titleDiv.className = 'el-descriptions__title';
-        titleDiv.textContent = this.title || '';
-        header.appendChild(titleDiv);
-        if(this.title == '工艺线路'){
-            const hideSwcBtn = document.createElement('button');
-            hideSwcBtn.innerHTML = '<i class="fas fa-chevron-up" id="collapseIcon"></i><span>收起内容</span>'
-            hideSwcBtn.id = 'hide_process'
-            hideSwcBtn.className = 'collapse-btn'
-            hideSwcBtn.style.backgroundColor = '#2f7deb'
-            header.appendChild(hideSwcBtn);
-        }
-        this.container.appendChild(header); 
-        if(this.title.includes('工艺线路')) {
-            this.title = '工艺线路'; 
-        }
-    }
-    createLine(background = '#2f7deb')
-    {
-        const line = document.createElement('div');
-        line.className = 'el-descriptions__line';
-        line.style.height = '1px';
-        line.style.background = background;
-        line.style.borderRadius = '1px';
-        line.style.margin = '8px 0';
-        this.container.appendChild(line);
-    }
-    createExtra()
-    {
-        if(this.hasSelecter === 'none' ) return null;
-        const extraDiv = document.createElement('div');
-        extraDiv.className = 'el-descriptions__extra';
-        extraDiv.style.marginBottom = '20px';
-        extraDiv.style.marginTop = '20px';
-        extraDiv.style.display = 'flex';
-        extraDiv.style.gap = '10px';
-        this.selecter = document.createElement('select')         
-        //this.selecter.style.display ='inline-flex'       
-        this.selectedContext = document.createElement('div')         
-        this.selectedContext.id = this.hasSelecter
-        //this.selectedContext.style.display ='inline-flex'     
-        extraDiv.appendChild(this.selecter);
-        extraDiv.appendChild(this.selectedContext);   
-        this.extraDiv = extraDiv;
-        this.container.appendChild(extraDiv);
-    }
-
-    createBody()
-    {                
-        const body = document.createElement('div');
-        body.className = 'el-descriptions__body';
-        const table = document.createElement('table');
-        table.id = `${T_ENDPOINTS[this.title]||''}-${this.orderPart['FModel']||''}`;
-        body.appendChild(table);
-        this.tableDiv = table;
-        this.container.appendChild(body);
-    }
-    createFooter()
-    {
-        const footerDiv = document.createElement('div');
-        footerDiv.className = 'el-descriptions__footer';
-        footerDiv.style.marginBottom = '20px';
-        footerDiv.style.marginTop = '20px';
-        this.footerDiv = footerDiv;
-        this.container.appendChild(footerDiv);
-    }
-    renderButtonGroupForEdit()  // fmdoel is not used, but kept for compatibility
-    {
-        if (!this.footerDiv || !this.extraDiv) return;
-        const isEditActive = this.modal.querySelector('#modal_edit').classList.contains('btn-active');
-        const display = isEditActive ? 'inline-flex' : 'none';
-        this.footerDiv.innerHTML = ''; // 清空现有内容
-        const buttonContainer = document.createElement('div');
-        buttonContainer.style.marginTop = '10px';
-        buttonContainer.style.textAlign = 'right';
-        buttonContainer.style.display = 'flex';
-
-        // Add row button
-        const removeBtn = document.createElement('button');
-        removeBtn.id = 'row-remove';
-        removeBtn.className = 'el-button el-button--warning el-button--small';
-        removeBtn.textContent = '撤销工序';
-        removeBtn.dataset.edit = isEditActive;
-        removeBtn.style.display = display;
-
-        // Add row button
-        const addButton = document.createElement('button');
-        addButton.id = 'new-process';
-        addButton.textContent = '添加工序';
-        addButton.className = 'el-button el-button--primary el-button--small';
-        addButton.dataset.edit = isEditActive;
-        addButton.style.display = display;
-
-        // Save button
-        const saveButton = document.createElement('button');
-        saveButton.id = 'table-save'
-        saveButton.textContent = '保存';
-        saveButton.className = 'el-button el-button--primary el-button--small';
-        saveButton.dataset.edit = isEditActive;
-        saveButton.style.display = display;
-        //saveButton.style.marginLeft = '10px';
-
-        buttonContainer.appendChild(addButton);
-        buttonContainer.appendChild(removeBtn);
-        buttonContainer.appendChild(saveButton);
-        this.footerDiv.appendChild(buttonContainer);
-
-        const select_button = document.createElement('button');            
-        select_button.id = 'selecter-save'
-        select_button.className = 'el-button el-button--primary    el-button--small';
-        select_button.textContent = '确认';
-        select_button.dataset.edit = isEditActive;
-        select_button.style.display = display;
-        select_button.style.float = 'right';
-
-        this.extraDiv.appendChild(select_button);
-    }
-    static toggleEditButtons(container, isVisible) {
-        if(!container) return;
-        const editButtons = container.querySelectorAll('button[data-edit]');
-        editButtons.forEach(button => {
-            button.style.display = isVisible ? 'flex' : 'none';  //'inline-block'
-        })
-    }
-}
-
-export function updateSelecterSaveButtonState(container, routeEndPoint) {
-    const button = container.querySelector('#selecter-save');
-    if (!button) return;
-    
-    const isEnabled = routeEndPoint !== '';
-    button.disabled = !isEnabled;
-    
-    button.className = isEnabled? 'el-button el-button--primary    el-button--small':'';
-    button.style.cursor = isEnabled ? 'pointer' : 'not-allowed';
-    
-    if (!isEnabled) {
-        button.replaceWith(button.cloneNode(true));
-    }
-
-    button.classList.toggle('active', isEnabled);
-    button.classList.toggle('disabled', !isEnabled);
-}
-
-export class subgongyiGroup{
-    constructor(container, params, orderid)
-    {
-        this.container = container;
-        if(params) utils.setDataset(container, params)
-        this.params = utils.datasetToObj(container);
-        this.OrderId = orderid
-        this.url = JSON.parse(this.params?.url ||'{}')
+export class dataCardRenderer {
+    constructor(table, params = null) {
+        this.table = table;
+        this.params = table? utils.datasetToObj(table) : params;
+        this.headers = JSON.parse(this.params?.headers || '[]');
+        this.keys = JSON.parse(this.params?.keys || '[]');  
+        this.url = JSON.parse(this.params?.url || '{}')
         this.endpoint = this.params?.endpoint || '';
-        this.url_params = JSON.parse(this.params?.url_params || '{}');
+        this.url_params = JSON.parse(this.params.url_params || '{}');
+        this.data = [];
+        this.thead = table?.querySelector('thead');
+        this.tbody = table?.querySelector('tbody');
+        this.method = 'GET'
+        if(this.table){       
+            this.table.className = 'el-descriptions__card';
+            this.table.style.width = '100%';
+            this.table.style.borderCollapse = 'collapse';
+            //this.id = this.table.id;
+        }
+        this.maxColumn = 4
     }
-    render(result)
-    {
-        BaseRenderer.clearContainer(this.container);
-        if(!result) return;
-        const subParts = result.map(item => item.parameters)
-        this.container.dataset.supParts = JSON.stringify(subParts || [])
-        result.forEach((dataItem, index) => {
-            dataItem.POrder_id = this.OrderId;
-            const subContainer = document.createElement('div');
-            subContainer.id = `subgongyi-${index}`;
-            subContainer.className = 'el-descriptions el-descriptions--sub';
-            const param = {isSubPart : true, title : `${dataItem.FModel} 工艺线路`, 
-                body:'table', select:'process'};     
-            utils.setDataset(subContainer, param);                
-            this.container.appendChild(subContainer);
-            new partDescriptions(subContainer, dataItem).renderSubRoute();
-        })
+    render(result) {
+        const data = result?.items || result;
+        if(!BaseRenderer.validateParams(this.table, data)){
+            return;
+        } 
+        this.table.appendChild(document.createElement('thead'))
+        const tbody = document.createElement('tbody')
+        for (let i = 0; i < this.headers.length; i += this.maxColumn) {
+            const [labelRow, valueRow] = this.buildCardRows(data[0], i);
+            tbody.append(labelRow, valueRow);
+        }
+        this.table.appendChild(tbody)
+    }
+    buildCardRows(dataItem, startIdx) {
+        const labelRow = document.createElement('tr');
+        const valueRow = document.createElement('tr');
+        
+        for (let j = startIdx; j < startIdx + this.maxColumn && j < this.headers.length; j++) {
+            labelRow.innerHTML += `
+                <td><div><span class="el-descriptions-item__label">
+                    ${this.headers[j]}
+                </span></div></td>`;
+            
+            valueRow.innerHTML += `
+                <td><div><span class="el-descriptions-item__content">
+                    ${utils.getValueByPath(dataItem, this.keys[j], '-')}
+                </span></div></td>`;
+        }
+        
+        return [labelRow, valueRow];
     }
 }
-
 
 export class tableRenderer{
     constructor(table, params=null) {
@@ -282,6 +84,7 @@ export class tableRenderer{
         this.keys = JSON.parse(this.params?.keys || '[]');
         this.hidkeys = JSON.parse(this.params?.hidkeys || '[]');
         this.inputs = JSON.parse(this.params?.inputs || '[]');
+        this.numbers = JSON.parse(this.params?.numbers || '[]');
         this.uniqKeys = JSON.parse(this.params?.uniqKeys || '[]');
         this.require = JSON.parse(this.params?.require || '[]');        
         this.selects = JSON.parse(this.params?.selects || '[]');     
@@ -296,12 +99,15 @@ export class tableRenderer{
         this.thead = table?.querySelector('thead');
         this.tbody = table?.querySelector('tbody');
         this.method = 'GET'
+        this.minrows = 1;
         if(this.limit > 0){
             this.url_params.limit = this.limit
             this.url_params.page = this.page
         }
     }
-
+    setMinRows(minrows){
+        this.minrows = minrows
+    }
     postRender(result){
         if(!result) return
         alert(result.message || '数据上传成功!');
@@ -345,6 +151,7 @@ export class tableRenderer{
     render(result) {
         if(this.method !== 'GET') return this.postRender(result)
         BaseRenderer.clearContainer(this.table);
+        this.clearPageination();
         this.data = (result && (result.items || result)) || [];  // 默认空数组
         this.total_count = (result && result.count) || 0;        // 默认0
         if(!BaseRenderer.validateParams(this.table, this.data)){
@@ -353,7 +160,7 @@ export class tableRenderer{
         this.createHeader();
         if(this.params['groupkey']) this.createTreeBody(this.params['groupkey']);
         else this.createBody();
-        if(this.url_params.limit > 0) this.createPagination(this.total_count, this.page)
+        if(this.url_params.limit > 0 && this.total_count > 0) this.createPagination(this.total_count, this.page)
     }
     renderError(response) {
         if(this.method !== 'GET') return this.postRenderError(response)
@@ -390,7 +197,6 @@ export class tableRenderer{
         }
         return Array.isArray(val)? {type: 'div', required: request}:{type: 'td', required: request};
     }
-
     getValueByPath(obj, path, fallback = '-') {
         return utils.getValueByPath(obj, path, fallback);
     }
@@ -408,6 +214,9 @@ export class tableRenderer{
         input.id = this.uniqKeys.includes(key)? 'uniq_input':'';
         input.className = 'optimized-width';
         input.type = 'text';
+        if(this.numbers.includes(key)){
+            input.type = 'number';
+        }
         input.value = val;
         input.required = request;        
         cell.appendChild(input);
@@ -419,28 +228,55 @@ export class tableRenderer{
         input.type = 'date';
         if(val && !isNaN(Date.parse(val))){
             const date = new Date(val);
+            // 设置为 yyyy-mm-dd 格式，兼容 input[type=date]
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
-            input.value = `${year}-${month}`;
+            const day = String(date.getDate()).padStart(2, '0');
+            input.value = `${year}-${month}-${day}`;
         }
         input.required = request;        
         cell.appendChild(input);
     }
 
-    createSelectForCell(cell, request, key)
-    {
-        const select = document.createElement('select');  
+    createSelectForCell(cell, request, key, val, item = null) {
+        const select = document.createElement('select');
         select.className = 'optimized-width';
         select.required = request;
-        if (Array.isArray(this.selects[key].datas) && this.selects[key].datas.length > 0){
-            new selecterRenderer(select).render(this.selects[key].datas)
-            select.dataset.datas = JSON.stringify(this.selects[key].datas)
-        }    
-        select.dataset.url = JSON.stringify(this.selects[key].path || {})
-        select.dataset.endpoint = this.selects[key].endpoint||''
-        select.dataset.key = this.selects[key].key
-        select.dataset.textK = this.selects[key].textK
-        cell.appendChild(select)
+        const selDef = (this.selects && this.selects[key]) ? this.selects[key] : null;
+        try {
+            select.dataset.url = JSON.stringify(selDef && selDef.path ? selDef.path : {});
+            select.dataset.endpoint = selDef && selDef.endpoint ? selDef.endpoint : '';
+            select.dataset.key = selDef && selDef.key ? selDef.key : '';
+            select.dataset.textK = selDef && selDef.textK ? selDef.textK : '';
+        } catch (e) {
+            console.error('createSelectForCell: set dataset failed', e);
+        }
+        
+        let optionals = [];
+        const dataKey = select.dataset.key;
+        if (item && dataKey && Object.prototype.hasOwnProperty.call(item, dataKey)) {
+            const v = item[dataKey];
+            optionals = Array.isArray(v) ? v : (v != null ? [v] : []);
+        } else if (selDef && Array.isArray(selDef.datas)) {
+            optionals = selDef.datas;
+        } else {
+            optionals = [];
+        }
+
+        if (Array.isArray(optionals) && optionals.length > 0) {
+            try {
+                new selecterRenderer(select).render(optionals);
+            } catch (e) {
+                console.error('selecterRenderer.render error', e);
+            }
+            select.dataset.datas = JSON.stringify(optionals);
+        }
+        const hasValue = Array.isArray(optionals) && optionals.some(opt => 
+            typeof opt === 'object' ? opt.value === val : opt === val
+        );
+        if (hasValue) select.value = val;
+
+        cell.appendChild(select);
     }
     renderRow(data, rowIdx){
         if (this.tbody.rows && this.tbody.rows.length > rowIdx-1) {
@@ -467,7 +303,7 @@ export class tableRenderer{
             })
         }
     }
-    createCell(val, key) {
+    createCell(val, key, item=null) {
         const tdType = this.setTdtype(key, val);
         const cellType = tdType.type;
         const request = tdType.required;
@@ -486,7 +322,7 @@ export class tableRenderer{
                 this.createInputForCell(cell, val, request, key);
                 break;
             case 'select':
-                this.createSelectForCell(cell, request, key);
+                this.createSelectForCell(cell, request, key, val, item);
                 break;
             case 'button':
                 cell.appendChild(this.createButtonForCell(key));
@@ -508,15 +344,14 @@ export class tableRenderer{
             }
         return cell;
     }
-
     createRow(item) {
         if (!this.table || !this.keys || this.keys.length === 0) return null;
         const row = document.createElement('tr');
         if(item){
             this.keys.forEach(key => {
                 const val = item[key] ? item[key] : this.getValueByPath(item, key, '-');
-                row.appendChild(this.createCell(val,key));});
-        }else{
+                row.appendChild(this.createCell(val,key,item));});
+        }else if(this.minrows > 0){
             this.keys.forEach(key => {row.appendChild(this.createCell('',key));});
         }
         return row;
@@ -539,7 +374,7 @@ export class tableRenderer{
         }
         this.table.appendChild(this.tbody);
     }
-    createTreeBody(parentKey='POrder_id') {
+    createTreeBody(parentKey='order_id') {
         if (!this.table || !this.keys || this.keys.length === 0) return;
         this.tbody = document.createElement('tbody');
         let groupedData = {};
@@ -579,6 +414,14 @@ export class tableRenderer{
             });
         });
         this.table.appendChild(this.tbody);
+    }
+    clearPageination() {
+        let pager = this.table.nextElementSibling;
+        if (pager && pager.classList && pager.classList.contains('table-pager')) {
+            while (pager.firstChild) {
+                pager.removeChild(pager.firstChild);
+            }
+        }
     }
     createPagination(total, page = 1) {
         let pager = this.table.nextElementSibling;
@@ -622,88 +465,7 @@ export class tableRenderer{
         pager.innerHTML = html;
     }
 }
-export class descriptionsTable extends tableRenderer {
-    constructor(table, params = null) {
-        super(table, params); 
-        if(this.table){       
-            this.table.className = 'el-descriptions__table';
-            this.table.style.width = '100%';
-            this.table.style.borderCollapse = 'collapse';
-            this.id = this.table.id;
-        }
-        
-        this.isEditActive = document.querySelector('#modal_edit')?.classList?.contains('btn-active') || false;
-        this.display = this.isEditActive ? 'flex' : 'none';
-    }
-    postRender(response){
-        if(!response) return
-        alert(response.message || '数据上传成功!');
-        if(response.routeId){
-            if(response.routeId != this.table.dataset.endpoint)
-            {
-                this.table.dataset.endpoint = response.routeId
-                const selecter = this.table.parentNode.previousElementSibling.querySelector('select')
-                selecterRenderer.appendOptionV(selecter, response.routeId)
-                selecter.value = response.routeId;
-                selecter.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-        }
-    }
-    postRenderError(response) {
-        const errorMessage = [response?.message, 
-            Array.isArray(response?.Error) ? response.Error.join('\n') : ''
-        ].filter(Boolean).join('\n\n') || '发生未知错误';
-        alert(errorMessage);
-    }
-    createButtonForCell(key)
-    {
-        const button = document.createElement('button');
-        button.textContent = key;
-        button.id = 'process_edit';
-        button.className = 'el-button el-button--warning el-button--small';
-        button.dataset.edit = this.isEditActive;
-        button.style.display = this.display;
-        return button
-    }
-}
-class descriptionsCard extends descriptionsTable {
-    constructor(table, params = null) {
-        super(table, params);
-        if(this.table)
-            this.table.className = 'el-descriptions__card';
-    }
-    render(result) {
-        const data = result
-        if(!BaseRenderer.validateParams(this.table, data)){
-            return;
-        } 
-        this.table.appendChild(document.createElement('thead'))
-        const tbody = document.createElement('tbody')
-        for (let i = 0; i < this.headers.length; i += 3) {
-            const [labelRow, valueRow] = this.buildCardRows(data[0], i);
-            tbody.append(labelRow, valueRow);
-        }
-        this.table.appendChild(tbody)
-    }
-    buildCardRows(dataItem, startIdx) {
-        const labelRow = document.createElement('tr');
-        const valueRow = document.createElement('tr');
-        
-        for (let j = startIdx; j < startIdx + 3 && j < this.headers.length; j++) {
-            labelRow.innerHTML += `
-                <td><div><span class="el-descriptions-item__label">
-                    ${this.headers[j]}
-                </span></div></td>`;
-            
-            valueRow.innerHTML += `
-                <td><div><span class="el-descriptions-item__content">
-                    ${this.getValueByPath(dataItem, this.keys[j], '-')}
-                </span></div></td>`;
-        }
-        
-        return [labelRow, valueRow];
-    }
-}
+
 export class selecterRenderer{
     constructor(selecter = null, params = null) {
         this.selecter = selecter
@@ -743,7 +505,7 @@ export class selecterRenderer{
         }
         this.selecter.append(...this.options);
     }
-    static appendOptionV(selecter, value) {
+    static appendOptionV(selecter, value, text) {
         if (!selecter) return false; // 防御性检查
         
         const exists = Array.from(selecter.querySelectorAll('option'))
@@ -752,7 +514,7 @@ export class selecterRenderer{
         if (!exists) {
             const option = document.createElement('option');
             option.value = value;
-            option.textContent = `${selecter.dataset.optionText} ${value}`;
+            option.textContent = text;
             selecter.append(option);
         }
     }
@@ -774,19 +536,23 @@ export class transferRenderer{
         if(!BaseRenderer.validateParams(this.transfer, data)){
             return;
         } 
-        data.forEach(step => {
+        data.forEach(obj => {
             const div = document.createElement('div');
-            div.className = 'step-item';
-            div.textContent = step.Name;
-            div.dataset.Id = step.Id;
-            div.dataset.Name = step.Name;
-            div.dataset.EqpName = step.EqpName;
-            div.dataset.params = '';
-            if(step.FNumber){
-                div.dataset.Name = step.EqpName;
-                div.dataset.EqpName = step.EqpName;
-                div.dataset.params = step.Name;
-                div.dataset.FId = step.FId; }
+            div.className = 'step-item';            
+            if(obj.material_id){
+                div.textContent = obj.material_model;
+                div.dataset.id = MIDPART_INFO.id;
+                div.dataset.name = MIDPART_INFO.name;
+                div.dataset.type_name = MIDPART_INFO.name;
+                div.dataset.params = obj.material_model;
+                div.dataset.material_id = obj.material_id; }
+            else{        
+                div.textContent = obj.name;     
+                div.dataset.id = obj.id;     
+                div.dataset.name = obj.name;
+                div.dataset.type_name = obj.type_name;
+                div.dataset.params = '';
+            }
             this.transfer.appendChild(div);
         });
     }
@@ -866,15 +632,142 @@ export class postTableRenderer extends tableRenderer{
         return
     }
 }
-export class fastFillModelRenderer extends partDescriptions
+
+export class floatingWindModelRender
 {
-    constructor(container, select_params, table_params)
-    {
-        super(container)
+    initialize(result) {
+        this.container.innerHTML = '';
+        this.createHeader();
+        this.createLine();
+        this.createExtra();
+        this.createBody();
+        this.createFooter();
+        this.randerSelecter();
+        this.randerTableData();
+    }
+    constructor(container, table_params=null, select_params=null, button_group=null) {
+        this.container = container;
+        this.title = container.getAttribute('data-title') || '';
         this.select_params = select_params || {}
         this.table_parmer = table_params || {}
+        this.button_group = button_group
+        this.extraDiv = container.querySelector('.el-descriptions__extra');
+        this.selecter = container.querySelector('.el-descriptions__extra select');
+        this.footerDiv = container.querySelector('.el-descriptions__footer');
+        this.tableDiv = container.querySelector('.el-descriptions__body table');
+        this.table_id = this.table_parmer?.id || '';
     }
-    render(result) {
+    
+    createHeader()
+    {
+        const header = document.createElement('div');
+        header.className = 'el-descriptions__header';
+        const titleDiv = document.createElement('div');
+        titleDiv.className = this.issubPart ? 'el-descriptions__title_subitem':'el-descriptions__title';
+        titleDiv.textContent = this.title || '';
+        header.appendChild(titleDiv);
+        
+        if(this.container.dataset.hasHideSwc === 'true') {
+            const hideSwcBtn = document.createElement('button');
+            hideSwcBtn.innerHTML = '<i class="fas fa-chevron-up" id="collapseIcon"></i><span>收起内容</span>'
+            hideSwcBtn.id = 'hide_process'
+            hideSwcBtn.className = 'collapse-btn'
+            hideSwcBtn.style.backgroundColor = '#2f7deb'
+            header.appendChild(hideSwcBtn);
+        }
+        this.container.appendChild(header); 
+    }
+    createLine(background = '#2f7deb')
+    {
+        const line = document.createElement('div');
+        line.className = 'el-descriptions__line';
+        line.style.height = '1px';
+        line.style.background = background;
+        line.style.borderRadius = '1px';
+        line.style.margin = '8px 0';
+        this.container.appendChild(line);
+    }
+
+    createExtra(container = this.container)
+    {        
+        if(!this.select_params || Object.keys(this.select_params).length === 0) return null;
+        const extraDiv = document.createElement('div');
+        extraDiv.className = 'el-descriptions__extra';
+        extraDiv.style.marginBottom = '20px';
+        extraDiv.style.marginTop = '5px';
+        extraDiv.style.display = 'flex';
+        extraDiv.style.gap = '10px';
+        this.selecter = document.createElement('select')         
+        this.selectedContext = document.createElement('div')         
+        this.selectedContext.id = 'select-help-note'   
+        extraDiv.appendChild(this.selecter);
+        extraDiv.appendChild(this.selectedContext);   
+        this.extraDiv = extraDiv;
+        container.appendChild(extraDiv);
+        this.selecter.required = this.select_params.required || false
+        utils.setDataset(this.selecter, this.select_params)
+    }
+
+    createBody(container = this.container)
+    {                
+        const body = document.createElement('div');
+        body.className = 'el-descriptions__body';
+        const table = document.createElement('table');
+        table.id = this.table_id;
+        body.appendChild(table);
+        this.tableDiv = table;
+        container.appendChild(body);
+        utils.setDataset(this.tableDiv, this.table_parmer)
+    }
+    createFooter(container = this.container)
+    {
+        const footerDiv = document.createElement('div');
+        footerDiv.className = 'el-descriptions__footer';
+        footerDiv.style.marginBottom = '20px';
+        footerDiv.style.marginTop = '20px';
+        this.footerDiv = footerDiv;
+        if(this.button_group && Object.keys(this.button_group).length > 0){
+            this.renderButtonGroup();
+        }
+        container.appendChild(footerDiv);
+    }
+
+    renderButtonGroup()  // fmdoel is not used, but kept for compatibility
+    {
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.marginTop = '10px';
+        buttonContainer.style.textAlign = 'right';
+        buttonContainer.style.display = 'flex';
+
+        this.button_group.forEach(btnInfo => {
+            const button = document.createElement('button');
+            button.id = btnInfo.id || '';
+            button.className = btnInfo.className || 'el-button el-button--primary el-button--small';
+            button.textContent = btnInfo.text || '按钮';
+            buttonContainer.appendChild(button);
+        });
+        this.footerDiv.appendChild(buttonContainer);
+    }
+    randerTableData()
+    {
+        new postTableRenderer(this.tableDiv).initiTable();   
+    }
+    randerSelecter()
+    {
+        if(this.selecter){
+            const selecterRender = new selecterRenderer(this.selecter)
+            selecterRender.render(); 
+        }  
+    }
+}
+
+export class fastFillModelRenderer extends floatingWindModelRender
+{
+    constructor(container, select_params, table_params, button_group = [{id: 'submit', text: '确认', className: 'el-button el-button--warning el-button--small'}])
+    {
+        super(container, table_params, select_params, button_group)
+    }
+    initialize(result) {
         this.container.innerHTML = '';
         this.createLine();
         this.createExtra();
@@ -882,32 +775,11 @@ export class fastFillModelRenderer extends partDescriptions
         this.createHiddenTextarea()
         this.createBody();
         this.createFooter();
-        this.renderButtonGroupForEdit();
         this.randerSelecter();
         this.randerTableData(result?.items || result);
         this.textarea.focus()
     }
 
-    createFooter()
-    {
-        const footerDiv = document.createElement('div');
-        footerDiv.className = 'el-descriptions__footer';
-        footerDiv.style.marginBottom = '20px';
-        footerDiv.style.marginTop = '20px';
-
-        const buttonContainer = document.createElement('div');
-        buttonContainer.style.marginTop = '10px';
-        buttonContainer.style.textAlign = 'right';
-        buttonContainer.style.display = 'flex';
-        const removeBtn = document.createElement('button');
-        removeBtn.id = 'submit';
-        removeBtn.className = 'el-button el-button--warning el-button--small';
-        removeBtn.textContent = '确认';
-        buttonContainer.appendChild(removeBtn);
-        footerDiv.appendChild(buttonContainer);
-        this.container.appendChild(footerDiv);
-    }
-   
     renderHelpNotes() {
         const notediv = document.createElement('div')
         const notep = document.createElement('p')
@@ -934,21 +806,4 @@ export class fastFillModelRenderer extends partDescriptions
         this.textarea = textarea;
         this.container.appendChild(textarea)
     }
-
-    randerSelecter()
-    {
-        if(this.selecter){
-            if (this.select_params && this.select_params.key)
-                this.selecter.required = true
-            utils.setDataset(this.selecter, this.select_params)
-            const selecterRender = new selecterRenderer(this.selecter)
-            selecterRender.render(); 
-        }  
-    }
-    randerTableData()
-    {
-        utils.setDataset(this.tableDiv, this.table_parmer)
-        new postTableRenderer(this.tableDiv).initiTable();   
-    }
-    renderButtonGroupForEdit(){}
 }
