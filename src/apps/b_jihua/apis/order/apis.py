@@ -27,8 +27,8 @@ def create(request, payload:List[OrderIn]):
 
     for idx, item in enumerate(payload):
         try:
-            item_dic = {k: v for k, v in item.dict().items() if k != 'plan_delivery'}
-            item_dic['plan_delivery'] = datetime.strptime(item.plan_delivery.strip(), day_format).date() if item.plan_delivery else None
+            item_dic = {k: v for k, v in item.dict().items() if k != 'deadline'}
+            item_dic['deadline'] = datetime.strptime(item.deadline.strip(), day_format).date() if item.deadline else None
             item_dic['status'] = '新建'
             if item.order_id in existing_order:
                 existCnt += 1
@@ -58,19 +58,21 @@ def create(request, payload:List[OrderIn]):
 
 @router.get('/order/{item_id}', response=OrderOut, url_name='b_jihua/order/retrieve')
 def retrieve(request, item_id):
-    item = get_object_or_404(Order, id=item_id)
+    item = get_object_or_404(Order, order_id=item_id)
     return item
 
 
 @router.get('/order', response=List[OrderOut], url_name='b_jihua/order/list')
 @paginate
-def list_items(request):
+def list_items(request, order_id: str = None):
     qs = Order.objects.all()
+    if order_id:
+        qs = qs.filter(order_id=order_id)
     return qs
 
 
 @router.put('/order/{item_id}', response=OrderOut, url_name='b_jihua/order/update')
-def update(request, item_id, payload: OrderUpdataIn):
+def update(request, item_id, payload: OrderIn):
     item = get_object_or_404(Order, order_id=item_id)
     for attr, value in payload.dict().items():
         setattr(item, attr, value)

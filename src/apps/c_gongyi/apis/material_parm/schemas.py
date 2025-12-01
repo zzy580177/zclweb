@@ -1,11 +1,13 @@
 from ninja import ModelSchema
 from apps.c_gongyi.models import *
+from typing import List, Optional
 
 
 class MaterialParmIn(ModelSchema):
     
-    bom_ver_id: int
-    
+    material_number: str
+    version: str
+    cost: Optional[str] = None   
 
     class Meta:
         model = MaterialParm

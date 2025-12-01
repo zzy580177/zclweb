@@ -23,8 +23,10 @@ def create(request, payload: list[MaterialIn]):
     errors = []
     existCnt = 0
     try:          
+        target_group_numbers = {item.number.rsplit('.', 1)[0] for item in payload if '.' in item.number}
+        target_material_numbers = {item.number for item in payload} 
         existing_units = {unit.name: unit for unit in Attribute.objects.filter(description = '单位').all()}
-        existing_groups = {group.number: group for group in MaterialGroup.objects.all()}
+        existing_groups = {group.number: group for group in MaterialGroup.objects.filter(number__in=target_group_numbers).all()}
         existing_materials = {material.number: material for material in Material.objects.all()}
         existing_materials_pk = {material.pk: material for material in Material.objects.all()}
     except Exception as e:
@@ -35,6 +37,8 @@ def create(request, payload: list[MaterialIn]):
     seen_numbers = set()   # 防止 payload 内重复创建同一编号
 
     for idx, item in enumerate(payload):
+        if item.number is None or item.number.strip() == '':
+            continue
         try:
             item_dic = {}
             p_material_raw = item.p_material
@@ -120,8 +124,6 @@ def create(request, payload: list[MaterialIn]):
     if(len(errors)>0):
         return {'success': False, 'data': data}
     return {'success': True, 'data': {'message': f'成功上传{len(success)}条记录, {existCnt}条记录已存在'}}
-
-
 
 @router.get('/material/{item_id}', response=MaterialOut, url_name='a_wuliao/material/retrieve')
 def retrieve(request, item_id):

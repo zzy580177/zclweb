@@ -5,16 +5,15 @@ from ninja import Router
 from ninja.pagination import paginate
 
 from django_starter.http.response import responses
-from django_starter.lib.common import to_decimal
+from django_starter.lib.common import to_decimal, str_to_date
 
 from apps.b_jihua.models import *
 from apps.a_wuliao.models import Material
 from apps.b_jihua.apis.order_parts.schemas import *
+from apps.a_wuliao.models import BomVersion
 
 router = Router(tags=['order_parts'])
-from datetime import datetime
-day_format = "%Y-%m-%d"
-day_format_s = "%Y%m%d"
+
 
 @router.post('/order_parts',  url_name='b_jihua/order_parts/create')
 def create(request, payload: List[OrderPartsIn]):
@@ -29,9 +28,11 @@ def create(request, payload: List[OrderPartsIn]):
     order_obj = get_object_or_404(Order, order_id=order_id)
     if not order_obj:
         return {'success': False, 'data': {'message': f'订单编号 {order_id} 不存在'}}
-    try:          
+    try:
+        target_material_numbers = {item.material_number for item in payload}          
         existing_parts = {part.material.number : part for part in OrderParts.objects.filter(order=order_obj)}
-        existing_materials = {material.number : material for material in Material.objects.all()}
+        existing_materials = {material.number : material for material in Material.objects.filter(number__in=target_material_numbers)}
+        history_versions = {mat.number: list(BomVersion.objects.filter(material=mat).values_list('version', flat=True)) for mat in existing_materials.values()}
     except Exception as e:
         errors.append(f"批量查询失败: {str(e)} ")
     
@@ -40,18 +41,24 @@ def create(request, payload: List[OrderPartsIn]):
 
     for idx, item in enumerate(payload):
         try:
+            if item.material_number is None or item.material_number.strip() == '':
+                continue
             if item.material_number in existing_parts:
                 existCnt += 1
                 continue
-            material_obj = existing_materials.get(item.material_number)
+            material_obj = existing_materials.get(item.material_number) if existing_materials else None
             if not material_obj:
                 errors.append(f"{idx+1}: 物料 {item.material_name} {item.material_number} 不存在 ")
                 faileds.append({'id': idx, 'status': False, })
                 continue
+            if item.version not in history_versions.get(item.material_number, []):
+                errors.append(f"{idx+1}: 物料 {item.material_name} {item.material_number} 不存在 Version:{item.version} ")
+                faileds.append({'id': idx, 'status': False, })
+                continue
 
-            item_dic = {'material': material_obj, 'status': '新建',
-                'quantity': to_decimal(item.quantity), 'description': item.description, 'order': order_obj}
-            item_dic['plan_delivery'] = datetime.strptime(item.plan_delivery.strip(), day_format).date() if item.plan_delivery else None
+            item_dic = {'material': material_obj, 'status': '新建', 'version': item.version, 
+                        'deadline': str_to_date(item.deadline) if item.deadline else None,
+                        'quantity': to_decimal(item.quantity), 'description': item.description, 'order': order_obj}
 
             to_create.append((idx, item_dic, item.order_id))
         except Exception as e:
@@ -80,35 +87,66 @@ def create(request, payload: List[OrderPartsIn]):
 
 @router.get('/order_parts/{item_id}', response=OrderPartsOut, url_name='b_jihua/order_parts/retrieve')
 def retrieve(request, item_id):
-    item = get_object_or_404(OrderParts, id=item_id)
+    item = get_object_or_404(OrderParts, order_id=item_id)
     return item
 
 
 @router.get('/order_parts', response=List[OrderPartsOut], url_name='b_jihua/order_parts/list')
 @paginate
-def list_items(request):
+def list_items(request, order_id: str = None, material_id: str = None, material_number: str = None, status: str = None, material_model: str = None):
     qs = OrderParts.objects.all()
+    if order_id or material_number or status or material_model:
+        if order_id:
+            qs = qs.filter(order__order_id = order_id.strip())
+        if material_id:
+            qs = qs.filter(material_id = material_id.strip())
+        if material_number:
+            qs = qs.filter(material__number__icontains = material_number.strip())
+        if status:
+            qs = qs.filter(status__icontains = status.strip())
+        if material_model:
+            qs = qs.filter(material__model__icontains = material_model.strip())
+        return qs
     return qs
 
 
 @router.put('/order_parts/{item_id}', response=OrderPartsOut, url_name='b_jihua/order_parts/update')
-def update(request, item_id, payload: OrderPartsUpdateIn):
-    item = get_object_or_404(OrderParts, id=item_id)
-    for attr, value in payload.dict().items():
-        if attr in ['plan_delivery', 'deadline'] and value is not None:
-            value = datetime.strptime(value.strip(),day_format_s).date() if value else None
-        elif attr in ['quantity', 'defectives', 'deliveries', 'cost'] and value is not None:
-            value = to_decimal(value) if value else None
-        elif attr == 'order':
-            order_obj = get_object_or_404(Order, order_id=value)
-            value = order_obj
-        elif attr == 'material':
-            material_obj = get_object_or_404(Material, number=value.split()[-1])
-            value = material_obj
-        setattr(item, attr, value)
-    item.save()
-    return item
+def update(request, item_id, payload: OrderPartsIn):
+    try:
+        item = get_object_or_404(OrderParts, id=item_id)
+        updates = payload.dict(exclude_unset=True)
+        for attr, value in updates.items():
+            if value is None:
+                continue
 
+            if attr in ('delivery_day', 'deadline'):
+                value = str_to_date(value)
+            elif attr in ('quantity', 'defectives', 'deliveries', 'cost'):
+                if (isinstance(value, str) and value.strip() == ''):
+                    value = None
+                else:
+                    value = to_decimal(value)
+            elif 'material' in attr:
+                if attr == 'material':
+                    material_obj = get_object_or_404(Material, number=value.split()[-1])
+                elif attr == 'material_number':
+                    material_obj = get_object_or_404(Material, number=value)
+                elif attr == 'material_id':
+                    material_obj = get_object_or_404(Material, material_id=value)
+                else:
+                    continue
+                value = material_obj
+                attr = 'material'
+            elif 'order' in attr:
+                order_obj = get_object_or_404(Order, order_id=value)
+                value = order_obj
+                attr = 'order'
+
+            setattr(item, attr, value)
+        item.save()
+    except Exception as e:
+        return {'success': False, 'data': {'message': f'更新失败: {str(e)}'}}
+    return item
 
 @router.patch('/order_parts/{item_id}', response=OrderPartsOut, url_name='b_jihua/order_parts/partial_update')
 def partial_update(request, item_id, payload: OrderPartsIn):

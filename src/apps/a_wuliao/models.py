@@ -121,7 +121,7 @@ class BomVersion(base_model):
     creator = models.CharField("创建人", max_length=max_charNameLen, null=True, blank=True)
 
     def __str__(self):
-        return f"M{self.material.material_id} - {self.version}"
+        return f"M{self.material.material_id}-{self.version}"
         
     class Meta:
         constraints = [

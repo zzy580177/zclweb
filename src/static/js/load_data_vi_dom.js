@@ -1,9 +1,9 @@
-export function bindInputsForFilter(orderId,inputs) {
+export function bindInputsForFilter(orderId,inputs) {  ///useless remove later
     let detail = [];
     let params = [];
     if (orderId) 
         detail.push(`订单号: ${orderId}`);
-        params.push('OrderId=' + encodeURIComponent(orderId));
+        params.push('order_id=' + encodeURIComponent(orderId));
     inputs.forEach(key => {
         const val = document.querySelector('input[name="' + key + '"]').value.trim();
         if (val) 

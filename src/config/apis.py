@@ -12,6 +12,7 @@ from apps.amfui.apis import router as amfui_router
 from apps.a_wuliao.apis import router as a_wuliao_router
 from apps.b_jihua.apis import router as b_jihua_router
 from apps.c_gongyi.apis import router as c_gongyi_router
+from apps.d_paichan.apis import router as d_paichan_router
 
 
 def convert_decimal_to_float(obj):
@@ -63,3 +64,4 @@ api.add_router('amfui', amfui_router)
 api.add_router('a_wuliao', a_wuliao_router)
 api.add_router('b_jihua', b_jihua_router)
 api.add_router('c_gongyi', c_gongyi_router)
+api.add_router('d_paichan', d_paichan_router)

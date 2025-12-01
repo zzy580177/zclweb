@@ -21,7 +21,7 @@ export class ApiHandler {
         toggleLoad = null
     }) {
         const queryString = this.buildQueryString(params);
-        const url = endpoint? `${this.baseURL}/${endpoint.replace(/^\//, '')}${queryString}`: 
+        const url = endpoint? `${this.baseURL}/${endpoint.replace(/^\//, '')}`: 
             `${this.baseURL}${queryString}`;
         const requestId = `${method}_${url}`;
 
@@ -104,7 +104,7 @@ export class ApiHandler {
 export async function fetchDataRenderFrame(frameRenderer, method = 'GET', data = null,
      onSuccess = null, onError = null) {  
     const url = frameRenderer?.url?.[method]??''
-    const endpoint = frameRenderer.endpoint === undefined? '' : frameRenderer.endpoint;
+    const endpoint = frameRenderer.endpoint === undefined || method === 'POST' ? '' : frameRenderer.endpoint;
     const params = frameRenderer.url_params === undefined? {} : frameRenderer.url_params
     if(url === '' || url === null || (url.endsWith('/') && !endpoint)) {
         console.info('url 为空');
@@ -166,7 +166,7 @@ export class TablerHandler {
         this.table = table;
         this.url = JSON.parse(table.dataset.url || '{}');
         this.data = null;
-        this.orderPart = JSON.parse(table.dataset.orderPart || '{}')
+        this.data_params = JSON.parse(table.dataset.data_params || '{}')
         this.method = method;
         this.result = 'ok';
         this.toggleLoad = true;
@@ -187,8 +187,8 @@ export class TablerHandler {
         let hasUniqK = false 
         let url_params = {}      
         for (const key of uniqKeys) {
-            if (data[key]) {
-                url_params = { [key]: data[key] };
+            if (data?.data?.[key]) {
+                url_params = { [key]: data?.data?.[key] };
                 hasUniqK = true
                 break;}
         }
@@ -232,7 +232,7 @@ export class TablerHandler {
     _getTrData(row){
         if(!row) return { data: {}, endpoint: '' };
         if(this.isResultList) return this._getTrData_ResultList(row)
-        const rawData = Object.assign({}, this.orderPart)
+        const rawData = Object.assign({}, this.data_params)
         const tds = row.getElementsByTagName('td');
         Array.from(tds).forEach(td => {
             if(!td.querySelector('button')) {
@@ -247,7 +247,7 @@ export class TablerHandler {
                 }
             }
         });
-        return { data: rawData, endpoint: rawData.Id || '' };
+        return { data: rawData, endpoint: rawData.Id || rawData.id || '' };
     }
 
     _getTrData_ResultList(row){
@@ -372,7 +372,7 @@ class fastFillModelHandler{
         this.table.dataset.baseData = JSON.stringify(params);        
     }
     async update() {
-        if (!this.selector.checkValidity()) return alert('请选择新增属性类别后重试');
+        if (this.selector && !this.selector.checkValidity()) return alert('请选择新增属性类别后重试');
         const tabler = new TablerHandler(this.table, 'POST')
         await tabler.submitDataAndPost()
     }
@@ -419,7 +419,7 @@ export function handleFastFillModelEvent(container)
     })
 }
 
-export function handlePostTableEvent(container)
+export function handlePostTableEvent(container, additionalHandler = null)
 {
     container.addEventListener('click', e => {
         if (e.target.matches('#add-row')) {
@@ -436,12 +436,25 @@ export function handlePostTableEvent(container)
             const model = document.getElementById('quick-fill-modal')
             utils.switchOverlay(model, true)
         } 
-        else if (e.target.matches('#uniq_input')) {            
-            let table = e.target.closest('table')
-            new TablerHandler(table, 'GET').getDataByUniqKey(e.target)}
         else if (e.target.matches('select')) {
             const selecterRender = new selecterRenderer(e.target)
             fetchDataRenderFrame(selecterRender)}
+        if (additionalHandler) {
+            try {
+                additionalHandler(e);
+            }
+            catch (error) {
+                console.error('Additional handler error:', error);
+            }
+        }
+    });
+    container.addEventListener('change', e => {
+        if (e.target.matches('#uniq_input')) {
+            const table = e.target.closest('table');
+            if (table) {
+                new TablerHandler(table, 'GET').getDataByUniqKey(e.target);
+            }
+        }
     });
 }
 

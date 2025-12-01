@@ -54,7 +54,8 @@ INSTALLED_APPS: Tuple[str, ...] = (
     'apps.amfui',
     'apps.a_wuliao',
     'apps.b_jihua',
-    'apps.c_gongyi'
+    'apps.c_gongyi',
+    'apps.d_paichan'
 )
 
 MIDDLEWARE: Tuple[str, ...] = (

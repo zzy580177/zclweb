@@ -100,8 +100,20 @@
     </div>
 </div>
 
-<script src="{% static 'lib/jquery/dist/jquery.min.js' %}"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.3/dist/purify.min.js"></script>
 <script src="{% static 'lib/bootstrap/dist/js/bootstrap.min.js' %}"></script>
+<script>
+$.AdminLTE = $.AdminLTE || {};
+$.AdminLTE.iframe = null; // Disable IFrame component
+$.fn.IFrame = function(method) {
+  if (method === 'dispose') {
+    return this; // Allow dispose calls
+  }
+  // Prevent initialization that causes null errors
+  return this;
+};
+</script>
 <script src="{% static 'lib/admin-lte/dist/js/adminlte.min.js' %}"></script>
 <script src="{% static 'lib/chart.js/dist/chart.min.js' %}"></script>
 <script>
@@ -136,13 +148,49 @@
 
     async function fetchApiData() {
         try {
-            const response = await fetch('/api/amfui/cell/cncs');
+            // Check network connectivity
+            if (!navigator.onLine) {
+                throw new Error('网络连接不可用');
+            }
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+            const response = await fetch('/api/amfui/cell/cncs', {
+                signal: controller.signal,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Cache-Control': 'no-cache'
+                }
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
             const result = await response.json();
-            initChart(result.data);
-          } catch (error) {
-            initChart('Failed: ' + error);
-            console.error('Error fetching dashboard data:', error);
-          }
+
+            if (result && result.data) {
+                initChart(result.data);
+            } else {
+                throw new Error('API 返回数据格式错误');
+            }
+
+        } catch (error) {
+            console.error('Dashboard 加载错误:', error);
+            let errorMessage = '数据加载失败，请检查网络连接';
+
+            if (error.name === 'AbortError') {
+                errorMessage = '请求超时，请重试';
+            } else if (error.message.includes('网络')) {
+                errorMessage = error.message;
+            }
+
+            // Try to show error in chart area
+            initChart({ cells: {}, msgs: { error: errorMessage } });
+        }
     }
 
     function addAmsgHref(text, msgsElem)
@@ -150,14 +198,38 @@
         let listItem = document.createElement('a');
         listItem.href = '#';
         listItem.className = 'list-group-item list-group-item-action';
-        listItem.textContent = text;
+        listItem.textContent = DOMPurify.sanitize(text, { ALLOWED_TAGS: ['#text'] }); // Sanitize text only
         msgsElem.appendChild(listItem);
     }
 
     function initChart(exampleData) {
-        let chartElem = document.getElementById('myChart2')
-        let msgsElem = document.getElementById('msg_list')
-        chartElem.innerHTML = '';
+        try {
+            let chartElem = document.getElementById('myChart2');
+            let msgsElem = document.getElementById('msg_list');
+
+            if (!chartElem || !msgsElem) {
+                console.error('Chart elements not found: chartElem=', chartElem, 'msgsElem=', msgsElem);
+                return;
+            }
+
+            chartElem.innerHTML = '';
+
+            // Destroy previous chart to avoid reuse error
+            if (window.currentChart && typeof window.currentChart.destroy === 'function') {
+                try {
+                    window.currentChart.destroy();
+                } catch (destroyError) {
+                    console.warn('Error destroying previous chart:', destroyError);
+                }
+            }
+
+            // Validate data structure
+            if (!exampleData || typeof exampleData !== 'object') {
+                exampleData = { cells: {}, msgs: { error: '无效数据格式' } };
+            }
+
+            if (!exampleData.cells) exampleData.cells = {};
+            if (!exampleData.msgs) exampleData.msgs = {};
         let labels = []
         let values = []
         let backgroundColors = []
@@ -198,8 +270,15 @@
         for (const key in exampleData.msgs) {
             addAmsgHref(`${exampleData.msgs[key]}`, msgsElem);
         }
-        let currentChart = new Chart(chartElem, config)
-        currentChart.resize(null, 500)
+            window.currentChart = new Chart(chartElem, config)
+            window.currentChart.resize(null, 500)
+
+        } catch (chartError) {
+            console.error('Chart initialization error:', chartError);
+            if (msgsElem) {
+                msgsElem.innerHTML = '<div class="error">图表加载失败</div>';
+            }
+        }
     }
 
     fetchApiData()

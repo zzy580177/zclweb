@@ -71,57 +71,95 @@ export const API_CONFIG = {
     'b_jihua':{
         order:{GET:'/api/b_jihua/order/order', POST:'/api/b_jihua/order/order', PUT:'/api/b_jihua/order/order'} ,
         order_parts:{
-            GET:'/api/b_jihua/order_parts/order_parts',
+            GET:'/api/a_wuliao/bom_version/bom_version',
             POST:'/api/b_jihua/order_parts/order_parts', 
-            PUT:'/api/b_jihua/order_parts/order_parts'}
+            PUT:'/api/b_jihua/order_parts/order_parts'},
+        get_order_parts:{GET:'/api/b_jihua/order_parts/order_parts'},
     },
     'c_gongyi':{
         materialParm:{
-            GET:'/api/c_gongyi/material_parm/material_parm', 
+            GET:'/api/a_wuliao/bom_version/bom_version',
             POST:'/api/c_gongyi/material_parm/material_parm', 
             PUT:'/api/c_gongyi/order/order'} ,        
         step:{
             GET:'/api/c_gongyi/step/step', POST:'/api/c_gongyi/step/step', 
             PUT:'/api/c_gongyi/step/step'} ,
+        '订单信息': {
+            path: {GET:'/api/b_jihua/order/order'},
+            params: ['order_id']
+        },
+        '零件信息': {
+            path: {GET:'/api/b_jihua/order_parts/order_parts'},
+            params: ['order_id', 'material_id']
+        },
+        '中间件信息': {
+            path: {GET:'/api/a_wuliao/bom/get_material_vi_parents'},
+            params: ['material_id', 'version']
+        },
+        '规格参数': {
+            path: {GET:'/api/c_gongyi/material_parm/material_parm'},
+            params: ['material_id', 'version']
+        },
+        '工艺线路': {
+                path: {GET:'/api/c_gongyi/process/route/', POST:'/api/c_gongyi/process/process'},
+                params: []
+        },
+        'CNC工艺设计': {
+            path: {},
+            params: ['material_id', 'version']
+        },
+        lab_materials: {
+            path: {GET:'/api/a_wuliao/bom/get_materials'},
+            params: ['material_id', 'version']
+        },
+        route_selecter:{
+            GET:'/api/c_gongyi/route/material',
+            params: ['isCNC']
+        },
+        step_transfer:{
+            '中间件':{GET:'/api/a_wuliao/bom/get_material_vi_parents'}, 
+            'stepList':{GET:'/api/c_gongyi/step/step'}},
 
+    },
+    'd_gongyi':{
+        materialParm:{
+            GET:'/api/a_wuliao/bom_version/bom_version',
+            POST:'/api/d_gongyi/material_parm/material_parm', 
+            PUT:'/api/d_gongyi/order/order'} ,        
     }
 };
 
 export const H_ENDPOINTS = {
-    'pmcui-porder':{
+    'c_gongyi':{
         '订单信息': ['订单', '产品信息', '批次号', '订单状态', '截止日期'],
-        '零件信息': ['组别', '物料编码', '物料名称', '规格型号', '生产单位', '生产数量', '零件当前状态', '交付截至'],
-        '中间件信息': ['子件编码', '子件名称', '规格型号', '生产单位'],
+        '零件信息': ['组别', '物料编码', '物料名称', '规格型号', '版本信息', '生产单位', '生产数量', '零件当前状态', '交付截至'],
+        '中间件信息': ['子件物料号','子件编码', '子件名称', '规格型号', '生产单位'],
         '规格参数': ['材料', '加工尺寸', '毛料尺寸', '镀层要求', '备注'],
-        '工艺线路': ['工序序号', '类别', '工序ID列表', '工序列表', '加工参数', '备注','操作'],
-        '子件工艺线路': ['工序序号', '类别', '工序ID列表', '工序列表', '加工参数', '备注'],
+        '工艺线路': ['工序序号', '类别', '工序列表', '加工参数', '备注','操作'],
         'CNC工艺设计': [],
         'main-filter': ['订单号','产品','批次']
     }
 };
 
 export const K_ENDPOINTS = {
-    'pmcui-porder':{
-        '订单信息': ['OrderId', 'Product_id', 'LotId', 'Status', 'Deadline'],
-        '零件信息': ['Part.FGroup.FName', 'Part.FNumber', 'Part.FName', 'Part.FModel', 'Part.FUnit.Name', 'Quantity', 'Status', 'DeadLine'],
-        '中间件信息': ['FNumber', 'FName', 'Name', 'unit'],
-        '规格参数': ['Stuff', 'Size', 'Cost', 'Surface', 'Description'],
-        '工艺线路': ['SeqNum', 'Steps_Step_EqpType_Name', 'Steps_Step_Id', 'Steps_Step_Name', 'Process_Steps_Parm', 'Description', '编辑'],
-        //['Route_id','Route_Material_FNumber','Route_Material_FModel','POrder_OrderId']
-        '子件工艺线路': ['SeqNum', 'Steps_Step_EqpType_Name', 'Steps_Step_Id', 'Steps_Step_Name', 'Process_Steps_Parm', 'Description'],
+    'c_gongyi':{
+        '订单信息': ['order_id', 'product_id', 'lot_id', 'status', 'deadline'],
+        '零件信息': ['material_group_name', 'material_number', 'material_name', 'material_model', 'version' ,'material_unit_name', 'quantity', 'status', 'deadline'],
+        '中间件信息': ['material_id','material_number', 'material_name', 'material_model', 'material_unit_name'],
+        '规格参数': ['stuff', 'size', 'cost', 'surface', 'description'],
+        '工艺线路': ['seqnum', 'type_name', 'steps_step_ids', 'steps_step_names', 'steps_parms', 'description', '编辑'],
         'CNC工艺设计': [],
-        'main-filter': ['OrderId','Product_id','LotId']
+        'main-filter': ['order_id','product_id','lot_id']
     }
 };
 
 export const K_HIDDENS ={
-    'pmcui-porder':{
+    'c_gongyi':{
         '订单信息': [],
         '零件信息': [],
         '中间件信息': [],
         '规格参数': [],
-        '工艺线路': ['Route_id', 'Route_Material_FNumber', 'Route_Material_FModel', 'POrder_OrderId'],
-        '子件工艺线路': ['Route_id', 'Route_Material_FNumber', 'Route_Material_FModel', 'POrder_OrderId'],
+        '工艺线路': ['steps_step_ids'],
         'CNC工艺设计': [],
         'main-filter': []
     }

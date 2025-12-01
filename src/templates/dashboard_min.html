@@ -1,61 +1,45 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <title>
-            车间看板
-        </title>
-        <link rel="stylesheet" href="../../static/amfui/css/public_min.css">
-        <link rel="stylesheet" href="../../static/amfui/css/page_min.css">
-        <script src="../../static/amfui/js/jquery-3.3.1.min.js">
-        </script>
-		<script type="text/javascript" src="../../static/amfui/js/dashbord_builds_min.js"></script>
-</head>
-<body class="page" style="overflow-x:hidden">
-    <header class="flex-row justify-between align-center postion-relative">
-        <div class="postion-absolute left-0 top-0 color-white texe-al">
-            ZCL智能生产展示看板
-        </div>
-        <img src="../../static/amfui/img/adz.png" alt="" style="width: 100%;">
-    </header>
-    <!-- 代码部分begin -->
-    <div class="about_edu" id = "touchArea" >
-      <script>
-        fetchDashboardData(0);
-      </script>
-    </div>
-</body>
+{% extends '_dashboard_base.html' %}
 
- 
-<script>
-  const swipeZone = document.getElementById('touchArea');
-  let startX, endX;
- 
-  swipeZone.addEventListener('touchstart', function(e) {
-    startX = e.touches[0].clientX;}, { passive: true });
- 
-  swipeZone.addEventListener('touchmove', function(e) {
-    e.preventDefault(); // prevent scrolling
-    endX = e.touches[0].clientX; }, { passive: false });
- 
-  swipeZone.addEventListener('touchend', function(e) {
-    const deltaX = endX - startX;
-    if (deltaX > 20) {
-      this.innerHTML = 'Content Reloaded!';
-      setTimeout(() => {
-        shiftLeft();
-      }, 500); // Reset content after 1 second
-    } else if (deltaX < 20) {
-      this.innerHTML = 'Content Reloaded!';
-      setTimeout(() => {
-        shiftRight();
-      }, 500); // Reset content after 1 second
-    } else{
-      this.style.transform = '';
-    }}, { passive: true });
-</script>
-</script>
-<script src="../../static/amfui/js/pxTurnRem.js">
-</script>
-</body>
-</html>
+{% block extra_head %}
+    <link rel="stylesheet" href="/static/amfui/css/public_min.css">
+    <link rel="stylesheet" href="/static/amfui/css/page_min.css">
+    <script type="text/javascript" src="/static/amfui/js/dashbord_builds_min.js"></script>
+{% endblock %}
+
+{% block content %}
+    <div class="about_edu" id="touchArea">
+        <script>
+            fetchDashboardData(0);
+        </script>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        const swipeZone = document.getElementById('touchArea');
+        let startX, endX;
+
+        swipeZone.addEventListener('touchstart', function(e) {
+            startX = e.touches[0].clientX;
+        }, { passive: true });
+
+        swipeZone.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            endX = e.touches[0].clientX;
+        }, { passive: false });
+
+        swipeZone.addEventListener('touchend', function(e) {
+            const deltaX = endX - startX;
+            if (deltaX > 20) {
+                this.innerHTML = 'Content Reloaded!';
+                setTimeout(() => { shiftLeft(); }, 500);
+            } else if (deltaX < 20) {
+                this.innerHTML = 'Content Reloaded!';
+                setTimeout(() => { shiftRight(); }, 500);
+            } else {
+                this.style.transform = '';
+            }
+        }, { passive: true });
+    </script>
+    <script src="/static/amfui/js/pxTurnRem.js"></script>
+{% endblock %}

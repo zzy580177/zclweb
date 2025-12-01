@@ -74,9 +74,11 @@
     {% endblock content %}
 </div>
 
-{% compress js %}
-    <script src="{% static 'lib/flowbite/dist/flowbite.min.js' %}"></script>
-{% endcompress %}
+    {% compress js %}
+        <script src="{% static 'lib/jquery/dist/jquery.min.js' %}"></script>
+        <script src="{% static 'lib/dompurify/purify.min.js' %}"></script>
+        <script src="{% static 'lib/flowbite/dist/flowbite.min.js' %}"></script>
+    {% endcompress %}
 
 </body>
 

@@ -23,6 +23,10 @@ def retrieve(request, item_id):
     item = get_object_or_404(Route, id=item_id)
     return item
 
+@router.get('/material', response=List[RouteOut], url_name='c_gongyi/route/material_route')
+def get_route_by_material(request, material_id: str = None, isCNC: bool = False):
+    item = Route.objects.filter(bom_ver__material_id = material_id, is_cnc = isCNC).order_by('-route_ver')
+    return item
 
 @router.get('/route', response=List[RouteOut], url_name='c_gongyi/route/list')
 @paginate

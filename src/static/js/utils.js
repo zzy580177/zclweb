@@ -23,13 +23,15 @@ export class utils
             modal.classList.remove("modal-maximized");
             maximizeButton.textContent = "⛶";
             if (mainbody) {
-                mainbody.style.maxHeight = '60vh';
+                modal.style.maxHeight = '80vh';
+                mainbody.style.maxHeight = '70vh';
             }
         } else {
             modal.classList.add("modal-maximized");
             maximizeButton.textContent = "🗗";
             if (mainbody) {
-                mainbody.style.maxHeight = '';
+                modal.style.maxHeight = '100vh';
+                mainbody.style.maxHeight = '90vh';
             }
         }
 
@@ -73,6 +75,28 @@ export class utils
         return path?.split('.').reduce((acc, key) => 
             (acc && acc[key] !== undefined) ? acc[key] : fallback||'', obj);
     }
+
+    static getSelectedCellValue(selected, keys) {
+        // 参数验证
+        if (!selected || !keys || !Array.isArray(keys)) return null;    
+        let tr = selected.closest('tr');
+        if (!tr || tr.parentNode.tagName.toLowerCase() !== 'tbody') return null;
+        const cells = Array.from(tr.children);
+        const result = {};    
+        keys.forEach(key => {
+            const cell = cells.find(cell => cell.getAttribute('data-key') === key);
+            if (cell) {
+                const attrValue = cell.getAttribute('data-key');
+                if (attrValue) {
+                    const finalKey = attrValue.split('.').at(-1);
+                    result[finalKey] = cell.textContent.trim();
+                }
+            }
+        });
+        
+        return Object.keys(result).length > 0 ? result : null;
+    }
+
 }
 export class loadingOverlay {
     static show() {
@@ -103,13 +127,11 @@ export class loadingOverlay {
 }
 
 export class URLConfig{
-    static buildApiParams(resourceKey, title = '', order_part) {
-        let config = API_CONFIG[resourceKey]
-        config = config[title];    
+    static buildApiParams(config,  order_part) {
         if (!config) return '';
         const url_params = {}
         config.params.forEach(param => {
-            url_params[param] = order_part[param.replace('OrderId', 'POrder_id')] ;
+            url_params[param] = order_part[param] ;
         })
         if(url_params.FID) url_params.FID = parseInt(url_params.FID)
         return url_params;

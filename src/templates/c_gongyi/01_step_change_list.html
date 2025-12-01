@@ -89,7 +89,7 @@
 
 
 <script type="module">
-    import {handlePostTableEvent, handleFastFillModelEvent} from "{% static 'js/eventAction.js' %}";
+    import {handlePostTableEvent, handleFastFillModelEvent, handleResultListEvent} from "{% static 'js/eventAction.js' %}";
     import {API_CONFIG} from "{% static 'js/apiConfig.js' %}";
     import {renderFastFillModel} from "{% static 'js/a_wuliao.js' %}";
     import {postTableRenderer} from "{% static 'js/renderFrame.js' %}";
@@ -101,7 +101,7 @@
         const mdTable = document.querySelector('.el_table-container table')
         mdTable.dataset.headers = JSON.stringify(['工序名','工序类别', '工序计时单价/元','工序计件单价/元','备注', '操作'])
         mdTable.dataset.keys = JSON.stringify([ 'name', 'type_name', 'hcost','ucost','description', '删除'])
-        mdTable.dataset.inputs = JSON.stringify(['name', 'hcost','ucost','description',])
+        mdTable.dataset.inputs = JSON.stringify(['name', 'hcost','ucost','description',])   
         mdTable.dataset.selects = JSON.stringify({type_name: select_url})
         mdTable.dataset.buttons = JSON.stringify(['删除'])
         mdTable.dataset.require = JSON.stringify(['name', 'type_name', ])
@@ -120,9 +120,9 @@
         renderFastFillModel(fastContain, null, table_params)
         handleFastFillModelEvent(document.querySelector('#quick-fill-modal'));
 
-        const result_list_tab = document.getElementById('result_list');
-        result_list_tab.dataset.url = JSON.stringify(table_url)   
-        handleAdminTableEvent(result_list_tab);
+        const container = document.querySelector('#result_list');
+        container.dataset.url = JSON.stringify(table_url);
+        handleResultListEvent(container);
     });
         
 </script>
