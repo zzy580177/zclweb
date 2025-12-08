@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>车间看板</title>
+    <link rel="stylesheet" href="/static/amfui/css/public.css">
+    <link rel="stylesheet" href="/static/amfui/css/page.css">
+    <script src="/static/lib/jquery/dist/jquery.min.js"></script>
+    <script src="/static/lib/dompurify/purify.min.js"></script>
+    <script type="text/javascript" src="/static/amfui/js/dashbord_builds.js"></script>
+
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body class="page" style="overflow-x:hidden">
+    <header class="flex-row justify-between align-center postion-relative">
+        <div class="postion-absolute left-0 top-0 color-white texe-al">
+            ZCL智能生产展示看板
+        </div>
+        <img src="/static/amfui/img/adz.png" alt="" style="width: 100%;">
+    </header>
+
+    {% block content %}{% endblock %}
+
+    {% block scripts %}{% endblock %}
+
+</body>
+
+</html>

@@ -22,7 +22,7 @@ SIMPLEUI_ICON = {
     '3.5 流程管理': 'fa fa-sitemap',
 }
 SIMPLEUI_CONFIG = {
-    'system_keep': True,  # 关闭系统菜单
+    'system_keep': False,  # 关闭系统菜单
     'menu_display': ['首页大屏','认证和授权','宏观质量', '品牌建设', '产品安全', '企业质量画像',
                      '企业基础设施','数据看板','加工数据查看',
                      '生产计划管理','生产技术管理','基础资料管理','生产管理',
