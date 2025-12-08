@@ -1,233 +1,31 @@
-import {BaseRenderer, floatingWindModelRender, tableRenderer, dataCardRenderer, selecterRenderer } from "./renderFrame.js";   
-import {utils, URLConfig} from './utils.js';
+import {handleToggleButton, fastFillModelRenderer, tableRenderer, dataCardRenderer, selecterRenderer } from "./renderFrame.js";
+import {utils, URLConfig, ModalStackManager} from './utils.js';
 import {H_ENDPOINTS, K_ENDPOINTS, T_ENDPOINTS, K_HIDDENS, API_CONFIG} from './apiConfig.js';
-import {fetchDataRenderFrame, renderTableAndLoadData, TablerHandler} from './eventAction.js';
+import { renderFrameAndLoadData, TablerHandler, fetchDataRenderFrame, } from './eventAction.js';
+import {renderPartDetailModalFrame, partLabsDescriptions} from './t_modalPartsDetail.js';
+import {DesignModal, CNCDesignModal, triggerCNCDesignModal, NUMERIC_UNITS, fetchDataAndRenderCNCDesignModal} from './t_modalCncDesign.js';
 
-const PARTINFO_KEYS = ['id','order_id','material_id','material_model','material_name','material_number','version']
+const PARTINFO_KEYS = ['id','order_id','material_id','material_model','material_name','material_number','version', 'route', 'cnc_route']
 const FILTER_KEYS = ["material_number","material_model","status"];
 const APP = 'c_gongyi';
 
-export class descriptionsTable extends tableRenderer {
-    constructor(table, params = null) {
-        super(table, params); 
-        if(this.table){       
-            this.table.className = 'el-descriptions__table';
-            this.table.style.width = '100%';
-            this.table.style.borderCollapse = 'collapse';
-            //this.id = this.table.id;
-        }
-        
-        this.isEditActive = document.querySelector('#modal_edit')?.classList?.contains('btn-active') || false;
-        this.display = this.isEditActive ? 'flex' : 'none';
-    }
-    postRender(response){
-        if(!response) return
-        alert(response.message || '数据上传成功!');
-        if(response.routeId){
-            if(response.routeId != this.table.dataset.endpoint)
-            {
-                this.table.dataset.endpoint = response.routeId
-                const selecter = this.table.parentNode.previousElementSibling.querySelector('select')
-                selecterRenderer.appendOptionV(selecter, response.routeId, response.text)
-                selecter.value = response.routeId;
-                selecter.dispatchEvent(new Event('change', { bubbles: true }));
-            }
-        }
-    }
-    postRenderError(response) {
-        const errorMessage = [response?.message, 
-            Array.isArray(response?.Error) ? response.Error.join('\n') : ''
-        ].filter(Boolean).join('\n\n') || '发生未知错误';
-        alert(errorMessage);
-    }
-    createButtonForCell(key)
-    {
-        const button = document.createElement('button');
-        button.textContent = key;
-        button.id = 'process_edit';
-        button.className = 'el-button el-button--warning el-button--small';
-        button.dataset.edit = this.isEditActive;
-        button.style.display = this.display;
-        return button
-    }
-}
 
-export class partDescriptions extends floatingWindModelRender
-{
-    constructor(container, data_params=null, button_group=null) {
-        super(container, null, null, button_group)
-        this.data_params = data_params || {};
-        const title = this.title;
-        this.table_id = `${T_ENDPOINTS[title]||''}-${this.data_params['material_model']||''}`;
-        this.table_parmer =  {
-            'headers': JSON.stringify(H_ENDPOINTS[APP][title]||[]),
-            'keys': JSON.stringify(K_ENDPOINTS[APP][title]||[]),
-            'hidkeys': JSON.stringify(K_HIDDENS[APP][title]||[]),
-            'url': JSON.stringify(API_CONFIG[APP][title].path),
-            'url_params': JSON.stringify(URLConfig.buildApiParams(API_CONFIG[APP][title], this.data_params)),
-            'data_params': JSON.stringify(this.data_params)
-        } 
+// 快速添加CNC工序功能
+export function renderFastAddCNCProcess(Params, isCNC = true) {
+    Params = isCNC? Params['CNC'] : Params['UNCNC']
+    const fastContain = document.querySelector('.el-descriptions-fast-fill')
+    const headers = isCNC? ['工步名称', ...Params.map(h => h.label)] : ['工序名称','设备', ...Params.map(h => h.label)];
+    const keys = isCNC? ['step_name', ...Params.map(h => h.key)] : ['process_name','type_name', ...Params.map(h => h.key)];
+    const numbers = keys.filter(item => NUMERIC_UNITS.some(keyword => item.includes(keyword)))
+
+    const table_params = {
+        headers: JSON.stringify(headers),
+        keys: JSON.stringify(keys),
+        require: JSON.stringify(['step_name']),
+        numbers: JSON.stringify(numbers)
     }
-    randerTableData()
-    {
-        const tableRender = this.container.dataset.body === 'table'? 
-            new descriptionsTable(this.tableDiv) : new dataCardRenderer(this.tableDiv);        
-        fetchDataRenderFrame(tableRender);
-    }
-}
-
-export class partLabsDescriptions extends partDescriptions {
-    constructor(container, data_params = null)
-    {
-        super(container, data_params, null);
-        this.url = API_CONFIG[APP].lab_materials.path
-        this.url_params = data_params? URLConfig.buildApiParams(API_CONFIG[APP].lab_materials, data_params) : {};
-        this.labTabContent = container.querySelector('.tab-content');
-        this.labTabHeader = container.querySelector('.tab-header');
-        this.labTab = container.querySelector('.custom-tabs');
-        this.isCNC = this.title.includes('CNC');
-    }
-
-    initialize(){
-        this.container.innerHTML = '';
-        this.createHeader()
-        this.createLine('#0d47a1');
-        this.initial_labTab();
-    }
-
-    initial_labTab(container = this.container)
-    {
-        this.labTab = document.createElement('div');
-        this.labTab.className = 'custom-tabs';
-        this.labTabHeader = document.createElement('div');
-        this.labTabHeader.className = 'tab-header';
-        this.labTab.appendChild(this.labTabHeader);
-        this.labTabContent = document.createElement('div');
-        this.labTabContent.className = 'tab-content';
-        this.labTab.appendChild(this.labTabContent);        
-        container.appendChild(this.labTab);
-    }
-
-    createLabTabItemPane(text, index)
-    {
-        const tabItem = document.createElement('div');
-        tabItem.className = 'tab-item'; 
-        tabItem.id = this.isCNC ? `${text}-CNC`: `${text}`;
-        tabItem.textContent = text;
-        if(index === 0) tabItem.classList.add('active'); 
-        if(this.isCNC) tabItem.classList.add('CNC'); 
-        this.labTabHeader.appendChild(tabItem);
-        const tabPane = document.createElement('div');
-        tabPane.className = 'tab-pane';
-        tabPane.id = this.isCNC ? `${text}-CNC`: `${text}`;
-        if(index === 0) tabPane.classList.add('active'); 
-        if(this.isCNC) tabPane.classList.add('CNC'); 
-        this.labTabContent.appendChild(tabPane);
-        return tabPane
-    }
-    render(result)
-    {
-        BaseRenderer.clearContainer(this.labTabHeader);        
-        BaseRenderer.clearContainer(this.labTabContent);
-        if(!result || !Array.isArray(result) || result.length === 0) return;  
-
-        result.forEach((dataItem, index) => {
-            dataItem.order_id = this.data_params.order_id;   
-            dataItem.isCNC = this.isCNC;           
-            this.table_id = `${T_ENDPOINTS[this.title]||''}-${dataItem.material_model||''}`;
-            this.select_params =  {
-                defaultText: '请选择历史工艺线路设计', key: 'id', textK: 'text',
-                url: JSON.stringify(API_CONFIG[APP].route_selecter), 
-                url_params: JSON.stringify({material_id: dataItem.material_id, isCNC:this.isCNC})
-            }
-            this.button_group = this.isCNC ?
-                [{id:'compile-existing', text:'编译已有CNC工序设计的', className:'el-button el-button--primary el-button--small'},
-                 {id:'new-route', text:'开始CNC工序设计', className:'el-button el-button--warning el-button--small'}]:
-                [{id:'row-remove', text:'撤销工序', className:'el-button el-button--warning el-button--small'},
-                    {id:'new-process', text:'添加工序', className:'el-button el-button--primary el-button--small'},
-                    {id:'table-save', text:'保存', className:'el-button el-button--primary el-button--small'}]
-            this.table_parmer =  {
-                'headers': JSON.stringify(H_ENDPOINTS[APP][this.title]||[]),
-                'keys': JSON.stringify(K_ENDPOINTS[APP][this.title]||[]),
-                'hidkeys': JSON.stringify(K_HIDDENS[APP][this.title]||[]),
-                'url': JSON.stringify(API_CONFIG[APP][this.title].path),
-                'url_params': JSON.stringify(URLConfig.buildApiParams(API_CONFIG[APP][this.title], dataItem)),
-                'data_params': JSON.stringify(dataItem),
-                'buttons': JSON.stringify(['编辑'])} 
-            const tabPane = this.createLabTabItemPane(dataItem.material_model, index);
-            this.createExtra(tabPane);
-            this.createBody(tabPane);
-            this.createFooter(tabPane);
-            this.randerSelecter();
-            this.randerTableData();
-        });
-        this.container.switchTab = (index) => {
-            const panes = this.container.querySelectorAll('.tab-pane');
-            const items = this.container.querySelectorAll('.tab-item');
-            panes.forEach(pane => pane.classList.remove('active'));
-            items.forEach(item => item.classList.remove('active'));
-            panes[index].classList.add('active');
-            items[index].classList.add('active');
-        };
-    }
-    renderButtonGroup()  // fmdoel is not used, but kept for compatibility
-    {
-        const isEditActive = document.querySelector('#modal_edit').classList.contains('btn-active');
-        const display = isEditActive ? 'inline-flex' : 'none';
-        this.footerDiv.innerHTML = ''; // 清空现有内容
-        const buttonContainer = document.createElement('div');
-        buttonContainer.style.marginTop = '10px';
-        buttonContainer.style.textAlign = 'right';
-        buttonContainer.style.display = 'flex';
-
-        this.button_group.forEach(btnInfo => {
-            const button = document.createElement('button');
-            button.id = btnInfo.id || '';
-            button.className = btnInfo.className || 'el-button el-button--primary el-button--small';
-            button.textContent = btnInfo.text || '按钮';
-            button.dataset.edit = isEditActive;
-            button.style.display = display;
-            buttonContainer.appendChild(button);
-        });
-        this.footerDiv.appendChild(buttonContainer);
-
-        const select_button = document.createElement('button');            
-        select_button.id = 'selecter-save'
-        select_button.className = 'el-button el-button--primary    el-button--small';
-        select_button.textContent = '确认';
-        select_button.dataset.edit = isEditActive;
-        select_button.style.display = display;
-        select_button.style.float = 'right';
-
-        this.extraDiv.appendChild(select_button);
-    }
-    static toggleEditButtons(container, isVisible) {
-        if(!container) return;
-        const editButtons = container.querySelectorAll('button[data-edit]');
-        editButtons.forEach(button => {
-            button.style.display = isVisible ? 'flex' : 'none';  //'inline-block'
-        })
-    }
-}
-
-function renderPartDetailModalFrame(order_part, modal){
-    const titleTextDiv = modal.querySelector('#parts-detail-modal-title');
-    titleTextDiv.textContent = `${order_part['material_model']}  ${order_part['material_name']}`;
-    titleTextDiv.setAttribute('title', `${order_part['material_model']}  ${order_part['material_name']}`);
-    modal.dataset.orderPart = JSON.stringify(order_part);
-
-    const childrens = modal.querySelectorAll(`[id^="parts-descriptions-"]`)
-    childrens.forEach(async children =>{
-        const title = children.getAttribute('data-title');
-        if (!['工艺线路','CNC工艺设计'].some(keyword => title.includes(keyword))) {    
-            const partDesc = new partDescriptions(children, order_part);    
-            partDesc.initialize();
-        }else{
-            const partDescLeb = new partLabsDescriptions(children, order_part);
-            partDescLeb.initialize();
-            fetchDataRenderFrame(partDescLeb);
-        }
-    })
+    const renderer = new fastFillModelRenderer(fastContain, null, table_params);    
+    renderer.initialize();
 }
 
 function bindInputsForFilter(container, table) {
@@ -237,14 +35,14 @@ function bindInputsForFilter(container, table) {
     table.dataset.groupkey = 'order_id';
     if (orderId) {
         detail.push(`订单号: ${orderId}`);
-        params['order_id'] = orderId;        
+        params['order_id'] = orderId;
         table.dataset.groupkey = '';}
     FILTER_KEYS.forEach(key => {
         const val = container.querySelector(`#${key}`).value.trim();
         if (val) {
             detail.push(`${key}: ${val}`);
             params[key] = val;}
-    })                
+    })
     document.getElementById('filter-detail-content').textContent = detail.length ? detail.join('，') : '无';
     return params
 }
@@ -254,26 +52,27 @@ export function handlePartsTableSelectEvent(container, modal) {
         if (!e.target.matches('td')) return;
         const tr = e.target.closest('tr');
         if (tr && tr.classList.contains('parent-row') && tr.classList.contains('expanded')) return;
-        const order_part = utils.getSelectedCellValue(e.target, PARTINFO_KEYS);
-        if (!order_part) return;
+        const order_part = new TablerHandler(e.target.closest('table')).getTrData(tr, PARTINFO_KEYS);
+        if (!order_part.data) return;
+        const dataParams = order_part.data;
         utils.switchOverlay(modal, true);
-        renderPartDetailModalFrame(order_part, modal);
+        renderPartDetailModalFrame(dataParams, modal, `${dataParams.material_name}  ${dataParams.material_model}`);
     });
 }
 
 export function handleOrderPartFilterEvent(container, loadtable) {
     container.addEventListener('click', e => {
         if (e.target.matches('td')) {
-            const orderId = utils.getSelectedCellValue(e.target, ['order_id'])
-            container.dataset.filterOrderId = orderId['order_id'];
+            const order = new TablerHandler(e.target.closest('table')).getTrData(e.target.closest('tr'),  ['order_id']);
+            container.dataset.filterOrderId = order.data.order_id;
             const url_parm = bindInputsForFilter(container, loadtable);
-            loadtable.dataset.url_params = JSON.stringify(url_parm);
-            renderTableAndLoadData(loadtable);
+            loadtable.dataset.url = JSON.stringify({path: API_CONFIG['b_jihua'].get_order_parts, params: url_parm});
+            renderFrameAndLoadData(loadtable);
         };
         if (e.target.matches('#filter-confirm-btn')){
             const url_parm = bindInputsForFilter(container, loadtable);
-            loadtable.dataset.url_params = JSON.stringify(url_parm);
-            renderTableAndLoadData(loadtable);
+            loadtable.dataset.url = JSON.stringify({path: API_CONFIG['b_jihua'].get_order_parts, params: url_parm});
+            renderFrameAndLoadData(loadtable);
         }
     })
     loadtable.addEventListener('change', e => {
@@ -283,4 +82,182 @@ export function handleOrderPartFilterEvent(container, loadtable) {
         };
     })
 
+}
+
+export function handlePartDetailModalEvent(modal, STEPARAM = null) {
+    modal.addEventListener('click', e => {
+        if (e.target.matches('#switch-modal'))
+            utils.switchOverlay(modal, false);
+        if (e.target.matches('#maximize-modal'))
+            utils.maximizeModal(modal, 'main');
+        if (e.target.matches('#modal_edit'))
+            partLabsDescriptions.toggleEditButtons(modal, e.target);
+        //if (e.target.matches('#row-remove'))
+        //    new TablerHandler(e.target.closest(".tab-pane").querySelector('.el-descriptions__body table')).deleteRow();
+        //if (e.target.matches('#new-process')){
+        //    new ProcessEditer(document.querySelector('#process-design-modal')).modelActive(
+        //        e.target.closest(".tab-pane").querySelector('.el-descriptions__body table'));}
+        //if (e.target.matches('#process_edit')){
+        //    new ProcessEditer(document.querySelector('#process-design-modal')).modelActive(
+        //        e.target.closest(".tab-pane").querySelector('.el-descriptions__body table'), e.target.closest("tr"));}
+        //if (e.target.matches('#table-save'))
+        //    new TablerHandler(e.target.closest(".tab-pane").querySelector('.el-descriptions__body table'), 'POST').update();
+        if (e.target.matches('#selecter-save')){
+            const tabs = e.target.closest('.tab-content').querySelectorAll('.tab-pane');
+            let warning = []
+            let parts = []
+            tabs.forEach( tab => {
+                const selecter = tab.querySelector('select');
+                if (selecter.value === '') 
+                    warning.push(`${tab.id} 请选择合适的工艺路线 `) 
+                else {
+                    const table = tab.querySelector('table');
+                    let data = JSON.parse(table.dataset.dataParams);
+                    data.route = selecter.value;
+                    parts.push(data)
+                }
+            })
+            if (warning.length > 0) {
+                alert(warning.join('\n'));}
+            else {
+                updateProductionRoute(parts, e.target.closest('.el-descriptions'));
+            }
+        }
+        if (e.target.matches('.collapse-btn') || e.target.parentNode.matches('.collapse-btn')){
+            const container = e.target.closest('.el-descriptions');
+            partLabsDescriptions.hideContainSwitch(container, e.target);
+        }
+        if(e.target.matches('.tab-item'))
+            partLabsDescriptions.panelSwitch(e.target.closest('.custom-tabs'),e.target)
+        if (e.target.matches('#new-route')) {
+            e.preventDefault();
+            triggerCNCDesignModal(e, 'Create', STEPARAM)
+        }
+        if (e.target.matches('#compile-existing')) {
+            e.preventDefault();
+            triggerCNCDesignModal(e, 'Edit', STEPARAM)
+        }
+    },300);
+
+    modal.addEventListener('change', e => {
+        if (e.target.matches('select')) {
+            const partDesc = e.target.closest(".tab-pane");
+            partLabsDescriptions.randerTableDataViSelecter(partDesc);
+        }
+    });
+}
+
+export function handleCNCDesignModalEvent(modal, STEPARAM)
+{
+    modal.addEventListener('click', e => {
+
+        if (e.target.matches('.toggle-steps') || e.target.closest('.toggle-steps')) {
+            const button = e.target.closest('.toggle-steps');
+            const processCard = button.closest('.cnc-process-card');
+            const stepsContainer = processCard.querySelector('.steps-container');
+            handleToggleButton(stepsContainer, button);
+        }
+
+        if (e.target.matches('.remove-process')) {
+            const processCard = e.target.closest('.cnc-process-card');
+            processCard.remove();
+            CNCDesignModal.updateProcessNumbers();
+        }
+        if (e.target.matches('.remove-step')) {
+            const processCard = e.target.closest('.cnc-process-card');
+            if (!processCard) {
+                console.error('Error: Could not find the parent .cnc-process-card element.');
+                return;
+            }
+            const stepItem = e.target.closest('.cnc-step-item');
+            if (!stepItem) {
+                console.error('Error: Could not find the .cnc-step-item element to remove.');
+                return;
+            }
+            stepItem.remove();
+            CNCDesignModal.updateStepNumbers(processCard);
+        }
+        if (e.target.matches('.add-step')){
+            const modelRenderer = new CNCDesignModal(null, STEPARAM)
+            if (modelRenderer.validateFormInputs(e.target.closest('.cnc-process-card')))
+                modelRenderer.addStep(e.target.closest('.cnc-process-card')) 
+            }
+        if (e.target.matches('#save-cnc-design'))
+            if (new CNCDesignModal().validateFormInputs(e.target.closest('.cnc-processes-container')))
+                fetchDataAndRenderCNCDesignModal(null, STEPARAM)
+        if (e.target.matches('#add-cnc-process'))
+            new CNCDesignModal(null, STEPARAM).addProcessCard()
+        if (e.target.matches('#fast-add-cnc-process')){
+            const dataParams = JSON.parse(modal.dataset.dataParams || '{}');
+            renderFastAddCNCProcess(STEPARAM.Params, dataParams.isCNC)
+            utils.switchOverlay(document.querySelector('#quick-fill-modal'), true);
+        }
+        if (e.target.matches('#switch-modal'))
+            utils.switchOverlay(modal, false);
+        if (e.target.matches('#maximize-modal'))
+            utils.maximizeModal(modal, '.el-dialog__body');
+        if (e.target.matches('#cancel-cnc-design')) utils.switchOverlay(modal, false)
+    })
+    modal.addEventListener('change', e => {
+        if (e.target.matches('.device-select')) {
+            const dataParams = JSON.parse(modal.dataset.dataParams || '{}');
+            if (!dataParams.isCNC) {
+                const container = e.target.closest(".cnc-process-body").querySelector(".steps-container");
+                if (container) {
+                    while (container.firstChild) container.firstChild.remove();
+                }
+            }
+        }
+    });
+}
+
+export async function handleFastAddCNCProcess(event, params) {
+    const container = event.target.closest('#quick-fill-modal');
+    const table = container.querySelector('table');
+    const handler = new TablerHandler(table)
+    if (handler.getData() !== 'ok') {
+        console.error('表格数据检查失败');
+        return;
+    }
+
+    const cncModalElement = document.getElementById('cnc-design-modal');
+    if (!cncModalElement) {
+        console.error('CNC设计模态框不存在');
+        return;
+    }
+
+    let dataParams = {};
+    try {
+        dataParams = JSON.parse(cncModalElement.dataset.dataParams || '{}');
+    } catch (e) {
+        console.warn('解析模态框数据参数失败:', e);
+    }
+
+    const cncModal = dataParams.isCNC ? new CNCDesignModal(dataParams, params) : new DesignModal(dataParams, params);
+    const result = await cncModal.handleFastFillDate(handler.data);
+    if (result) {
+        setTimeout(() => {
+            utils.switchOverlay(container, false);
+        }, 500);
+    }
+}
+
+async function updateProductionRoute(parts, el_descriptions) {
+    if (!parts || !Array.isArray(parts) || parts.length === 0) {
+        alert('没有需要更新的零件数据');
+        return;
+    }
+    let data = []
+    for (const part of parts) {
+        data.push({
+            order_part: part.material_id,
+            route: part.isCNC ? null : part.route,
+            cnc_route: part.isCNC ? part.route : null,
+            status: 'planned',
+            order_id: part.order_id,
+            description: `工艺路线已确认 - ${part.material_name || part.material_model}`
+        })
+    }
+    const renderer = new partLabsDescriptions(el_descriptions, null, 'POST');
+    await fetchDataRenderFrame(renderer, 'POST', data);
 }

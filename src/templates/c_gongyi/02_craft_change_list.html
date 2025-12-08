@@ -223,206 +223,58 @@
 
         </main>
     </div>
-
-    <!-- 零件详情查询框 -->
-    <div id="parts-detail-modal" class="modal" >
-        <header class="el-header" style="height: 5vh;">
-            <div class="fx-modal-header" style="display: flex; align-items: center; justify-content: space-between;">
-                <div class="header-title" style="margin-right: 16px;">
-                <div class="title-text" id="parts-detail-modal-title" title="title-text" style="font-size: 20px; font-weight: bold;"></div>
-            </div>
-            <div class="modal-controls" style="display: flex; align-items: center; gap: 8px;">
-                <div class="el-button-group btn-group" size="small">
-                    <button type="button" id="maximize-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
-                        ⛶</button>
-                    <button type="button" id="switch-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
-                        <span class="el-icon-switch-button"></span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        </header> 
-        <footer class="el-footer" style="height: 5vh;">
-            <hr style="border-bottom:1px solid #e4e7ed; margin: 12px 0; height: 0;" aria-hidden="true">
-            <div class="fx-data-menu" style="display: flex; align-items: center; gap: 24px; justify-content: space-between;">
-                <div class="button-pane">
-                    <div class="el-button-group btn-group" size="small">
-                        <button type="button" id="modal_printer" class="el-icon-printer" style="cursor: pointer">
-                        </button>
-                        <button type="button" id="modal_edit" class="el-icon-edit" style="cursor: pointer">
-                        </button>
-                        <button type="button" id="modal_delete" class="el-icon-delete" style="cursor: pointer">
-                        </button>
-                    </div>
-                </div>
-                <div class="switch-pane fx-data-switch" style="display: flex; align-items: center; gap: 8px;">
-                    <button class="switch-btn active" aria-label="Previous"></button>
-                    <div class="switch-index">2/6</div>
-                    <button class="switch-btn active" aria-label="Next"></button>
-                </div>
-            </div>
-            <hr style="border-bottom:1px solid #e4e7ed; margin: 12px 0; height: 0;" aria-hidden="true">
-        </footer>
-        <main class="el-main" style="max-height: 70vh; overflow-y: auto;">
-            <div id="parts-descriptions-order" class='el-descriptions' data-title="订单信息"></div>
-            <div id="parts-descriptions-wuliao" class='el-descriptions' data-title="零件信息"></div>
-            <div id="parts-descriptions-subparts" class='el-descriptions' data-title="中间件信息"  data-body="table"></div>
-            <div id="parts-descriptions-chanshu" class='el-descriptions' data-title="规格参数"></div>
-            <div id="parts-descriptions-gongyi" class='el-descriptions' data-title="工艺线路" data-has-hide-swc="true" data-body="table"> </div>
-            <div id="parts-descriptions-cnc-gongyi" class='el-descriptions' data-title="CNC工艺设计" data-has-hide-swc="true" data-body="table"></div>
-        </main> 
-    </div>
-    <div id="parts-detail-modal-overlay" class="modal-overlay"></div>
-
-    <die id="process-design-modal" class="modal">
-        <div class="el-dialog__header" style="height: 60px;">
-        <span class="el-dialog__title">工序设计</span>
-        </div>
-        <hr style="border-bottom:1px solid #e4e7ed; margin: 12px 0; height: 0;" aria-hidden="true">
-        <div class="el-dialog__body" style="max-height: 60vh; overflow-y: auto;">
-            <!-- 1.工序组选择 -->
-            <div style="margin-bottom: 15px;">
-            <label>工序组：</label>
-            <select id="select-step-group" class="el-select__inner">
-                <option value="" >请选择工序组</option>
-                {% for column in StepGroup %}
-                    <option value={{column.label}} >{{column.label}}</option>
-                {% endfor %}
-            </select>
-            </div>
-
-            <!-- 2.工序选择与排序 -->
-            <div class="transfer-container"  style="display: flex; align-items: center; ">
-                <div class="transfer-panel" id="step-before-select">                    
-                    <div class="el-transfer-panel__header">可选工序</div>
-                    <div id="available-steps" class="el-transfer-panel__body" style="border:1px solid #ddd; overflow-y: auto;"></div>
-                </div>
-                <div class="sort-buttons"></div>
-                <div class="transfer-panel" id="step-after-select">
-                    <div class="el-transfer-panel__header">已选工序</div>
-                    <div id="selected-steps" class="el-transfer-panel__body" style="border:1px solid #ddd; overflow-y: auto;" ></div>
-                </div>
-            </div>
-
-            <!-- 3.工艺参数设置 -->
-            <div style="margin: 20px 0;" id="step-params-set">
-            <table class="el-table" >
-                <table class="el-table__header" width="100%" id="param-table"
-                    data-headers='["工序名称","工艺参数"]' data-keys='["name","params"]' data-inputs='["params"]'>        
-                </table>
-            </table>
-            <div class="el-table__body-wrapper"></div>
-            </div>
-
-            <!-- 4.备注输入 -->
-            <div style="margin: 15px 0;">
-            <label>备注：</label>
-            <textarea id="remark" class="el-textarea__inner" rows="3"></textarea>
-            </div>
-
-            <!-- 5.确认按钮 -->
-            <div style="text-align: right;">
-            <button class="el-button" id="close-step-design-modal">取消</button>
-            <button class="el-button el-button--primary" id="load-step-design">确认</button>
-            </div>
-        </div>
-    </div>
-    <div id="process-design-modal-overlay" class="modal-overlay"></div>
-
-    <!-- CNC工艺设计模态框 -->
-    <div id="cnc-design-modal" class="modal">
-        <div class="el-dialog__header cnc-modal-header" style="height: 5vh;">
-            <h2 class="cnc-modal-header-title">CNC工艺设计</h2>
-            <div class="modal-controls" style="display: flex; align-items: center; gap: 8px;">
-                <div class="el-button-group btn-group" size="small">
-                    <button type="button" id="maximize-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
-                        ⛶</button>
-                    <button type="button" id="switch-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
-                        <span class="el-icon-switch-button"></span>
-                    </button>
-                </div>
-            </div>
-        </div>
-        <hr style="border-bottom:1px solid #e4e7ed; margin: 12px 0; height: 0;" aria-hidden="true">
-
-        <div class="el-dialog__body" style="max-height: 65vh; overflow-y: auto; padding: 20px;">
-            <!-- 基础信息展示 -->
-            <div id="cnc-basic-info" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
-                <h3 style="margin: 0 0 10px 0; color: #409EFF;">基础信息</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                    <div><strong>订单号:</strong> <span id="cnc-order-id"></span></div>
-                    <div><strong>零件编码:</strong> <span id="cnc-material-number"></span></div>
-                    <div><strong>零件型号:</strong> <span id="cnc-material-model"></span></div>
-                    <div><strong>零件版本:</strong> <span id="cnc-version"></span></div>
-                    <div><strong>工艺版本:</strong> <span id="cnc-version"></span></div>
-                </div>
-            </div>
-
-            <!-- CNC工序卡管理 -->
-            <div style="margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 style="margin: 0; color: #409EFF;">CNC工序卡</h3>
-                    <button id="add-cnc-process" class="el-button el-button--primary el-button--small">
-                        <i class="el-icon-plus"></i> 添加工序卡
-                    </button>
-                </div>
-
-                <div id="cnc-processes-container">
-                    <!-- 动态添加的工序卡 -->
-                </div>
-            </div>
-
-            <!-- 操作按钮 -->
-            <div style="text-align: right; margin-top: 20px; padding-top: 15px; border-top: 1px solid #ebeef5;">
-                <button class="el-button el-button--small" id="cancel-cnc-design">取消</button>
-                <button class="el-button el-button--primary el-button--small" id="save-cnc-design">保存设计</button>
-            </div>
-        </div>
-    </div>
-    <div id="cnc-design-modal-overlay" class="modal-overlay"></div>
+    {% include 'common/modal_orderpart_detail.html' %}
+    {% include 'common/modal_cnc_design.html' %}
 </div>
 
 <script type="module">
     import {postTableRenderer} from "{% static 'js/renderFrame.js' %}";
     import {
         handleProcessEditModalEvent,
-        handlePartDetailModalEvent,
-        handleCNCDesignModalEvent
+        
     } from "{% static 'js/ui_pmcui.js' %}";
     import {
+        renderFastAddCNCProcess,
+        handleCNCDesignModalEvent,
+        handlePartDetailModalEvent,
         handleOrderPartFilterEvent,
         handlePartsTableSelectEvent,
+        handleFastAddCNCProcess,
     } from "{% static 'js/c_gongyi.js' %}";
 
     import{
-        renderTableAndLoadData,
+        renderFrameAndLoadData,
         handleTableEvent,
+        handleFastFillModelEvent,
     } from "{% static 'js/eventAction.js' %}";
     import {API_CONFIG} from "{% static 'js/apiConfig.js' %}";
     // 全局变量
 
     document.addEventListener('DOMContentLoaded', function() {
         const ordertable = document.getElementById('product-order-table')
-        ordertable.dataset.url = JSON.stringify(API_CONFIG['b_jihua'].order)
-        renderTableAndLoadData(ordertable);
+        ordertable.dataset.url = JSON.stringify({path: API_CONFIG['b_jihua'].order})
+        renderFrameAndLoadData(ordertable);
         const partstable = document.getElementById('product-parts-table');
-        partstable.dataset.headers = JSON.stringify(["零件编码","零件名称","规格型号","版本信息", "生产单位","数量", "计划截止","状态"])
-        partstable.dataset.keys = JSON.stringify(["id","order_id","material_id", "material_number","material_name","material_model","version","material_unitname","quantity","deadline","status"])
-        partstable.dataset.hidkeys = JSON.stringify(["id","order_id","material_id"])       
-        //partstable.dataset.selects = JSON.stringify({version:{key:'history_versions'}})
-        partstable.dataset.url = JSON.stringify(API_CONFIG['b_jihua'].get_order_parts)
+        partstable.dataset.headers = JSON.stringify(["规格型号","零件名称","版本信息", "数量", "工艺路线","CNC工艺", "预计交期", "状态"])
+        partstable.dataset.keys = JSON.stringify(["id","order_id","material_id","material_model","material_name","version","quantity","route","cnc_route","deadline","production_status"])
+        partstable.dataset.hidkeys = JSON.stringify(["id","order_id","material_id", "material_number",])       
+        partstable.dataset.selects = JSON.stringify(
+            {route:{option: {key:"id", textK:"text"},dataK:'route_list'},cnc_route:{option: {key:"id", textK:"text"},dataK:'cnc_route_list'}})
         const parts_detail_modal = document.getElementById('parts-detail-modal');
         handleOrderPartFilterEvent(document.getElementById('main-filter'), partstable);
         //handleTableEvent(document.getElementById('order-filter-result'))
 
         handlePartsTableSelectEvent(partstable, parts_detail_modal);
-        handlePartDetailModalEvent(parts_detail_modal);
+        handlePartDetailModalEvent(parts_detail_modal, {{ STEPARAM|safe }});
 
-        handleProcessEditModalEvent(document.getElementById('process-design-modal'))
+        //handleProcessEditModalEvent(document.getElementById('process-design-modal'))
 
-        handleCNCDesignModalEvent(document.getElementById('cnc-design-modal'))
-        
-    });
+        handleCNCDesignModalEvent(document.getElementById('cnc-design-modal'), {{ STEPARAM|safe }})
+
+        handleFastFillModelEvent(
+            document.querySelector('#quick-fill-modal'), 
+            (event, params) => handleFastAddCNCProcess(event, {{ STEPARAM|safe }})
+        );
+    })
 </script>
 {% endblock %}

@@ -125,11 +125,73 @@ def create(request, payload: list[MaterialIn]):
         return {'success': False, 'data': data}
     return {'success': True, 'data': {'message': f'成功上传{len(success)}条记录, {existCnt}条记录已存在'}}
 
-@router.get('/material/{item_id}', response=MaterialOut, url_name='a_wuliao/material/retrieve')
-def retrieve(request, item_id):
-    item = get_object_or_404(Material, id=item_id)
-    return item
+@router.get('/get_material_routes', response=List[MaterilRoutesOut], url_name='a_wuliao/material/get_material_routes')
+def get_material_routes(request, material_id: str, version: str, order_id: str = None):
+    try:
+        # 1. 获取子物料ID列表
+        subM = [obj['version__material_id'] for obj in Bom.objects.filter(
+            Q(p_material_id=material_id, version__version=version)
+        ).values('version__material_id')]
 
+        material_ids = [int(material_id)]  
+        for mat_id in subM:
+            if mat_id and mat_id not in material_ids:
+                material_ids.append(mat_id)
+        
+        # 2. 获取物料对象
+        materials = Material.objects.filter(material_id__in=material_ids)
+        
+        # 3. 如果提供了order_id，获取ProductionPlan中的route信息
+        production_plan_routes = {}
+        if order_id:
+            try:
+                # 查找OrderParts
+                from apps.b_jihua.models import OrderParts
+                from apps.d_paichan.models import ProductionPlan
+                
+                # 为每个物料查找对应的ProductionPlan
+                for mat_id in material_ids:
+                    # 查找OrderParts：通过order_id和material_id
+                    order_part = OrderParts.objects.filter(
+                        order__order_id=order_id,
+                        material_id=mat_id
+                    ).first()
+                    
+                    if order_part:
+                        # 查找ProductionPlan
+                        production_plan = ProductionPlan.objects.filter(
+                            order_part=order_part
+                        ).first()
+                        
+                        if production_plan:
+                            production_plan_routes[mat_id] = {
+                                'route': production_plan.route_id if production_plan.route else None,
+                                'cnc_route': production_plan.cnc_route_id if production_plan.cnc_route else None
+                            }
+            except Exception as e:
+                # 如果查询ProductionPlan失败，继续执行，不影响主要功能
+                print(f"查询ProductionPlan失败: {e}")
+        
+        # 4. 为每个物料对象添加production_plan_routes信息
+        # 这里我们需要修改返回的数据结构，但MaterilRoutesOut模式已经支持route和cnc_route字段
+        # 这些字段会通过解析器自动填充，但我们需要确保解析器能使用production_plan_routes中的数据
+        
+        # 由于解析器是静态方法，我们无法直接传递参数
+        # 作为替代方案，我们可以为每个物料对象动态添加属性
+        for material in materials:
+            if material.material_id in production_plan_routes:
+                routes_info = production_plan_routes[material.material_id]
+                # 动态添加属性，这些属性会被MaterilRoutesOut的解析器使用
+                material._production_plan_route = routes_info.get('route')
+                material._production_plan_cnc_route = routes_info.get('cnc_route')
+            else:
+                material._production_plan_route = None
+                material._production_plan_cnc_route = None
+        
+        return materials
+    except Exception as e:
+        print(f"get_material_routes错误: {e}")
+        return []
 
 @router.get('/material', response=List[MaterialSampleOut], url_name='a_wuliao/material/list')
 @paginate

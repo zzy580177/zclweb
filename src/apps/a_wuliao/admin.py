@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django_starter.contrib.admin.tags import html_tags
+from django_starter.contrib.admin.tags import html_tags, elementui_tags
 from django.contrib.admin import SimpleListFilter
 from django.db.models import Q
 
@@ -139,11 +139,24 @@ class MinBGroupFilter(SimpleListFilter):
 
 @admin.register(Attribute)
 class AttributeAdmin(admin.ModelAdmin):
-    list_display = ['attribute_id','description','name']
+    list_display = ['attribute_id','description_option','name_option', 'key_option', 'sub_actions']
     list_filter = ['description']
     change_list_template = "a_wuliao/00_attribute_change_list.html"
-    actions = [delete_selected]  
+    actions = [delete_selected]
     ordering = ['description', 'attribute_id']
+
+    def description_option(self, obj):
+        return html_tags.input_tag(obj.description)
+    description_option.short_description = '属性'
+    def name_option(self, obj):
+        return html_tags.input_tag(obj.name)
+    name_option.short_description = '名称'
+    def key_option(self, obj):
+        return html_tags.input_tag(obj.key)
+    key_option.short_description = '备注'
+    def sub_actions(self, obj):
+        return elementui_tags.el_button('primary','变更')
+    sub_actions.short_description = '操作'
 
 @admin.register(MaterialGroup)
 class MaterialGroupAdmin(admin.ModelAdmin):

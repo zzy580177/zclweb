@@ -40,3 +40,14 @@ class RouteOut(ModelSchema):
     class Meta: 
         model = Route
         fields = ['id', 'bom_ver', 'is_cnc', 'product_id', 'approval_status', 'params', 'description']
+
+class  OrderRouteOut(ModelSchema):
+    text: str = Field(default_factory=str)
+
+    @staticmethod
+    def resolve_text(obj: Route) -> str:
+        return f"CNC工艺{obj.bom_ver}-V{obj.route_ver}" if obj.is_cnc else f"工艺{obj.bom_ver}-V{obj.route_ver}"
+    
+    class Meta: 
+        model = Route
+        fields = ['id', 'bom_ver', 'route_ver', 'is_cnc']

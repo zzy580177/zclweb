@@ -13,11 +13,7 @@ from .route.apis import router as route_router
 
 from .virtual_process_route.apis import router as virtual_process_route_router
 
-from .cnc_process.apis import router as cnc_process_router
-
 from .cnc_program.apis import router as cnc_program_router
-
-from .cnc_craft.apis import router as cnc_craft_router
 
 
 router = Router(tags=['c_gongyi'])
@@ -35,8 +31,4 @@ router.add_router('route', route_router)
 
 router.add_router('virtual_process_route', virtual_process_route_router)
 
-router.add_router('cnc_process', cnc_process_router)
-
 router.add_router('cnc_program', cnc_program_router)
-
-router.add_router('cnc_craft', cnc_craft_router)

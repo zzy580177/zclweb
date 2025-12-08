@@ -25,18 +25,6 @@ def get_material_vi_parents(request, material_id: str, version: str):
         return []
     return qs
 
-@router.get('/get_materials', response=List[SubBomOut], url_name='a_wuliao/bom/get_materials')
-def get_materials(request, material_id: str, version: str):
-    try:
-        p_material_obj = get_object_or_404(Material, material_id=material_id)
-        if not p_material_obj:
-            return []
-        qs = Bom.objects.select_related('version', 'p_material').filter(
-            Q(p_material=p_material_obj, version__version=version) | 
-            Q(version__material=p_material_obj, version__version=version))
-    except Exception as e:
-        return []
-    return qs
 
 @router.post('/bom', response=dict, url_name='a_wuliao/bom/create')
 def create(request, payload: List[BomIn]):

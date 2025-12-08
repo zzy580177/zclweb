@@ -18,74 +18,48 @@
         </div>
     </form>
 
-    <!-- 快速填报浮窗 -->
-    <div id="quick-fill-modal" class="modal" style="display: none;">
-        <header class="el-header" style="height: 60px;">
-            <div class="fx-modal-header" style="display: flex; align-items: center; justify-content: space-between;">
-                <div class="header-title" style="margin-right: 16px;">
-                <div class="title-text" id="parts-detail-modal-title" title="title-text" style="font-size: 20px; font-weight: bold;">
-                    快速填报
-                </div>
-            </div>
-            <div class="modal-controls" style="display: flex; align-items: center; gap: 8px;">
-                <div class="el-button-group btn-group" size="small">
-                    <button type="button" id="maximize-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
-                        ⛶</button>
-                    <button type="button" id="switch-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
-                        <span class="el-icon-switch-button"></span>
-                    </button>
-                </div>
-            </div>
-        </header>
-        <main class="el-main" >
-            <div id="fast-descriptions-attribute" class='el-descriptions' 
-                data-body="table" data-select='description', style="max-height: 60vh; overflow-y: auto;">
-            </div>
-        </main>
-    </div>
-
-    <!-- 模态框遮罩层 -->
-    <div id="quick-fill-modal-overlay" class="modal-overlay", style=""></div>
+    {% include 'common/modal_quick_fill.html' %}
 
     {{ block.super }}
 </div>
 
 
 <script type="module">
-    import {handlePostTableEvent, handleFastFillModelEvent} from "{% static 'js/eventAction.js' %}";
+    import {handlePostTableEvent, handleFastFillModelEvent, handleResultListEvent} from "{% static 'js/eventAction.js' %}";
     import {API_CONFIG} from "{% static 'js/apiConfig.js' %}";
     import {renderFastFillModel} from "{% static 'js/a_wuliao.js' %}";
     import {postTableRenderer} from "{% static 'js/renderFrame.js' %}";
 
     document.addEventListener("DOMContentLoaded", function () {
-        const select_url = {datas: ["单位", "获取方式", "工序分类", "生产状态"]}   
+        const select_url = {datas: ["单位", "设备", "CNC设备", "工艺参数", "CNC工艺参数","获取方式", "生产状态", ]}   
         const table_url = API_CONFIG['a_wuliao'].attribute
 
         const mdTable = document.querySelector('.el_table-container table')
-        mdTable.dataset.headers = JSON.stringify(['分类','名称','操作'])
-        mdTable.dataset.keys = JSON.stringify(['description','name','删除'])
-        mdTable.dataset.inputs = JSON.stringify(['name'])
+        mdTable.dataset.headers = JSON.stringify(['分类','名称', '备注','操作'])
+        mdTable.dataset.keys = JSON.stringify(['description','name', 'key', '删除'])
+        mdTable.dataset.inputs = JSON.stringify(['name','key',])
         mdTable.dataset.buttons = JSON.stringify(['删除'])
-        mdTable.dataset.selects = JSON.stringify(['description'])
         mdTable.dataset.require = JSON.stringify(['name'])
         mdTable.dataset.selects = JSON.stringify({description: select_url})
-        mdTable.dataset.url = JSON.stringify(table_url)
+        mdTable.dataset.url = JSON.stringify({path: table_url})
         new postTableRenderer(mdTable,1).initiTable();
         handlePostTableEvent(document.querySelector('.el_table-container'));
 
-        const fastContain = document.querySelector('.el-descriptions')
+        const fastContain = document.querySelector('.el-descriptions-fast-fill')
         const table_params = {
-            url: JSON.stringify(table_url),
-            headers: JSON.stringify(['名称']),
-            keys: JSON.stringify(['name'])
+            url: JSON.stringify({path: table_url}),
+            headers: JSON.stringify(['名称', '备注']),
+            keys: JSON.stringify(['name', 'key'])
         }
         const select_params = {
-            optionText: '',
-            defaultText: '请选择属性类别',
-            key: 'description',
-            url: JSON.stringify(select_url || {})}
+            option: JSON.stringify({key: 'description', defaultText: '请选择属性类别'}),
+            url: JSON.stringify(select_url)}
         renderFastFillModel(fastContain, select_params, table_params)
         handleFastFillModelEvent(document.querySelector('#quick-fill-modal'));
+
+        const container = document.querySelector('#result_list');
+        container.dataset.url = JSON.stringify(table_url);
+        handleResultListEvent(container);
     });
         
 </script>

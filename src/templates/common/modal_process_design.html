@@ -1,0 +1,55 @@
+
+<div id="process-design-modal" class="modal">
+    <div class="el-dialog__header" style="height: 60px;">
+        <span class="el-dialog__title">工序设计</span>
+    </div>
+    <hr style="border-bottom:1px solid #e4e7ed; margin: 12px 0; height: 0;" aria-hidden="true">
+    <div class="el-dialog__body" style="max-height: 60vh; overflow-y: auto;">
+        <!-- 1.工序组选择 -->
+        <div style="margin-bottom: 15px;">
+            <label>工序组：</label>
+            <select id="select-step-group" class="el-select__inner">
+                <option value="">请选择工序组</option>
+                {% for column in StepGroup %}
+                    <option value={{column.label}}>{{column.label}}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- 2.工序选择与排序 -->
+        <div class="transfer-container" style="display: flex; align-items: center;">
+            <div class="transfer-panel" id="step-before-select">
+                <div class="el-transfer-panel__header">可选工序</div>
+                <div id="available-steps" class="el-transfer-panel__body" style="border:1px solid #ddd; overflow-y: auto;"></div>
+            </div>
+            <div class="sort-buttons"></div>
+            <div class="transfer-panel" id="step-after-select">
+                <div class="el-transfer-panel__header">已选工序</div>
+                <div id="selected-steps" class="el-transfer-panel__body" style="border:1px solid #ddd; overflow-y: auto;"></div>
+            </div>
+        </div>
+
+        <!-- 3.工艺参数设置 -->
+        <div style="margin: 20px 0;" id="step-params-set">
+            <table class="el-table">
+                <table class="el-table__header" width="100%" id="param-table"
+                    data-headers='["描述","工艺参数"]' data-keys='["name","params"]' data-inputs='["params"]'>
+                </table>
+            </table>
+            <div class="el-table__body-wrapper"></div>
+        </div>
+
+        <!-- 4.备注输入 -->
+        <div style="margin: 15px 0;">
+            <label>备注：</label>
+            <textarea id="remark" class="el-textarea__inner" rows="3"></textarea>
+        </div>
+
+        <!-- 5.确认按钮 -->
+        <div style="text-align: right;">
+            <button class="el-button" id="close-step-design-modal">取消</button>
+            <button class="el-button el-button--primary" id="load-step-design">确认</button>
+        </div>
+    </div>
+</div>
+<div id="process-design-modal-overlay" class="modal-overlay"></div>

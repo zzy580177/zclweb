@@ -1,4 +1,4 @@
-from ninja import ModelSchema
+from ninja import ModelSchema, Schema
 from apps.c_gongyi.models import *
 from typing import Optional
 
@@ -18,3 +18,9 @@ class StepOut(ModelSchema):
     class Meta:
         model = Step
         fields = ['id', 'create_time', 'update_time', 'is_deleted', 'deleted_at', 'deleted_by', 'name', 'type', 'ucost', 'hcost', 'description', ]
+
+
+class StepCreatOut(Schema):
+    success: bool
+    message: str
+    data: list[StepOut]

@@ -11,6 +11,7 @@ class Attribute(models.Model):
     """属性表"""
     attribute_id = models.AutoField("属性序号", primary_key=True)
     name = models.CharField("属性名称", max_length=max_charIdLen, unique=True)
+    key = models.CharField("关键字", max_length=max_charIdLen, null=True, blank=True)
     description = models.TextField("描述", null=True, blank=True)
     
     def __str__(self):

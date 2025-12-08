@@ -18,34 +18,7 @@
         </div>
     </form>
 
-    <!-- 快速填报浮窗 -->
-    <div id="quick-fill-modal" class="modal" style="display: none;">
-        <header class="el-header" style="height: 60px;">
-            <div class="fx-modal-header" style="display: flex; align-items: center; justify-content: space-between;">
-                <div class="header-title" style="margin-right: 16px;">
-                <div class="title-text" id="parts-detail-modal-title" title="title-text" style="font-size: 20px; font-weight: bold;">
-                    快速填报
-                </div>
-            </div>
-            <div class="modal-controls" style="display: flex; align-items: center; gap: 8px;">
-                <div class="el-button-group btn-group" size="small">
-                    <button type="button" id="maximize-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
-                        ⛶</button>
-                    <button type="button" id="switch-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
-                        <span class="el-icon-switch-button"></span>
-                    </button>
-                </div>
-            </div>
-        </header>
-        <main class="el-main" >
-            <div id="fast-descriptions-attribute" class='el-descriptions' 
-                data-body="table" data-select='description', style="max-height: 60vh; overflow-y: auto;">
-            </div>
-        </main>
-    </div>
-
-    <!-- 模态框遮罩层 -->
-    <div id="quick-fill-modal-overlay" class="modal-overlay", style=""></div>
+    {% include 'common/modal_quick_fill.html' %}
 
     {{ block.super }}
 </div>
@@ -59,7 +32,7 @@
 
     document.addEventListener("DOMContentLoaded", function () {
         const select_url = {datas: ["快速填报", "快速编辑"]}   
-        const table_url = API_CONFIG['a_wuliao'].version
+        const table_url = {path: API_CONFIG['a_wuliao'].version}
         const table_headers = ['编号','型号','名称','版本','基础版本','变更原因','状态', '上级物料']
         const table_keys = ['material_number','material_model','material_name','version','base','change_reason','status','p_material']
         const require_keys = ['material_name','material_model','material_number','version','base','change_reason',]
@@ -71,7 +44,7 @@
         mdTable.dataset.headers = JSON.stringify(table_headers.concat('操作'))
         mdTable.dataset.keys = JSON.stringify(table_keys.concat('删除'))
         mdTable.dataset.buttons = JSON.stringify(['删除'])
-        mdTable.dataset.selects = JSON.stringify({base:{key:'history_versions'}})
+        mdTable.dataset.selects = JSON.stringify({base:{dataK:'history_versions'}})
         mdTable.dataset.inputs = JSON.stringify(['material_name','material_model','material_number','version','change_reason','status', 'p_material'])
         mdTable.dataset.url = JSON.stringify(table_url)
         mdTable.dataset.require = JSON.stringify(require_keys)
@@ -79,7 +52,7 @@
         new postTableRenderer(mdTable,1).initiTable();
         handlePostTableEvent(document.querySelector('.el_table-container'));
 
-        const fastContain = document.querySelector('.el-descriptions')
+        const fastContain = document.querySelector('.el-descriptions-fast-fill')
         const table_params = {
             url: JSON.stringify(table_url),
             headers: JSON.stringify(table_headers),
@@ -87,8 +60,6 @@
            // baseData: JSON.stringify(table_baseData)
         }
         const select_params = {
-            optionText: '',
-            defaultText: '',
             url: JSON.stringify(select_url)}
         renderFastFillModel(fastContain, select_params, table_params)
         handleFastFillModelEvent(document.querySelector('#quick-fill-modal'));

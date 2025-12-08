@@ -40,11 +40,18 @@ class OrderParts(base_model):
     deliveries = models.DecimalField("交付数量", max_digits=10, decimal_places=2, default=0);
     cost = models.DecimalField("成本", max_digits=10, decimal_places=2, null=True, blank=True);
     description = models.TextField("备注", null=True, blank=True);
+    p_orderpart = models.ForeignKey('self', on_delete=models.CASCADE, related_name='middle_parts', null=True, blank=True, default=None)
 
     def __str__(self):
         order_str = str(self.order) if self.order is not None else ''
         material_str = str(self.material) if self.material is not None else ''
         return f"{order_str} {material_str}".strip()
+    
+    @property
+    def is_middle(self):
+        """通过p_orderpart判断是否为中间件"""
+        return self.p_orderpart is not None
+    
     class Meta:
         unique_together = ('order', 'material')
         app_label = app_name

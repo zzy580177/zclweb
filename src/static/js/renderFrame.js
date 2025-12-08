@@ -29,8 +29,8 @@ export class dataCardRenderer {
         this.headers = JSON.parse(this.params?.headers || '[]');
         this.keys = JSON.parse(this.params?.keys || '[]');  
         this.url = JSON.parse(this.params?.url || '{}')
-        this.endpoint = this.params?.endpoint || '';
-        this.url_params = JSON.parse(this.params.url_params || '{}');
+        this.endpoint = this.url?.endpoint || '';
+        this.url_params = this.url.params || '{}';
         this.data = [];
         this.thead = table?.querySelector('thead');
         this.tbody = table?.querySelector('tbody');
@@ -44,7 +44,7 @@ export class dataCardRenderer {
         this.maxColumn = 4
     }
     render(result) {
-        const data = result?.items || result;
+        const data = result?.data?.items || result;
         if(!BaseRenderer.validateParams(this.table, data)){
             return;
         } 
@@ -79,7 +79,7 @@ export class dataCardRenderer {
 export class tableRenderer{
     constructor(table, params=null) {
         this.table = table;
-        this.params = table? utils.datasetToObj(table) : params;
+        this.params = table? utils.datasetToObj(table) : params || {};
         this.headers = JSON.parse(this.params?.headers || '[]');
         this.keys = JSON.parse(this.params?.keys || '[]');
         this.hidkeys = JSON.parse(this.params?.hidkeys || '[]');
@@ -93,8 +93,8 @@ export class tableRenderer{
         this.limit = JSON.parse(this.params?.limit || 0);
         this.page = JSON.parse(this.params?.page || 1);
         this.url = JSON.parse(this.params?.url || '{}')
-        this.endpoint = this.params?.endpoint || '';
-        this.url_params = JSON.parse(this.params?.url_params || '{}');
+        this.endpoint = this.url?.endpoint ||this.params.endpoint || '';
+        this.url_params = this.url?.params|| {};
         this.data = [];
         this.thead = table?.querySelector('thead');
         this.tbody = table?.querySelector('tbody');
@@ -147,22 +147,38 @@ export class tableRenderer{
             });  
         }  
     }
-
+    renderNewRow(data){
+        if(!this.table.querySelector('thead')) {
+            this.render({items:[data]});
+        }
+        else if(!this.tbody){
+            this.data = [data];
+            this.createBody()
+        }else{
+            const tr = this.createRow(data);
+            this.tbody.appendChild(tr);
+        }
+    }
+    getResponeData(result){
+        this.data = (result.data && (result.data.items || result)) || [];  // 默认空数组
+    }
     render(result) {
         if(this.method !== 'GET') return this.postRender(result)
         BaseRenderer.clearContainer(this.table);
         this.clearPageination();
-        this.data = (result && (result.items || result)) || [];  // 默认空数组
+        this.getResponeData(result);
         this.total_count = (result && result.count) || 0;        // 默认0
         if(!BaseRenderer.validateParams(this.table, this.data)){
             return;
         } 
+        
         this.createHeader();
         if(this.params['groupkey']) this.createTreeBody(this.params['groupkey']);
         else this.createBody();
         if(this.url_params.limit > 0 && this.total_count > 0) this.createPagination(this.total_count, this.page)
     }
     renderError(response) {
+        response = response.data || response;
         if(this.method !== 'GET') return this.postRenderError(response)
         BaseRenderer.showError(this.table, response);
     }
@@ -239,21 +255,10 @@ export class tableRenderer{
     }
 
     createSelectForCell(cell, request, key, val, item = null) {
-        const select = document.createElement('select');
-        select.className = 'optimized-width';
-        select.required = request;
         const selDef = (this.selects && this.selects[key]) ? this.selects[key] : null;
-        try {
-            select.dataset.url = JSON.stringify(selDef && selDef.path ? selDef.path : {});
-            select.dataset.endpoint = selDef && selDef.endpoint ? selDef.endpoint : '';
-            select.dataset.key = selDef && selDef.key ? selDef.key : '';
-            select.dataset.textK = selDef && selDef.textK ? selDef.textK : '';
-        } catch (e) {
-            console.error('createSelectForCell: set dataset failed', e);
-        }
-        
+
         let optionals = [];
-        const dataKey = select.dataset.key;
+        const dataKey = selDef.dataK || '';
         if (item && dataKey && Object.prototype.hasOwnProperty.call(item, dataKey)) {
             const v = item[dataKey];
             optionals = Array.isArray(v) ? v : (v != null ? [v] : []);
@@ -263,20 +268,14 @@ export class tableRenderer{
             optionals = [];
         }
 
-        if (Array.isArray(optionals) && optionals.length > 0) {
-            try {
-                new selecterRenderer(select).render(optionals);
-            } catch (e) {
-                console.error('selecterRenderer.render error', e);
-            }
-            select.dataset.datas = JSON.stringify(optionals);
-        }
-        const hasValue = Array.isArray(optionals) && optionals.some(opt => 
-            typeof opt === 'object' ? opt.value === val : opt === val
-        );
-        if (hasValue) select.value = val;
+        const render = new selecterRenderer(null, selDef);
+        render.render(optionals);
+        render.updateSelected(val);
+        
+        render.selecter.className = 'optimized-width';
+        render.selecter.required = request;
 
-        cell.appendChild(select);
+        cell.appendChild(render.selecter);
     }
     renderRow(data, rowIdx){
         if (this.tbody.rows && this.tbody.rows.length > rowIdx-1) {
@@ -358,6 +357,7 @@ export class tableRenderer{
     }    
     updateRow(row, item){
         if (!row ||!this.table || !this.keys || this.keys.length === 0) return null;
+        if (!item) return null;
         row.innerHTML = ''
         this.keys.forEach(key => {
             const val = item[key] ? item[key] : this.getValueByPath(item, key, '-');
@@ -464,19 +464,47 @@ export class tableRenderer{
 
         pager.innerHTML = html;
     }
+    getData(){
+        this.data = []
+        const rows =  this.tbody.querySelectorAll('tr');
+        rows.forEach( row => this.data.push(this.getTrData(row)))
+        return this.data
+    }
+    getTrData(row){
+        if(!row) return
+        const rawData = Object.assign({}, this.baseData)
+        const tds = row.getElementsByTagName('td');
+        Array.from(tds).forEach(td => {
+            if(!td.querySelector('button')) {
+                const divs = td.querySelectorAll('div');
+                const key = td.dataset.key;                
+                if(divs.length > 0) {
+                    rawData[key] = Array.from(divs).map(div => div.textContent.trim());
+                } else {
+                    rawData[key] = td.firstChild ? 
+                        (td.firstChild.value || td.firstChild.textContent.trim()) : 
+                        td.textContent.trim();
+                }
+                if(this.numbers.includes(key))
+                    rawData[key] = parseInt(rawData[key])
+            }
+        });
+        return rawData;
+    }
 }
 
 export class selecterRenderer{
     constructor(selecter = null, params = null) {
-        this.selecter = selecter
-        this.params = selecter ? utils.datasetToObj(this.selecter): params;
+        this.params = selecter ? utils.datasetToObj(selecter): params;
+        this.url = (typeof this.params.url === "object")? this.params.url||{} :JSON.parse(this.params?.url ||'{}')  
+        this.option = (typeof this.params.option === "object")? this.params.option||{} : JSON.parse(this.params?.option ||'{}')       
+        this.endpoint = this.params?.endpoint || this.url?.endpoint || ''   
         this.default = document.createElement('option');
         this.default.value = "";
-        this.default.textContent = this.params?.defaultText || '请选择';
+        this.default.textContent = this.option.defaultText || '请选择';
+        //this.url_params = this.params?.url_params ? JSON.parse(this.params.url_params) : {};
+        this.selecter = selecter? selecter : document.createElement('select');
         this.selectedValue = this.selecter?.value || '';
-        this.url_params = this.params?.url_params ? JSON.parse(this.params.url_params) : {};
-        this.url = JSON.parse(this.params?.url ||'{}')         
-        this.endpoint = this.params?.endpoint ||''
         this.isBefore = this.selecter?.classList.contains('before') || false;
         this.isAfter = this.selecter?.classList.contains('after') || false;
     }
@@ -491,14 +519,14 @@ export class selecterRenderer{
         BaseRenderer.clearContainer(this.selecter);
         this.selecter.className = 'el-select__inner';
         this.selecter.value = this.selectedValue || '';
-        const data = result?.items ?? result ?? [];
+        const data = result?.data?.items ?? result ?? [];
         this.options = [this.default];
         if (Array.isArray(data) && data.length > 0) {
             data.forEach(item => {
                 const option = document.createElement('option');
-                option.value = utils.getValueByPath(item, this.params.key );
-                option.textContent = this.params.textK? utils.getValueByPath(item, this.params.textK, '' ) 
-                : `${this.params.optionText ||''} ${option.value}`;
+                option.value = utils.getValueByPath(item, this.option?.key || 'id', '');
+                option.textContent = this.option?.textK ? utils.getValueByPath(item, this.option.textK, '' ) 
+                : `${this.option.optionText ||''} ${option.value}`;
                 this.options.push(option);
             });
             this.selecter.classList.toggle('before', true);
@@ -521,6 +549,18 @@ export class selecterRenderer{
     static change(selecter)
     {
         selecter.classList.toggle('after', true);
+    }
+    updateSelected(value) {
+        const hasValue = this.options.some(opt => 
+            typeof opt === 'object' ? opt.value == value : opt == value
+        );
+        if (hasValue) {
+            this.selecter.selected = true;
+            this.selecter.value = value;
+        }
+    }
+    getValue() {
+        return this.selecter.value;
     }
 }
 export class transferRenderer{
@@ -561,6 +601,7 @@ export class transferRenderer{
 export class postTableRenderer extends tableRenderer{
     constructor(table, rowCount = 6){
         super(table);
+        this.table.classList.add('post-table');
         this.baseData = JSON.parse(table.dataset.baseData??'{}');
         this.numbers = JSON.parse(table.dataset.numbers??'[]');
         this.rowCount = rowCount
@@ -598,33 +639,7 @@ export class postTableRenderer extends tableRenderer{
             this.tbody.appendChild(this.pastedRow(cells))
         })
     }
-    getData(){
-        this.data = []
-        const rows =  this.tbody.querySelectorAll('tr');
-        rows.forEach( row => this.data.push(this.getTrData(row)))
-        return this.data
-    }
-    getTrData(row){
-        if(!row) return
-        const rawData = Object.assign({}, this.baseData)
-        const tds = row.getElementsByTagName('td');
-        Array.from(tds).forEach(td => {
-            if(!td.querySelector('button')) {
-                const divs = td.querySelectorAll('div');
-                const key = td.dataset.key;                
-                if(divs.length > 0) {
-                    rawData[key] = Array.from(divs).map(div => div.textContent.trim());
-                } else {
-                    rawData[key] = td.firstChild ? 
-                        (td.firstChild.value || td.firstChild.textContent.trim()) : 
-                        td.textContent.trim();
-                }
-                if(this.numbers.includes(key))
-                    rawData[key] = parseInt(rawData[key])
-            }
-        });
-        return rawData;
-    }
+
     postRender(result){
         if(!result) return
         alert(result.message || '数据上传成功!');        
@@ -663,11 +678,11 @@ export class floatingWindModelRender
         const header = document.createElement('div');
         header.className = 'el-descriptions__header';
         const titleDiv = document.createElement('div');
-        titleDiv.className = this.issubPart ? 'el-descriptions__title_subitem':'el-descriptions__title';
+        titleDiv.className = 'el-descriptions__title';
         titleDiv.textContent = this.title || '';
         header.appendChild(titleDiv);
         
-        if(this.container.dataset.hasHideSwc === 'true') {
+        if(this.container.classList.contains('has-hide-swc-button')) {
             const hideSwcBtn = document.createElement('button');
             hideSwcBtn.innerHTML = '<i class="fas fa-chevron-up" id="collapseIcon"></i><span>收起内容</span>'
             hideSwcBtn.id = 'hide_process'
@@ -713,6 +728,7 @@ export class floatingWindModelRender
         const body = document.createElement('div');
         body.className = 'el-descriptions__body';
         const table = document.createElement('table');
+        table.className = this.container.classList.contains('card') ? 'table-el-el-descriptions__card' : 'table-el-el-descriptions__table';
         table.id = this.table_id;
         body.appendChild(table);
         this.tableDiv = table;
@@ -806,4 +822,19 @@ export class fastFillModelRenderer extends floatingWindModelRender
         this.textarea = textarea;
         this.container.appendChild(textarea)
     }
+}
+
+export function handleToggleButton(container, button) {
+        const isExpanded = button.dataset.expanded === 'true';
+        if (isExpanded) {
+            // 收起
+            button.innerHTML = '<i class="fa fa-chevron-right"></i> 展开';
+            button.dataset.expanded = 'false';
+            container.style.display = 'none';
+        } else {
+            // 展开
+            button.innerHTML = '<i class="fa fa-chevron-down"></i> 收起';
+            button.dataset.expanded = 'true';
+            container.style.display = 'block';
+        }
 }

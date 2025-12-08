@@ -1,8 +1,19 @@
-import {tableRenderer, postTableRenderer, selecterRenderer } from './renderFrame.js';
+import { descriptionsTable } from './t_modalPartsDetail.js';
+import {tableRenderer, postTableRenderer, selecterRenderer, dataCardRenderer } from './renderFrame.js';
 import {loadingOverlay, utils} from './utils.js'
+
 
 const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
 
+function getUrl(frameRenderer, method)
+{
+    const url_info = frameRenderer?.url || {}
+    const url = url_info.path? url_info.path[method] || '' : url_info[method] ||''
+    const endpoint = method === 'POST' ? '' : frameRenderer.endpoint !== undefined? frameRenderer.endpoint:url_info.endpoint || '';
+    const params = frameRenderer.url_params !== undefined? frameRenderer.url_params:url_info.params || {};
+    
+    return {url:url, endpoint:endpoint, params:params}
+}
 
 export class ApiHandler {
     constructor(baseURL) {
@@ -42,9 +53,10 @@ export class ApiHandler {
                 this.renderResult(renderSelector, result);
             }
             if (!result.success) {
-                onError?.(result.data)
+                onError?.(result)
             }else{
-                onSuccess?.(result.data);
+                
+                onSuccess?.(result);
                 return result;
             }
         } catch (error) {
@@ -103,45 +115,49 @@ export class ApiHandler {
 
 export async function fetchDataRenderFrame(frameRenderer, method = 'GET', data = null,
      onSuccess = null, onError = null) {  
-    const url = frameRenderer?.url?.[method]??''
-    const endpoint = frameRenderer.endpoint === undefined || method === 'POST' ? '' : frameRenderer.endpoint;
-    const params = frameRenderer.url_params === undefined? {} : frameRenderer.url_params
+    const {url, endpoint, params} = getUrl(frameRenderer, method);
     if(url === '' || url === null || (url.endsWith('/') && !endpoint)) {
         console.info('url 为空');
         frameRenderer?.url?.datas?  frameRenderer.render(frameRenderer.url.datas):  frameRenderer.render()
-        return
+        return;
     }
-    
+   
     const api = new ApiHandler(url);
     try {
         await api.request({
-            method : method,
-            data : data,
-            endpoint : endpoint,
+            method: method,
+            data: data,
+            endpoint: endpoint,
             params: params,
             toggleLoad: frameRenderer.toggleLoad,
             onSuccess: (response) => {
-               !onSuccess? frameRenderer.render(response): onSuccess(response);
+                if (onSuccess) {
+                    onSuccess(response);
+                } else {
+                    frameRenderer.render(response);
+                }
             },
             onError: (error) => {
-               !onError? frameRenderer.renderError(error): onError(response);
-            }});
+                if (onError) {
+                    onError(error);
+                } else {
+                    frameRenderer.renderError(error);
+                }
+            }
+        });
     } catch (error) {
-        console.error('Unexpected error:', error);
+        console.error('fetchDataRenderFrame: Unexpected error:', error);
         alert('API获取失败，请稍后重试');
     }
 }
 
-export async function fetchDataForTableRow(renderer, rowIdx) {  
-    const url = renderer?.url?.GET??''
-    const endpoint = renderer.endpoint === undefined? '' : renderer.endpoint;
-    const params = renderer.url_params === undefined? {} : renderer.url_params
+export async function fetchDataForTableRow(renderer, rowIdx) {      
+    const {url, endpoint, params} = getUrl(frameRenderer, 'GET');
     if(url === '' || url === null || (url.endsWith('/') && !endpoint)) {
         console.info('url 为空');
-        frameRenderer.render();
+        frameRenderer?.url?.datas?  frameRenderer.render(frameRenderer.url.datas):  frameRenderer.render()
         return;
     }
-    
     const api = new ApiHandler(url);
     try {
         await api.request({
@@ -150,7 +166,7 @@ export async function fetchDataForTableRow(renderer, rowIdx) {
             params: params,
             toggleLoad: renderer.toggleLoad,
             onSuccess: (response) => {
-               renderer.renderRow(response, rowIdx);
+               renderer.renderRow(response.data, rowIdx);
             },
             onError: (error) => {
                renderer.doNonThing(error);
@@ -166,24 +182,27 @@ export class TablerHandler {
         this.table = table;
         this.url = JSON.parse(table.dataset.url || '{}');
         this.data = null;
-        this.data_params = JSON.parse(table.dataset.data_params || '{}')
+        this.dataParams = JSON.parse(table.dataset.dataParams || '{}')
         this.method = method;
         this.result = 'ok';
         this.toggleLoad = true;
-        this.tableRender = postTableRenderer;
         this.isResultList = isResultList;
+        this.target = table.querySelector('tbody');
     }
     validateFormInputs(target) {
-        const requiredInputs = target.querySelectorAll('input[required]');
-        const input_check = Array.from(requiredInputs).every(input => input.checkValidity());
-        const requiredSelects = target.querySelectorAll('select[required]');
-        const select_check = Array.from(requiredSelects).every(select => select.checkValidity());
-        return input_check && select_check
+        const requiredFields = target.querySelectorAll('input[required], select[required]');
+        requiredFields.forEach(element => {element.classList.remove('unvalid');});
+        const invalidEl = [];
+        requiredFields.forEach(element => { if (!element.checkValidity()) {
+            element.classList.add('unvalid');
+            invalidEl.push(element);
+        }});
+        return invalidEl.length === 0;
     }
     async getDataByUniqKey(input){
         const uniqKeys = JSON.parse(this.table.dataset.uniqKeys || '[]');
         this.target = input.closest('tr')
-        const data = this._getTrData(this.target); 
+        const data = this.getTrData(this.target); 
         let hasUniqK = false 
         let url_params = {}      
         for (const key of uniqKeys) {
@@ -201,43 +220,49 @@ export class TablerHandler {
     async submitDataAndPost()
     {
         if(!this.validateFormInputs(this.table)) return;
-        await renderTableAndLoadData(this.table, this.method,  null, this.toggleLoad, this.tableRender);
+        await renderFrameAndLoadData(this.table, this.method,  null, this.toggleLoad);
     }
 
     async update(target = this.target) {
         if (!this.table) return console.error('Table not found') || false;
-        this.result = this._getData(target);
+        this.result = this.getData(target);
         if(target.nodeName == 'TR') 
             this.table.dataset.endpoint = this.endpoint;
         return this.result === 'ok' 
-            ? await renderTableAndLoadData(this.table, this.method,  this.data, this.toggleLoad) || true
+            ? await renderFrameAndLoadData(this.table, this.method,  this.data, this.toggleLoad) || true
             : this.result;
     }
 
-    _getData(target){        
+    getData(target = this.target){        
         if(!this.validateFormInputs(target))             
             return 'checkValidityFailed';
         if(target.nodeName == 'TR'){
-            const result = this._getTrData(target);
+            const result = this.getTrData(target);
             this.data = result.data;
             this.endpoint = result.endpoint;
         }else{
             this.data = []
             const rows =  target.querySelectorAll('tr');
-            rows.forEach( row => this.data.push(this._getTrData(row).data))
+            rows.forEach( row => this.data.push(this.getTrData(row).data))
         }
         if(this.data.length == 0) return 'checkDataEmpty';
         return 'ok'
     }
-    _getTrData(row){
+    getTrData(row, selecteds = []){
         if(!row) return { data: {}, endpoint: '' };
-        if(this.isResultList) return this._getTrData_ResultList(row)
-        const rawData = Object.assign({}, this.data_params)
+        if(this.isResultList) return this.getTrData_ResultList(row)
+        const rawData = Object.assign({}, this.dataParams)
         const tds = row.getElementsByTagName('td');
         Array.from(tds).forEach(td => {
-            if(!td.querySelector('button')) {
-                const divs = td.querySelectorAll('div');
-                const key = td.dataset.key;                
+            if(td.querySelector('button')) return
+            const divs = td.querySelectorAll('div');
+            const key = td.dataset.key;  
+            if( selecteds.length > 0 && !selecteds.includes(key)) return;            
+            if(td.querySelector('select')){
+                const select = td.querySelector('select')
+                rawData[key] = select.value
+            }
+            else{  
                 if(divs.length > 0) {
                     rawData[key] = Array.from(divs).map(div => div.textContent.trim());
                 } else {
@@ -245,12 +270,13 @@ export class TablerHandler {
                         (td.firstChild.value || td.firstChild.textContent.trim()) : 
                         td.textContent.trim();
                 }
+                rawData[key] = rawData[key] === '请选择'? '' : rawData[key];
             }
         });
         return { data: rawData, endpoint: rawData.Id || rawData.id || '' };
     }
 
-    _getTrData_ResultList(row){
+    getTrData_ResultList(row){
         const rawData = {}
         let endpoint = '';
         const th= row.getElementsByTagName('th')[0];
@@ -276,7 +302,7 @@ export class TablerHandler {
             return false;
         }
         this.table.dataset.page = target.dataset.page||1
-        await renderTableAndLoadData(this.table);
+        await renderFrameAndLoadData(this.table);
     }
     addRow(){
         const tableBody = this.table.querySelector('tbody');
@@ -307,10 +333,26 @@ export class TablerHandler {
             alert("至少保留一行！");
         }
     }
+    static getSelectCellData(row, key){
+
+    }
 }
 
-export async function renderTableAndLoadData(container, method='GET', data=null, isToggleLoad = true, renderer = tableRenderer) {
-    const tableRender = new renderer(container)    
+export async function renderFrameAndLoadData(container, method='GET', data=null, isToggleLoad = true) {
+    const clist = container.classList;
+    let tableRender = null;
+    if (container.classList.contains('table-el-el-descriptions__table') || container.classList.contains('route-process')) {
+        tableRender = new descriptionsTable(container);
+    }else if (container.classList.contains('table-el-el-descriptions__card')) {
+        tableRender = new dataCardRenderer(container);
+    }else if (container.classList.contains('post-table')) {
+        tableRender = new postTableRenderer(container);
+    }else if (container.classList.contains('el-select__inner')){
+        tableRender = new selecterRenderer(container)
+    }
+    else{
+      tableRender = new tableRenderer(container)
+    }    
     tableRender.toggleLoad = isToggleLoad;
     tableRender.method = method;
     data = data != null ? data : method === 'GET' ? data : (tableRender?.getData() ?? [])
@@ -336,7 +378,7 @@ export function handleTableEvent(container)
             table = table.nodeName =='TABLE'? table: table.querySelector('table')
             //const tableHandler = new TablerHandler(table, 'POST');
             //tableHandler.update(table.querySelector("tbody"));
-            renderTableAndLoadData(table, 'POST',  null, true, postTableRenderer)
+            renderFrameAndLoadData(table, 'POST',  null, true)
         }
         if (e.target.matches('#updata')) {
             new TablerHandler(container.querySelector('table'), 'PUT').update(e.target.closest("tr"))}
@@ -362,8 +404,9 @@ class fastFillModelHandler{
         this.hiddenTextarea = container.querySelector('#hidden-paste-area');
     }
     selectedChange(){
-        if (!this.selector || !this.table) return;        
-        const key = this.selector.dataset.key;
+        if (!this.selector || !this.table) return;   
+        const option = JSON.parse(this.selector.dataset.option)     
+        const key = option.key;
         const val = this.selector.value;
         const params = (key && val && key.trim() && val.trim()) 
             ? { [key]: val } 
@@ -393,12 +436,21 @@ class fastFillModelHandler{
 }
 
 
-export function handleFastFillModelEvent(container)
+export function handleFastFillModelEvent(container,submitHandler = null)
 {
     container.addEventListener('click', e => {
         if (e.target.matches('#submit')) {
-            const tableHandler = new fastFillModelHandler(container);
-            tableHandler.update();
+            if (submitHandler) {
+                try {
+                    submitHandler(e);
+                }
+                catch (error) {
+                    console.error('Submit handler error:', error);
+                }
+            }else{
+                const tableHandler = new fastFillModelHandler(container);
+                tableHandler.update();
+            }
         }
         if (e.target.matches('select')) {
             const selecterRender = new selecterRenderer(e.target)
@@ -413,9 +465,8 @@ export function handleFastFillModelEvent(container)
             new fastFillModelHandler(container).selectedChange()        
         }
     })
-    const table = container.querySelector('table')
-    table.addEventListener("paste", function (event) {        
-        fastFillModelHandler.handlePaste(event, table)   
+    container.addEventListener("paste", function (event) {        
+        fastFillModelHandler.handlePaste(event, container.querySelector('table'))   
     })
 }
 
@@ -436,9 +487,8 @@ export function handlePostTableEvent(container, additionalHandler = null)
             const model = document.getElementById('quick-fill-modal')
             utils.switchOverlay(model, true)
         } 
-        else if (e.target.matches('select')) {
-            const selecterRender = new selecterRenderer(e.target)
-            fetchDataRenderFrame(selecterRender)}
+        else if (e.target.matches('select')) 
+            if(e.target.dataset.url) renderFrameAndLoadData(e.target)
         if (additionalHandler) {
             try {
                 additionalHandler(e);

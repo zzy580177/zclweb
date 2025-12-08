@@ -4,7 +4,7 @@ from apps.c_gongyi.models import *
 
 class CNCProgramIn(ModelSchema):
     
-    cnc_process_id: int
+    process_id: int
     
 
     class Meta:
@@ -15,4 +15,4 @@ class CNCProgramIn(ModelSchema):
 class CNCProgramOut(ModelSchema):
     class Meta:
         model = CNCProgram
-        fields = ['id', 'create_time', 'update_time', 'is_deleted', 'deleted_at', 'deleted_by', 'cnc_process', 'program_name', 'equipment_model', 'fixture_name', 'simulation_time', 'description', 'path', ]
+        fields = ['id', 'create_time', 'update_time', 'is_deleted', 'deleted_at', 'deleted_by', 'process', 'program_name', 'equipment_model', 'fixture_name', 'simulation_time', 'description', 'path', ]

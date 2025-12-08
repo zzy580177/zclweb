@@ -1,6 +1,8 @@
 from ninja import ModelSchema
 from apps.a_wuliao.models import *
 from typing import List, Optional
+from apps.c_gongyi.models import Route
+from apps.c_gongyi.apis.route.schemas import OrderRouteOut
 
 class BomIn(ModelSchema):   
     material_name: Optional[str] = None

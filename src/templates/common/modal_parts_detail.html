@@ -1,0 +1,49 @@
+<!-- 零件详情查询框 -->
+<div id="parts-detail-modal" class="modal" >
+    <header class="el-header" style="height: 5vh;">
+        <div class="fx-modal-header" style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="header-title" style="margin-right: 16px;">
+                <div class="title-text" id="parts-detail-modal-title" title="title-text" style="font-size: 20px; font-weight: bold;"></div>
+            </div>
+            <div class="modal-controls" style="display: flex; align-items: center; gap: 8px;">
+                <div class="el-button-group btn-group" size="small">
+                    <button type="button" id="maximize-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
+                        ⛶</button>
+                    <button type="button" id="switch-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
+                        <span class="el-icon-switch-button"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <footer class="el-footer" style="height: 5vh;">
+        <hr style="border-bottom:1px solid #e4e7ed; margin: 12px 0; height: 0;" aria-hidden="true">
+        <div class="fx-data-menu" style="display: flex; align-items: center; gap: 24px; justify-content: space-between;">
+            <div class="button-pane">
+                <div class="el-button-group btn-group" size="small">
+                    <button type="button" id="modal_printer" class="el-icon-printer" style="cursor: pointer">
+                    </button>
+                    <button type="button" id="modal_edit" class="el-icon-edit" style="cursor: pointer">
+                    </button>
+                    <button type="button" id="modal_delete" class="el-icon-delete" style="cursor: pointer">
+                    </button>
+                </div>
+            </div>
+            <div class="switch-pane fx-data-switch" style="display: flex; align-items: center; gap: 8px;">
+                <button class="switch-btn active" aria-label="Previous"></button>
+                <div class="switch-index">2/6</div>
+                <button class="switch-btn active" aria-label="Next"></button>
+            </div>
+        </div>
+        <hr style="border-bottom:1px solid #e4e7ed; margin: 12px 0; height: 0;" aria-hidden="true">
+    </footer>
+    <main class="el-main" style="max-height: 70vh; overflow-y: auto;">
+        <div id="parts-descriptions-order" class='el-descriptions' data-title="订单信息"></div>
+        <div id="parts-descriptions-wuliao" class='el-descriptions' data-title="零件信息"></div>
+        <div id="parts-descriptions-subparts" class='el-descriptions' data-title="中间件信息" data-body="table"></div>
+        <div id="parts-descriptions-chanshu" class='el-descriptions' data-title="规格参数"></div>
+        <div id="parts-descriptions-gongyi" class='el-descriptions' data-title="工艺线路" data-has-hide-swc="true" data-body="table"> </div>
+        <div id="parts-descriptions-cnc-gongyi" class='el-descriptions' data-title="CNC工艺设计" data-has-hide-swc="true" data-body="table"></div>
+    </main>
+</div>
+<div id="parts-detail-modal-overlay" class="modal-overlay"></div>

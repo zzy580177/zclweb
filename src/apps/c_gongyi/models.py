@@ -35,12 +35,12 @@ class MaterialParm(models.Model):
         verbose_name_plural = verbose_name
 
 class Step(base_model):
-    """工序索引表"""
-    name = models.CharField('工序名称', max_length=40)
+    """工步索引表"""
+    name = models.CharField('工步名称', max_length=40)
     type = models.ForeignKey(Attribute, on_delete=models.SET_NULL, null=True, blank=True,
-        verbose_name="工序分类", limit_choices_to={'description': '工序分类'})
-    ucost = models.DecimalField('工序计件单价/元', max_digits=10, decimal_places=2, null=True, blank=True)
-    hcost = models.DecimalField('工序计时单价/元', max_digits=10, decimal_places=2, null=True, blank=True)
+        verbose_name="工步分类", limit_choices_to={'description': '设备'})
+    ucost = models.DecimalField('工步计件单价/元', max_digits=10, decimal_places=2, null=True, blank=True)
+    hcost = models.DecimalField('工步计时单价/元', max_digits=10, decimal_places=2, null=True, blank=True)
     description = models.TextField("备注", null=True, blank=True)
 
     def __str__(self):
@@ -50,7 +50,7 @@ class Step(base_model):
         unique_together = ('name', 'type')
         db_table = f"[{schema}].[Step]"
         app_label = app_name
-        verbose_name = '3.1 工序管理'
+        verbose_name = '3.1 工步管理'
         verbose_name_plural = verbose_name
 
 class Process(models.Model):
@@ -61,7 +61,7 @@ class Process(models.Model):
         null=True,
         blank=True,
         verbose_name='工艺流程',
-        related_name='main_steps'
+        related_name='processes'
     )
     subroute = models.ForeignKey(
         'Route',
@@ -69,13 +69,13 @@ class Process(models.Model):
         null=True,
         blank=True,
         verbose_name='CNC工艺流程',
-        related_name='sub_steps'
+        related_name='processes_cnc'
     )
     seqnum = models.IntegerField('工序序列号', null=True, blank=True)
     steps = models.ManyToManyField(
         'Step',
         blank=True,
-        verbose_name='工序列表',
+        verbose_name='工步列表',
         through='Craft')
     params = models.JSONField('参数', null=True, blank=True)
     description = models.TextField('备注', null=True, blank=True)
@@ -92,9 +92,9 @@ class Process(models.Model):
 
 class Craft(models.Model):
     process = models.ForeignKey('Process', on_delete=models.CASCADE, verbose_name="工序流程")
-    step = models.ForeignKey('Step', on_delete=models.CASCADE, verbose_name="工序")
-    params = models.TextField('参数', null=True, blank=True)
-
+    step_num = models.IntegerField('工步序号', help_text="工步在工序中的顺序", null=True, blank=True)
+    step = models.ForeignKey('Step', on_delete=models.CASCADE, verbose_name="工步")
+    params = models.JSONField('参数', null=True, blank=True, help_text="存储刀具、速度等参数的JSON数据")
     class Meta:
         db_table = "[%s].[Craft]"% schema
         app_label = app_name
@@ -149,33 +149,9 @@ class VirtualProcessRoute(Route):
             'params': step.params
         } for step in steps_list]
 
-
-# CNC专用模型
-
-class CNCProcess(base_model):
-    """CNC工序卡片表"""
-    route = models.ForeignKey(
-        'Route', on_delete=models.CASCADE, null=True, blank=True, verbose_name='CNC工艺流程', related_name='cnc_processes'
-    )
-    seqnum = models.IntegerField('工序号', null=True, blank=True)
-    steps = models.ManyToManyField('Step', blank=True, verbose_name='工步列表', through='CNCCraft')
-    params = models.JSONField('参数', null=True, blank=True)
-    description = models.TextField('备注', null=True, blank=True)
-
-    def __str__(self):
-        return f"CNC工序 {self.route.bom_ver}-V{self.route.route_ver}-{self.seqnum or ''}".strip()
-
-    class Meta:
-        unique_together = ('route', 'seqnum')
-        db_table = f"[{schema}].[CNCProcess]"
-        app_label = app_name
-        verbose_name = '4.1 CNC工序'
-        verbose_name_plural = verbose_name
-
-
 class CNCProgram(base_model):
     """CNC程序表"""
-    cnc_process = models.ForeignKey('CNCProcess', on_delete=models.CASCADE, related_name='programs', verbose_name="CNC工序")
+    process = models.ForeignKey('Process', on_delete=models.CASCADE, related_name='programs', verbose_name="CNC工序")
     program_name = models.CharField('程序名称', max_length=100, help_text="CNC程序文件名")
     equipment_model = models.CharField('设备型号', max_length=50, null=True, blank=True)
     fixture_name = models.CharField('夹具名称', max_length=50, null=True, blank=True)
@@ -189,23 +165,7 @@ class CNCProgram(base_model):
     class Meta:
         db_table = f"[{schema}].[CNCProgram]"
         app_label = app_name
-        verbose_name = '4.3 CNC程序'
+        verbose_name = '3.4 CNC程序'
         verbose_name_plural = verbose_name
 
 
-class CNCCraft(models.Model):
-    """CNC工步详情表"""
-    process = models.ForeignKey('CNCProcess', on_delete=models.CASCADE, related_name='work_steps', verbose_name="工序卡片")
-    step_num = models.IntegerField('工步序号', help_text="工步在工序中的顺序")
-    step = models.ForeignKey('Step', on_delete=models.CASCADE, verbose_name="工步")
-    params = models.JSONField('参数', null=True, blank=True, help_text="存储刀具、速度等参数的JSON数据")
-
-    def __str__(self):
-        return f"工序{self.step_num}: {self.step.name}"
-
-    class Meta:
-        unique_together = ('process', 'step_num')
-        db_table = f"[{schema}].[CNCCraft]"
-        app_label = app_name
-        verbose_name = '4.2 CNC工步详情'
-        verbose_name_plural = verbose_name

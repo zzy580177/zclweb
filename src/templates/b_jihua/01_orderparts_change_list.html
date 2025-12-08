@@ -65,14 +65,14 @@
 
     document.addEventListener("DOMContentLoaded", function () {
         const select_url = {datas: {{orders_options| safe}}};
-        const table_url = API_CONFIG['b_jihua'].order_parts
+        const table_url = {path: API_CONFIG['b_jihua'].order_parts}
 
         const mdTable = document.querySelector('.el_table-container table')
         mdTable.dataset.headers = JSON.stringify(['订单号','物料编号','物料名称', '物料型号','版本信息','数量','计划交付日期','备注','操作'])
         mdTable.dataset.keys = JSON.stringify(['order_id','material_number','material_name','material_model','version','quantity','deadline', 'description','删除'])
         mdTable.dataset.inputs = JSON.stringify(['material_number','material_name','material_model','quantity','description'])
         mdTable.dataset.uniqKeys = JSON.stringify(['material_number'])
-        mdTable.dataset.selects = JSON.stringify({order_id: select_url, version:{key:'history_versions'}})
+        mdTable.dataset.selects = JSON.stringify({order_id: select_url, version:{dataK:'history_versions'}})
         mdTable.dataset.buttons = JSON.stringify(['删除'])
         mdTable.dataset.dates = JSON.stringify(['deadline'])
         mdTable.dataset.require = JSON.stringify(['order_id','material_number','deadline'])

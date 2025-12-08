@@ -40,7 +40,7 @@ class StepAdmin(admin.ModelAdmin):
     
     def _getStepTypeList(self):
         typeList = []
-        types = Attribute.objects.filter(description='工序分类')
+        types = Attribute.objects.filter(description='设备')
         for t in types:
             typeList.append(t.name)
         return typeList
@@ -50,8 +50,19 @@ class CraftAdmin(admin.ModelAdmin):
     change_list_template = "c_gongyi/02_craft_change_list.html"
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}        
-        qs = Attribute.objects.filter(description="工序分类").values('name', 'attribute_id').distinct()
-        extra_context['StepGroup'] = [{'label':data['name'], 'value' :data['attribute_id']} for data in qs]
+        eqp_qs = Attribute.objects.filter(description__icontains="设备").values('name', 'attribute_id', 'description').distinct()
+        parm_qs = Attribute.objects.filter(description__icontains="工艺参数").values('name', 'attribute_id', 'description', 'key').distinct()
+        
+        # 初始化STEPARAM字典
+        if 'STEPARAM' not in extra_context:
+            extra_context['STEPARAM'] = {'EQP': {}, 'Params': {}}
+        
+        # 修复语法错误：使用if而不是with
+        extra_context['STEPARAM']['EQP']['UNCNC'] = [{'label': data['name'], 'value': data['attribute_id']} for data in eqp_qs if data.get('description') == '设备']
+        extra_context['STEPARAM']['EQP']['CNC'] = [{'label': data['name'], 'value': data['attribute_id']} for data in eqp_qs if data.get('description') == 'CNC设备']
+        extra_context['STEPARAM']['Params']['UNCNC'] = [{'label': data['name'], 'key': data['key']} for data in parm_qs if data.get('description') == '工艺参数']
+        extra_context['STEPARAM']['Params']['CNC'] = [{'label': data['name'], 'key':  data['key']} for data in parm_qs if data.get('description') == 'CNC工艺参数']
+
         return super().changelist_view(request, extra_context=extra_context)
  
 @admin.register(Process)
@@ -62,9 +73,10 @@ class ProcessAdmin(admin.ModelAdmin):
 
 @admin.register(Route)
 class RouteAdmin(admin.ModelAdmin):
-    list_display = ['id','create_time','update_time','deleted_at','deleted_by','bom_ver','is_cnc','product_id','approval_status','params','description',]
-    list_display_links = ['id','create_time','update_time','deleted_at','deleted_by','is_cnc','product_id','approval_status','params','description',]
+    list_display = ['id', 'bom_ver','is_cnc','product_id','approval_status','params','description',]
+    list_display_links = ['is_cnc','product_id','approval_status','params','description',]
 
+    actions = [delete_selected]  
 
     
 
@@ -73,20 +85,12 @@ class VirtualProcessRouteAdmin(admin.ModelAdmin):
     list_display = ['id','create_time','update_time','deleted_at','deleted_by','bom_ver','is_cnc','product_id','approval_status','params','description',]
     list_display_links = ['id','create_time','update_time','deleted_at','deleted_by','is_cnc','product_id','approval_status','params','description',]
 
-@admin.register(CNCProcess)
-class CNCProcessAdmin(admin.ModelAdmin):
-    list_display = ['id','create_time','update_time','deleted_at','deleted_by','route','seqnum','params','description',]
-
     
 
 @admin.register(CNCProgram)
 class CNCProgramAdmin(admin.ModelAdmin):
-    list_display = ['id','create_time','update_time','deleted_at','deleted_by','cnc_process','program_name','equipment_model','fixture_name','simulation_time','path','description',]
+    list_display = ['id','create_time','update_time','deleted_at','deleted_by','process','program_name','equipment_model','fixture_name','simulation_time','path','description',]
 
 
     
-
-@admin.register(CNCCraft)
-class CNCCraftAdmin(admin.ModelAdmin):
-    list_display = ['id','process','step_num','step','params',]
 

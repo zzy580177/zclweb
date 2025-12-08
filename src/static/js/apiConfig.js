@@ -58,7 +58,7 @@ export const API_CONFIG = {
         attribute:{path:{GET:'/api/bmui/attribute/list/'}, endpoint:'单位', key:'Id', textK:'Name'}
     },
     'a_wuliao':{
-        attribute:{POST:'/api/a_wuliao/attribute/attribute'},
+        attribute:{POST:'/api/a_wuliao/attribute/attribute', PUT:'/api/a_wuliao/attribute/attribute'},
         group:{POST:'/api/a_wuliao/material_group/material_group'},
         material:{POST:'/api/a_wuliao/material/material'},
         version:{
@@ -101,16 +101,16 @@ export const API_CONFIG = {
             params: ['material_id', 'version']
         },
         '工艺线路': {
-                path: {GET:'/api/c_gongyi/process/route/', POST:'/api/c_gongyi/process/process'},
-                params: []
+                path: {GET:'/api/c_gongyi/process/route/', POST:'/api/c_gongyi/process/route', PUT:'/api/c_gongyi/process/route/',},
+                params: ['isCNC']
         },
         'CNC工艺设计': {
             path: {},
             params: ['material_id', 'version']
         },
         lab_materials: {
-            path: {GET:'/api/a_wuliao/bom/get_materials'},
-            params: ['material_id', 'version']
+            path: {GET:'/api/a_wuliao/material/get_material_routes', POST:'/api/d_paichan/production_plan/production_plan'},
+            params: ['material_id', 'version', 'order_id']
         },
         route_selecter:{
             GET:'/api/c_gongyi/route/material',
@@ -121,11 +121,11 @@ export const API_CONFIG = {
             'stepList':{GET:'/api/c_gongyi/step/step'}},
 
     },
-    'd_gongyi':{
-        materialParm:{
-            GET:'/api/a_wuliao/bom_version/bom_version',
-            POST:'/api/d_gongyi/material_parm/material_parm', 
-            PUT:'/api/d_gongyi/order/order'} ,        
+    'd_paichan':{    
+        production_plan:{
+            GET:'/api/d_paichan/production_plan/production_plan',
+            POST:'/api/d_paichan/production_plan/production_plan', 
+            PUT:'/api/d_paichan/production_plan/production_plan'} ,       
     }
 };
 
@@ -135,8 +135,8 @@ export const H_ENDPOINTS = {
         '零件信息': ['组别', '物料编码', '物料名称', '规格型号', '版本信息', '生产单位', '生产数量', '零件当前状态', '交付截至'],
         '中间件信息': ['子件物料号','子件编码', '子件名称', '规格型号', '生产单位'],
         '规格参数': ['材料', '加工尺寸', '毛料尺寸', '镀层要求', '备注'],
-        '工艺线路': ['工序序号', '类别', '工序列表', '加工参数', '备注','操作'],
-        'CNC工艺设计': [],
+        '工艺线路': ['工序序号', '设备', '工序列表', '加工参数', '备注',],
+        'CNC工艺设计': ['工序序号', '工步序号', '工步列表', "刀具名称","直径(mm)","长度(mm)","切削速度(m/min)","主轴转速(rpm)","进给量(mm/min)","对刀位置","分中位置"],
         'main-filter': ['订单号','产品','批次']
     }
 };
@@ -147,8 +147,8 @@ export const K_ENDPOINTS = {
         '零件信息': ['material_group_name', 'material_number', 'material_name', 'material_model', 'version' ,'material_unit_name', 'quantity', 'status', 'deadline'],
         '中间件信息': ['material_id','material_number', 'material_name', 'material_model', 'material_unit_name'],
         '规格参数': ['stuff', 'size', 'cost', 'surface', 'description'],
-        '工艺线路': ['seqnum', 'type_name', 'steps_step_ids', 'steps_step_names', 'steps_parms', 'description', '编辑'],
-        'CNC工艺设计': [],
+        '工艺线路': ['seqnum', 'type_name', 'steps_step_ids', 'steps_step_names', '备注', 'description', ],
+        'CNC工艺设计':  ['seqnum', 'steps_step_nums', 'steps_step_names',  "刀具名称","直径(mm)","长度(mm)","切削速度(m/min)","主轴转速(rpm)","进给量(mm/min)","对刀位置","分中位置" ],
         'main-filter': ['order_id','product_id','lot_id']
     }
 };

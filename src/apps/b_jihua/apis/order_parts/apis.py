@@ -1,5 +1,6 @@
 from typing import List
 
+from django.db.models import Exists
 from django.shortcuts import get_object_or_404
 from ninja import Router
 from ninja.pagination import paginate
@@ -11,9 +12,9 @@ from apps.b_jihua.models import *
 from apps.a_wuliao.models import Material
 from apps.b_jihua.apis.order_parts.schemas import *
 from apps.a_wuliao.models import BomVersion
+from apps.d_paichan.models import *
 
 router = Router(tags=['order_parts'])
-
 
 @router.post('/order_parts',  url_name='b_jihua/order_parts/create')
 def create(request, payload: List[OrderPartsIn]):
@@ -91,11 +92,12 @@ def retrieve(request, item_id):
     return item
 
 
-@router.get('/order_parts', response=List[OrderPartsOut], url_name='b_jihua/order_parts/list')
+@router.get('/order_parts', response=List[OrderPartOut], url_name='b_jihua/order_parts/list')
 @paginate
 def list_items(request, order_id: str = None, material_id: str = None, material_number: str = None, status: str = None, material_model: str = None):
-    qs = OrderParts.objects.all()
-    if order_id or material_number or status or material_model:
+    # 修复：使用正确的Django查询语法过滤p_orderpart为None的记录（顶层部件）
+    qs = OrderParts.objects.filter(p_orderpart__isnull=True)
+    if order_id or material_id or material_number or status or material_model:
         if order_id:
             qs = qs.filter(order__order_id = order_id.strip())
         if material_id:
@@ -107,8 +109,7 @@ def list_items(request, order_id: str = None, material_id: str = None, material_
         if material_model:
             qs = qs.filter(material__model__icontains = material_model.strip())
         return qs
-    return qs
-
+    return qs.order_by('material__model')
 
 @router.put('/order_parts/{item_id}', response=OrderPartsOut, url_name='b_jihua/order_parts/update')
 def update(request, item_id, payload: OrderPartsIn):

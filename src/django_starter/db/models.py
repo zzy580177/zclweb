@@ -196,7 +196,7 @@ class Step(models.Model):
     Id = models.CharField("工序编号", max_length=8, primary_key=True)  # 改为 CharField
     Name = models.CharField('工序名称',max_length =40)
     EqpType = models.ForeignKey(Attribute, on_delete=models.SET_NULL, null=True,blank=True,
-        verbose_name="工序分类",limit_choices_to={'Description': '工序分类'} );
+        verbose_name="设备",limit_choices_to={'Description': '设备'} );
     UCost = models.DecimalField('工序计件单价/元', max_digits=10, decimal_places=2, null=True, blank=True)
     HCost = models.DecimalField('工序计时单价/元', max_digits=10, decimal_places=2, null=True, blank=True)
     Description = models.IntegerField('备注索引',null=True, blank=True)

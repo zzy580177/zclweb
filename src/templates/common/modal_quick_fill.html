@@ -1,0 +1,36 @@
+<style>
+    input.unvalid, select.unvalid {
+        border-color: #ff4949;
+        background-color: #fdf2f2;
+        box-shadow: 0 0 0 1px rgba(255, 73, 73, 0.2);
+    }
+</style>
+
+<!-- 快速填报浮窗 -->
+    <div id="quick-fill-modal" class="modal" style="display: none;">
+        <header class="el-header" style="height: 60px;">
+            <div class="fx-modal-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <div class="header-title" style="margin-right: 16px;">
+                <div class="title-text" id="parts-detail-modal-title" title="title-text" style="font-size: 20px; font-weight: bold;">
+                    快速填报
+                </div>
+            </div>
+            <div class="modal-controls" style="display: flex; align-items: center; gap: 8px;">
+                <div class="el-button-group btn-group" size="small">
+                    <button type="button" id="maximize-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
+                        ⛶</button>
+                    <button type="button" id="switch-modal" class="el-button el-button--default el-button--small" style="cursor: pointer">
+                        <span class="el-icon-switch-button"></span>
+                    </button>
+                </div>
+            </div>
+        </header>
+        <main class="el-main" >
+            <div id="fast-descriptions-attribute" class='el-descriptions el-descriptions-fast-fill'
+                data-body="table" data-select='description', style="max-height: 60vh; overflow-y: auto;">
+            </div>
+        </main>
+    </div>
+
+    <!-- 模态框遮罩层 -->
+    <div id="quick-fill-modal-overlay" class="modal-overlay" style="display: none;"></div>
